@@ -26,4 +26,10 @@ mod tests {
         let hmac = crypto::verify_hmac(b"my secret and secure key", b"input message", b"97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9");
         hmac.expect("Verification was not successful.")
     }
+
+    #[test]
+    fn generate_key_pair() {
+        let _key_pair = crypto::generate_key_pair();
+
+    }
 }
