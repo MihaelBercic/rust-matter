@@ -1,4 +1,5 @@
 # Abstract Matter protocol implementation
+![example workflow](https://github.com/MihaelBercic/rust-matter/actions/workflows/rust.yml/badge.svg)
 <div style="text-align: center">in <b>rust</b></div>
 
 ### Cryptographic Primitives
