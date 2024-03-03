@@ -17,19 +17,21 @@ mod tests {
         let sample_key = b"my secret and secure key";
         let sample_input_message = b"input message";
         let hmac = crypto::hmac(sample_key, sample_input_message);
-        let hex = hmac.map(|x| format!("{:02x}", x)).join("");
+        let hex = hex::encode(hmac);
         assert_eq!(hex, "97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9")
     }
 
     #[test]
     fn crypto_hmac_verify() {
-        let hmac = crypto::verify_hmac(b"my secret and secure key", b"input message", b"97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9");
+        let sample_key = b"my secret and secure key";
+        let sample_input_message = b"input message";
+        let x = hex::decode("97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9").unwrap();
+        let hmac = crypto::verify_hmac(sample_key, sample_input_message, &x);
         hmac.expect("Verification was not successful.")
     }
 
     #[test]
     fn generate_key_pair() {
         let _key_pair = crypto::generate_key_pair();
-
     }
 }
