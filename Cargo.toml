@@ -1,0 +1,12 @@
+[package]
+name = "matter"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+drbg = "0.2.0"
+rand = "0.9.0-alpha.0"
+sha2 = "0.10.8"
+hmac = "0.12.1"
