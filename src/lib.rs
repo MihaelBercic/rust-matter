@@ -4,7 +4,6 @@ mod crypto;
 mod tests {
     use p256::{
         ecdsa::{signature::Verifier, Signature, VerifyingKey},
-        pkcs8::DecodePublicKey,
         EncodedPoint,
     };
 
@@ -52,7 +51,7 @@ mod tests {
     fn sign_message() {
         let signing_key = crypto::generate_key_pair();
         let message = b"Test";
-        let signed = crypto::sign_message(&signing_key, message);
+        let signed = crypto::sign_message(&signing_key.private_key, message);
     }
 
     #[test]

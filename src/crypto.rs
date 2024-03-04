@@ -1,11 +1,24 @@
 use hmac::digest::MacError;
 use hmac::{Hmac, Mac};
+use p256::ecdh::EphemeralSecret;
 use p256::ecdsa::signature::Signer;
-use p256::ecdsa::{Signature, SigningKey};
+use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
+
 use p256::elliptic_curve::rand_core::OsRng;
+use p256::PublicKey;
 use sha2::{Digest, Sha256};
 
 type HmacSha256 = Hmac<Sha256>;
+
+pub struct KeyPair {
+    pub private_key: SigningKey,
+    pub public_key: VerifyingKey,
+}
+
+pub struct EccKeyPair {
+    pub private_key: EphemeralSecret,
+    pub public_key: PublicKey,
+}
 
 const CRYPTO_GROUP_SIZE_BITS: usize = 256;
 const CRYPTO_GROUP_SIZE_BYTES: usize = 32;
@@ -37,9 +50,24 @@ pub fn verify_hmac(key: &[u8], message: &[u8], code_bytes: &[u8]) -> Result<(), 
     mac.verify_slice(&code_bytes[..])
 }
 
-/// Generates a Public - Private key pair using NIST-P256
-pub fn generate_key_pair() -> SigningKey {
-    SigningKey::random(&mut OsRng)
+/// ECDSA - Generates a Public - Private key pair using NIST-P256
+pub fn generate_key_pair() -> KeyPair {
+    let private_key = SigningKey::random(&mut OsRng);
+    let public_key = VerifyingKey::from(&private_key);
+    KeyPair {
+        private_key,
+        public_key,
+    }
+}
+
+/// ECDH - Generates a Public - Private key pair using NIST-P256
+pub fn ecc_generate_key_pair() -> EccKeyPair {
+    let private_key = EphemeralSecret::random(&mut OsRng);
+    let public_key = private_key.public_key();
+    EccKeyPair {
+        private_key,
+        public_key,
+    }
 }
 
 /// Signs a message using the [key] into signature which is of length [2 * CRYPTO_GROUP_SIZE_BYTES]
@@ -49,4 +77,17 @@ pub fn sign_message(key: &SigningKey, message: &[u8]) -> [u8; 2 * CRYPTO_GROUP_S
     let mut signature_bytes = [0u8; 2 * CRYPTO_GROUP_SIZE_BYTES];
     signature_bytes.copy_from_slice(&signed.to_bytes()[..]);
     signature_bytes
+}
+
+/// Computes ECDH shared secret using [ecdh]
+pub fn ecdh(
+    my_private_key: EphemeralSecret,
+    their_public_key: &[u8],
+) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
+    let their_public =
+        PublicKey::from_sec1_bytes(their_public_key).expect("Their public key is invalid!");
+    let shared = my_private_key.diffie_hellman(&their_public);
+    let mut bytes = [0u8; CRYPTO_GROUP_SIZE_BYTES];
+    bytes.copy_from_slice(&shared.raw_secret_bytes()[..]);
+    bytes
 }
