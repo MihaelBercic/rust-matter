@@ -2,12 +2,13 @@ mod crypto;
 
 #[cfg(test)]
 mod tests {
-    use p256::{
-        ecdsa::{signature::Verifier, Signature, VerifyingKey},
-        EncodedPoint,
-    };
+    use crate::crypto;
 
-    use super::*;
+    use p256::ecdsa::signature::Verifier;
+    use p256::ecdsa::Signature;
+    use p256::ecdsa::VerifyingKey;
+
+    use p256::EncodedPoint;
 
     #[test]
     fn crypto_hash_test_sha_256() {
@@ -51,7 +52,7 @@ mod tests {
     fn sign_message() {
         let signing_key = crypto::generate_key_pair();
         let message = b"Test";
-        let signed = crypto::sign_message(&signing_key.private_key, message);
+        let _signed = crypto::sign_message(&signing_key.private_key, message);
     }
 
     #[test]
@@ -62,6 +63,19 @@ mod tests {
         let verifying_key = VerifyingKey::from_encoded_point(&public_key).unwrap();
         let signature = hex::decode("7d639959c1a701326cb6827f10b59dca871d4f5f7d80f1c898eb6d85ac37999376afc3b4e22bd7724730cf1648f8dc974d1c5df8f94380f43fbe6414b3677a77").unwrap();
         let decoded_signature = Signature::from_slice(&signature).unwrap();
-        verifying_key.verify(message, &decoded_signature).is_ok();
+        let _ = verifying_key.verify(message, &decoded_signature).is_ok();
+    }
+
+    #[test]
+    fn ecdh_shared_secret() {
+        let bob = crypto::ecc_generate_key_pair();
+        let alice = crypto::ecc_generate_key_pair();
+
+        let bob_public_encoded = EncodedPoint::from(bob.public_key);
+        let alice_public_encoded = EncodedPoint::from(alice.public_key);
+
+        let shared_bob = crypto::ecdh(bob.private_key, alice_public_encoded.as_ref());
+        let shared_alice = crypto::ecdh(alice.private_key, bob_public_encoded.as_ref());
+        assert_eq!(shared_bob, shared_alice);
     }
 }

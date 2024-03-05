@@ -80,13 +80,9 @@ pub fn sign_message(key: &SigningKey, message: &[u8]) -> [u8; 2 * CRYPTO_GROUP_S
 }
 
 /// Computes ECDH shared secret using [ecdh]
-pub fn ecdh(
-    my_private_key: EphemeralSecret,
-    their_public_key: &[u8],
-) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
-    let their_public =
-        PublicKey::from_sec1_bytes(their_public_key).expect("Their public key is invalid!");
-    let shared = my_private_key.diffie_hellman(&their_public);
+pub fn ecdh(private_key: EphemeralSecret, public_key: &[u8]) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
+    let their_public = PublicKey::from_sec1_bytes(public_key).expect("Invalid public key.");
+    let shared = private_key.diffie_hellman(&their_public);
     let mut bytes = [0u8; CRYPTO_GROUP_SIZE_BYTES];
     bytes.copy_from_slice(&shared.raw_secret_bytes()[..]);
     bytes
