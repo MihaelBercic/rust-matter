@@ -8,7 +8,8 @@ use p256::elliptic_curve::rand_core::OsRng;
 use p256::PublicKey;
 use sha2::{Digest, Sha256};
 
-mod symmetric;
+#[allow(dead_code)]
+pub(crate) mod symmetric;
 
 type HmacSha256 = Hmac<Sha256>;
 
