@@ -1,9 +1,10 @@
 use aes::Aes128;
+use aes::cipher::typenum::U16;
 use ccm::{
     Ccm,
-    consts::{U10, U13},
+    consts::U13,
 };
-use ccm::aead::{AeadInPlace, generic_array::GenericArray, KeyInit};
+use ccm::aead::{Aead, generic_array::GenericArray, KeyInit, Payload};
 
 const CRYPTO_SYMMETRIC_KEY_LENGTH_BITS: usize = 128;
 const CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES: usize = 16;
@@ -13,31 +14,26 @@ const CRYPTO_AEAD_NONCE_LENGTH_BYTES: usize = 13;
 const Q: usize = 2;
 const N: usize = CRYPTO_AEAD_NONCE_LENGTH_BYTES;
 
-pub fn generate_and_encrypt(
+pub fn encrypt_in_place<'a>(
     key: &[u8],
-    payload: &[u8],
-    data: &[u8],
+    payload: Payload,
     nonce: &[u8; CRYPTO_AEAD_NONCE_LENGTH_BYTES],
 ) -> Vec<u8> {
-    /*
-    byte[lengthInBytes(P) + CRYPTO_AEAD_MIC_LENGTH_BYTES]
-    Crypto_AEAD_GenerateEncrypt(
-         SymmetricKey K,
-         byte[lengthInBytes(P)] P,
-         byte[] A,
-         byte[CRYPTO_AEAD_NONCE_LENGTH_BYTES] N)
-    */
-    type Cipher = Ccm<Aes128, U10, U13>;
-    let key = GenericArray::from_slice(key);
+    type Cipher = Ccm<Aes128, U16, U13>;
+    let cipher = Cipher::new_from_slice(key).unwrap();
     let nonce = GenericArray::from_slice(nonce);
-    let cipher = Cipher::new(key);
+    let encrypted = cipher.encrypt(&nonce, payload).expect("Unable to encrypt.");
+    encrypted
+}
 
-    let mut buf1 = [0; u16::MAX as usize];
-    let tag = cipher
-        .encrypt_in_place_detached(nonce, data, &mut buf1)
-        .expect("Issue encrypting.");
-
-    let encrypted = &buf1[0..payload.len()];
-    println!("Buffer data: {} for {} with tag {}", hex::encode(encrypted), String::from_utf8_lossy(payload), hex::encode(tag));
-    tag.to_vec()
+pub fn decrypt(
+    key: &[u8],
+    encrypted_payload: Payload,
+    nonce: &[u8; CRYPTO_AEAD_NONCE_LENGTH_BYTES],
+) -> Vec<u8> {
+    type Cipher = Ccm<Aes128, U16, U13>;
+    let cipher = Cipher::new_from_slice(key).expect("Issue decrypting AES key.");
+    let nonce = GenericArray::from_slice(nonce);
+    let decrypted = cipher.decrypt(nonce, encrypted_payload).expect("Issue decrypting message");
+    decrypted
 }

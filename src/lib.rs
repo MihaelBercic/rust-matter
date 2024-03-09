@@ -4,6 +4,7 @@ mod crypto;
 
 #[cfg(test)]
 mod tests {
+    use ccm::aead::Payload;
     use p256::ecdsa::Signature;
     use p256::ecdsa::signature::Verifier;
     use p256::ecdsa::VerifyingKey;
@@ -81,11 +82,18 @@ mod tests {
     }
 
     #[test]
-    fn test_ccm() {
+    fn aes_128() {
         let key = hex::decode("D7828D13B2B0BDC325A76236DF93CC6B").expect("Issue decoding HEX!");
         let nonce = hex::decode("2F1DBD38CE3EDA7C23F04DD650").expect("Issue decoding HEX!");
         let mut taken = [0u8; 13];
+        let message = b"Hello from Matter!";
+        let data: [u8; 0] = [];
         taken.copy_from_slice(&nonce[0..13]);
-        let _encrypted = crypto::symmetric::generate_and_encrypt(&key, b"Hello!", &[], &taken);
+        let encrypted = crypto::symmetric::encrypt_in_place(&key, Payload { msg: message, aad: &data }, &taken);
+        let encrypted_payload = Payload { msg: &encrypted[..], aad: &[] };
+        let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken);
+        println!("Encrypted: {}", hex::encode(&encrypted));
+        println!("Decrypted: {}", String::from_utf8_lossy(&decrypted));
+        assert_eq!(message, decrypted.as_slice())
     }
 }
