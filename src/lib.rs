@@ -89,11 +89,22 @@ mod tests {
         let message = b"Hello from Matter!";
         let data: [u8; 0] = [];
         taken.copy_from_slice(&nonce[0..13]);
-        let encrypted = crypto::symmetric::encrypt_in_place(&key, Payload { msg: message, aad: &data }, &taken);
+        let encrypted = crypto::symmetric::encrypt(&key, Payload { msg: message, aad: &data }, &taken).expect("Issue encrypting the payload.");
         let encrypted_payload = Payload { msg: &encrypted[..], aad: &[] };
-        let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken);
+        let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken).expect("Issue decrypting the payload.");
         println!("Encrypted: {}", hex::encode(&encrypted));
         println!("Decrypted: {}", String::from_utf8_lossy(&decrypted));
         assert_eq!(message, decrypted.as_slice())
+    }
+
+    #[test]
+    fn chunked_array() {
+        let key = hex::decode("D7828D13B2B0BDC325A76236DF93CC6B").expect("Issue decoding HEX!");
+        let nonce = hex::decode("2F1DBD38CE3EDA7C23F04DD650").expect("Issue decoding HEX!");
+        let mut taken = [0u8; 13];
+        let message = b"Hello from Matter!";
+        let data: [u8; 0] = [];
+        taken.copy_from_slice(&nonce[0..13]);
+        crypto::symmetric::encrypt_ctr(&key, b"Mihael bercic koko chanel sdfdsf sf fsd fdsfd fsf", &taken);
     }
 }
