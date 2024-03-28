@@ -3,7 +3,7 @@
 mod crypto;
 
 #[cfg(test)]
-mod tests {
+mod cryptography_tests {
     use ccm::aead::Payload;
     use p256::ecdsa::Signature;
     use p256::ecdsa::signature::Verifier;
@@ -11,6 +11,8 @@ mod tests {
     use p256::EncodedPoint;
 
     use crate::crypto;
+    use crate::crypto::constants::{CRYPTO_PBKDF_ITERATIONS_MIN, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS};
+    use crate::crypto::kdf;
 
     #[test]
     fn crypto_hash_test_sha_256() {
@@ -92,19 +94,40 @@ mod tests {
         let encrypted = crypto::symmetric::encrypt(&key, Payload { msg: message, aad: &data }, &taken).expect("Issue encrypting the payload.");
         let encrypted_payload = Payload { msg: &encrypted[..], aad: &[] };
         let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken).expect("Issue decrypting the payload.");
-        println!("Encrypted: {}", hex::encode(&encrypted));
-        println!("Decrypted: {}", String::from_utf8_lossy(&decrypted));
+        println!("Symmetric Encrypted: {}", hex::encode(&encrypted));
+        println!("Symmetric Decrypted: {}", String::from_utf8_lossy(&decrypted));
         assert_eq!(message, decrypted.as_slice())
     }
 
     #[test]
-    fn chunked_array() {
-        let key = hex::decode("D7828D13B2B0BDC325A76236DF93CC6B").expect("Issue decoding HEX!");
+    fn ctr() {
+        let key = hex::decode("D7828D13B2B0BDC325A76236DF93CC6B").expect("Issue decoding HEX");
         let nonce = hex::decode("2F1DBD38CE3EDA7C23F04DD650").expect("Issue decoding HEX!");
         let mut taken = [0u8; 13];
-        let message = b"Hello from Matter!";
-        let data: [u8; 0] = [];
+        let mut message = b"Hello from Matter!".to_vec();
         taken.copy_from_slice(&nonce[0..13]);
-        crypto::symmetric::encrypt_ctr(&key, b"Mihael bercic koko chanel sdfdsf sf fsd fdsfd fsf", &taken);
+        crypto::symmetric::encrypt_ctr(&key, &mut message, &taken);
+        println!("AES128-CTR Encrypted: {}", hex::encode(&message));
+        crypto::symmetric::decrypt_ctr(&key, &mut message, &taken);
+        println!("AES128-CTR Decrypted: {}", String::from_utf8_lossy(&message));
+    }
+
+    #[test]
+    fn kdf() {
+        let ikm = hex::decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b").unwrap();
+        let salt = hex::decode("000102030405060708090a0b0c").unwrap();
+        let info = hex::decode("f0f1f2f3f4f5f6f7f8f9").unwrap();
+        let kdf = kdf::key_derivation(&ikm[..], &salt[..], &info[..], 3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
+        println!("HKDF derived: {}", hex::encode(kdf));
+    }
+
+    #[test]
+    fn pb_kdf() {
+        let password = b"password";
+        let salt = b"salt";
+        let n = 600_000 as u32;
+        let expected = hex::decode("669cfe52482116fda1aa2cbe409b2f56c8e45637").unwrap();
+        let mut key1 = kdf::password_key_derivation(password, salt, n, 20);
+        assert_eq!(expected, key1);
     }
 }

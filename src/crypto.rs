@@ -7,9 +7,12 @@ use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
 use p256::elliptic_curve::rand_core::OsRng;
 use p256::PublicKey;
 use sha2::{Digest, Sha256};
+use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 
 #[allow(dead_code)]
 pub(crate) mod symmetric;
+pub(crate) mod kdf;
+pub(crate) mod constants;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -23,8 +26,6 @@ pub struct EccKeyPair {
     pub public_key: PublicKey,
 }
 
-const CRYPTO_GROUP_SIZE_BITS: usize = 256;
-const CRYPTO_GROUP_SIZE_BYTES: usize = 32;
 
 /// Uses SHA-256 to hash the provided message.
 pub fn hash_message(message: &[u8]) -> [u8; 32] {
