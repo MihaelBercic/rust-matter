@@ -2,7 +2,6 @@ use std::iter;
 
 use hkdf::Hkdf;
 use sha2::Sha256;
-use crate::crypto::verify_hmac;
 
 ///
 /// Key derivation function based on Chapter 3.8

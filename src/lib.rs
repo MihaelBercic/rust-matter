@@ -12,7 +12,7 @@ mod cryptography_tests {
 
     use crate::crypto;
     use crate::crypto::constants::{CRYPTO_PBKDF_ITERATIONS_MIN, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS};
-    use crate::crypto::kdf;
+    use crate::crypto::{kdf, spake};
 
     #[test]
     fn crypto_hash_test_sha_256() {
@@ -125,9 +125,14 @@ mod cryptography_tests {
     fn pb_kdf() {
         let password = b"password";
         let salt = b"salt";
-        let n = 600_000 as u32;
+        let n = 600_000u32;
         let expected = hex::decode("669cfe52482116fda1aa2cbe409b2f56c8e45637").unwrap();
-        let mut key1 = kdf::password_key_derivation(password, salt, n, 20);
+        let mut key1 = kdf::password_key_derivation(password, salt, n, 160);
         assert_eq!(expected, key1);
+    }
+
+    #[test]
+    fn spake2() {
+        spake::compute_values_initiator(b"miha", b"Hi", 0);
     }
 }

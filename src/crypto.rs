@@ -13,6 +13,7 @@ use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 pub(crate) mod symmetric;
 pub(crate) mod kdf;
 pub(crate) mod constants;
+pub(crate) mod spake;
 
 type HmacSha256 = Hmac<Sha256>;
 
