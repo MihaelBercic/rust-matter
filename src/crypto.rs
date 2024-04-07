@@ -15,6 +15,7 @@ pub(crate) mod symmetric;
 pub(crate) mod kdf;
 pub(crate) mod constants;
 pub(crate) mod spake;
+pub(crate) mod s2p_test_vectors;
 
 type HmacSha256 = Hmac<Sha256>;
 

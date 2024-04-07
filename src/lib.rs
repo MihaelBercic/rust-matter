@@ -8,11 +8,13 @@ mod cryptography_tests {
     use p256::ecdsa::Signature;
     use p256::ecdsa::signature::Verifier;
     use p256::ecdsa::VerifyingKey;
+    use p256::elliptic_curve::sec1::ToEncodedPoint;
     use p256::EncodedPoint;
 
     use crate::crypto;
-    use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BITS;
     use crate::crypto::{kdf, random_bytes};
+    use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BITS;
+    use crate::crypto::s2p_test_vectors::test_vectors::RFC_T;
     use crate::crypto::spake::Spake2P;
 
     #[test]
@@ -146,6 +148,33 @@ mod cryptography_tests {
 
     #[test]
     fn spake2() {
+        for rfc in RFC_T {
+            let mut spake = Spake2P::new();
+            // skip compute_values
+            spake.w0 = rfc.w0;
+            spake.w1 = rfc.w1;
+            spake.x = rfc.x;
+            spake.y = rfc.y;
+            spake.compute_values_verifier();
+            spake.compute_pA();
+            spake.compute_pB();
+            spake.compute_shared(false);
+
+            assert_eq!(rfc.L, spake.L);
+            assert_eq!(rfc.x, spake.x);
+            assert_eq!(rfc.y, spake.y);
+            assert_eq!(rfc.X, spake.X.to_encoded_point(false).as_bytes());
+            assert_eq!(rfc.Y, spake.Y.to_encoded_point(false).as_bytes());
+            assert_eq!(rfc.Z, spake.Z.to_encoded_point(false).as_bytes());
+            assert_eq!(rfc.V, spake.V.to_encoded_point(false).as_bytes());
+            /*
+            TODO: Unknown IDs so unable to test...
+            let tt = spake.compute_transcript();
+            assert_eq!(rfc.TT, tt[..]);
+            let confirmation = spake.compute_confirmation(&tt);
+             */
+        }
+
         let mut spake = Spake2P::new();
         spake.compute_values_initiator(b"miha", b"Hi", 0);
         spake.compute_values_verifier();
