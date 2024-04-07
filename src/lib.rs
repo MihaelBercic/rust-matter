@@ -174,16 +174,5 @@ mod cryptography_tests {
             let confirmation = spake.compute_confirmation(&tt);
              */
         }
-
-        let mut spake = Spake2P::new();
-        spake.compute_values_initiator(b"miha", b"Hi", 0);
-        spake.compute_values_verifier();
-        spake.compute_pA();
-        spake.compute_pB();
-        spake.compute_shared(true);
-        spake.compute_shared(false);
-        /*let x = hex::decode("03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49").unwrap();
-        let s: Vec<String> = x.iter().map(|x| format!("0x{:x}", x)).collect();
-        println!("{}", s.join(","))*/
     }
 }
