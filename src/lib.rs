@@ -11,14 +11,27 @@ mod cryptography_tests {
     use p256::EncodedPoint;
 
     use crate::crypto;
-    use crate::crypto::constants::{CRYPTO_PBKDF_ITERATIONS_MIN, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS};
-    use crate::crypto::{kdf, spake};
+    use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BITS;
+    use crate::crypto::{kdf, random_bytes};
+    use crate::crypto::spake::Spake2P;
+
+    #[test]
+    fn random_bytes_test() {
+        let short_bytes = random_bytes::<10>();
+        println!("{}B = {}", 10, hex::encode(short_bytes));
+
+        let medium_bytes = random_bytes::<32>();
+        println!("{}B = {}", 32, hex::encode(medium_bytes));
+
+        let long_bytes = random_bytes::<256>();
+        println!("{}B = {}", 256, hex::encode(long_bytes));
+    }
 
     #[test]
     fn crypto_hash_test_sha_256() {
         let sample = b"mihael";
         let hash = crypto::hash_message(sample);
-        let hex = hash.map(|x| format!("{:02x}", x)).join("");
+        let hex = hex::encode(hash);
         assert_eq!(
             hex,
             "a1ec7aff7a3ce85b3784176861b4995fe092eea0f417443d4ba77ae96a9f812e"
@@ -127,12 +140,21 @@ mod cryptography_tests {
         let salt = b"salt";
         let n = 600_000u32;
         let expected = hex::decode("669cfe52482116fda1aa2cbe409b2f56c8e45637").unwrap();
-        let mut key1 = kdf::password_key_derivation(password, salt, n, 160);
+        let key1 = kdf::password_key_derivation(password, salt, n, 160);
         assert_eq!(expected, key1);
     }
 
     #[test]
     fn spake2() {
-        spake::compute_values_initiator(b"miha", b"Hi", 0);
+        let mut spake = Spake2P::new();
+        spake.compute_values_initiator(b"miha", b"Hi", 0);
+        spake.compute_values_verifier();
+        spake.compute_pA();
+        spake.compute_pB();
+        spake.compute_shared(true);
+        spake.compute_shared(false);
+        /*let x = hex::decode("03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49").unwrap();
+        let s: Vec<String> = x.iter().map(|x| format!("0x{:x}", x)).collect();
+        println!("{}", s.join(","))*/
     }
 }

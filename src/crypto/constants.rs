@@ -1,5 +1,7 @@
 pub const CRYPTO_GROUP_SIZE_BITS: usize = 256;
 pub const CRYPTO_GROUP_SIZE_BYTES: usize = 32;
+pub const CRYPTO_PUBLIC_KEY_SIZE_BYTES: usize = 65;
+
 pub const CRYPTO_SYMMETRIC_KEY_LENGTH_BITS: usize = 128;
 pub const CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES: usize = 16;
 pub const CRYPTO_AEAD_MIC_LENGTH_BITS: usize = 128;

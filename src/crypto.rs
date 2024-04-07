@@ -1,12 +1,13 @@
-use hmac::digest::MacError;
 use hmac::{Hmac, Mac};
+use hmac::digest::MacError;
 use p256::ecdh::EphemeralSecret;
-use p256::ecdsa::signature::Signer;
 use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
-
+use p256::ecdsa::signature::Signer;
 use p256::elliptic_curve::rand_core::OsRng;
 use p256::PublicKey;
+use rand::{Rng, thread_rng};
 use sha2::{Digest, Sha256};
+
 use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 
 #[allow(dead_code)]
@@ -91,4 +92,14 @@ pub fn ecdh(private_key: EphemeralSecret, public_key: &[u8]) -> [u8; CRYPTO_GROU
     let mut bytes = [0u8; CRYPTO_GROUP_SIZE_BYTES];
     bytes.copy_from_slice(&shared.raw_secret_bytes()[..]);
     bytes
+}
+
+/// Computes [N] random bytes and stores them in a vector.
+pub fn random_bytes<const N: usize>() -> [u8; N] {
+    let mut array = [0u8; N];
+    let mut rng = thread_rng();
+    for i in 0..N {
+        array[i] = rng.gen_range(0..255)
+    }
+    return array;
 }
