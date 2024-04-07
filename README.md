@@ -1,8 +1,8 @@
-# Abstract Matter protocol implementation
+# Abstract Matter protocol implementation in Rust
 
 ![example workflow](https://github.com/MihaelBercic/rust-matter/actions/workflows/rust.yml/badge.svg)
 
-<div style="text-align: center">in <b>rust</b></div>
+Documentation is a work in progress...
 
 ### Chapter 4: Secure channel (currently working on)
 - [ ] Discovery
