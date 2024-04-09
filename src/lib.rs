@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod crypto;
+mod discovery;
 
 #[cfg(test)]
 mod cryptography_tests {
