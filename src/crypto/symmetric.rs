@@ -4,6 +4,7 @@ use ccm::aead::{Aead, Payload};
 use ccm::aead::generic_array::GenericArray;
 use ccm::consts::{U13, U16};
 use ctr::cipher::{KeyIvInit, StreamCipher};
+
 use crate::crypto::constants::{CRYPTO_AEAD_NONCE_LENGTH_BYTES, CRYPTO_PRIVACY_NONCE_LENGTH_BYTES};
 
 pub fn encrypt<'a>(
