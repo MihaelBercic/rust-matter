@@ -1,4 +1,4 @@
-use crate::discovery::multicast_socket::MulticastSocket;
+use crate::discovery::mdns::multicast_socket::MulticastSocket;
 
 mod discovery;
 mod useful;

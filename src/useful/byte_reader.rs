@@ -1,5 +1,7 @@
+use byteorder::ByteOrder;
+
 pub struct ByteReader<'a> {
-    buffer: &'a [u8],
+    pub buffer: &'a [u8],
     pub(crate) position: usize,
 }
 
@@ -18,6 +20,26 @@ impl<'a> ByteReader<'a> {
         let byte = self.buffer[self.position];
         self.position += 1;
         return Ok(byte);
+    }
+
+    pub fn read_u16<E: ByteOrder>(&mut self) -> Result<u16, &str> {
+        if self.remaining_bytes() < 2 {
+            return Err("Out of bounds");
+        }
+        let slice = &self.buffer[self.position..self.position + 2];
+        let u16 = E::read_u16(slice);
+        self.position += 2;
+        return Ok(u16);
+    }
+
+    pub fn read_u32<E: ByteOrder>(&mut self) -> Result<u32, &str> {
+        if self.remaining_bytes() < 4 {
+            return Err("Out of bounds");
+        }
+        let slice = &self.buffer[self.position..self.position + 4];
+        let read = E::read_u32(slice);
+        self.position += 4;
+        return Ok(read);
     }
 
     pub fn read_multiple(&mut self, length: usize) -> Result<&[u8], &str> {
@@ -40,8 +62,9 @@ impl<'a> ByteReader<'a> {
         return Ok(buf);
     }
 
-    pub fn copy_into(&self, dst: &mut [u8]) {
-        dst.copy_from_slice(&self.buffer);
+    pub fn copy_into(&mut self, dst: &mut [u8]) {
+        dst.copy_from_slice(&self.buffer[self.position..self.position + dst.len()]);
+        self.position += dst.len();
     }
 
     pub fn has_remaining(&self) -> bool {
@@ -49,8 +72,7 @@ impl<'a> ByteReader<'a> {
     }
 
     pub fn remaining_bytes(&self) -> usize {
-        println!("LEN: {} POS: {}", self.buffer.len(), self.position);
-        return self.buffer.len() - self.position;
+        self.buffer.len() - self.position
     }
 
     pub fn jump_to(&mut self, position: usize) {
