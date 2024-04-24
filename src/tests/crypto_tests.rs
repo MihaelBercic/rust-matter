@@ -104,11 +104,26 @@ mod cryptography_tests {
         let message = b"Hello from Matter!";
         let data: [u8; 0] = [];
         taken.copy_from_slice(&nonce[0..13]);
-        let encrypted = crypto::symmetric::encrypt(&key, Payload { msg: message, aad: &data }, &taken).expect("Issue encrypting the payload.");
-        let encrypted_payload = Payload { msg: &encrypted[..], aad: &[] };
-        let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken).expect("Issue decrypting the payload.");
+        let encrypted = crypto::symmetric::encrypt(
+            &key,
+            Payload {
+                msg: message,
+                aad: &data,
+            },
+            &taken,
+        )
+        .expect("Issue encrypting the payload.");
+        let encrypted_payload = Payload {
+            msg: &encrypted[..],
+            aad: &[],
+        };
+        let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken)
+            .expect("Issue decrypting the payload.");
         println!("Symmetric Encrypted: {}", hex::encode(&encrypted));
-        println!("Symmetric Decrypted: {}", String::from_utf8_lossy(&decrypted));
+        println!(
+            "Symmetric Decrypted: {}",
+            String::from_utf8_lossy(&decrypted)
+        );
         assert_eq!(message, decrypted.as_slice())
     }
 
@@ -122,7 +137,10 @@ mod cryptography_tests {
         crypto::symmetric::encrypt_ctr(&key, &mut message, &taken);
         println!("AES128-CTR Encrypted: {}", hex::encode(&message));
         crypto::symmetric::decrypt_ctr(&key, &mut message, &taken);
-        println!("AES128-CTR Decrypted: {}", String::from_utf8_lossy(&message));
+        println!(
+            "AES128-CTR Decrypted: {}",
+            String::from_utf8_lossy(&message)
+        );
     }
 
     #[test]
@@ -130,7 +148,12 @@ mod cryptography_tests {
         let ikm = hex::decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b").unwrap();
         let salt = hex::decode("000102030405060708090a0b0c").unwrap();
         let info = hex::decode("f0f1f2f3f4f5f6f7f8f9").unwrap();
-        let kdf = kdf::key_derivation(&ikm[..], &salt[..], &info[..], 3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
+        let kdf = kdf::key_derivation(
+            &ikm[..],
+            &salt[..],
+            &info[..],
+            3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
+        );
         println!("HKDF derived: {}", hex::encode(kdf));
     }
 

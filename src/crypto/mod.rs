@@ -10,12 +10,12 @@ use sha2::{Digest, Sha256};
 
 use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 
+pub(crate) mod constants;
+pub(crate) mod kdf;
+pub(crate) mod s2p_test_vectors;
+pub(crate) mod spake;
 #[allow(dead_code)]
 pub(crate) mod symmetric;
-pub(crate) mod kdf;
-pub(crate) mod constants;
-pub(crate) mod spake;
-pub(crate) mod s2p_test_vectors;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -28,7 +28,6 @@ pub struct EccKeyPair {
     pub private_key: EphemeralSecret,
     pub public_key: PublicKey,
 }
-
 
 /// Uses SHA-256 to hash the provided message.
 pub fn hash_message(message: &[u8]) -> [u8; 32] {

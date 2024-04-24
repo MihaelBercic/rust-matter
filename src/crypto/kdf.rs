@@ -14,7 +14,12 @@ pub fn key_derivation(input_key: &[u8], salt: &[u8], info: &[u8], bit_length: us
     return om;
 }
 
-pub fn password_key_derivation(input: &[u8], salt: &[u8], iterations: u32, bit_length: usize) -> Vec<u8> {
+pub fn password_key_derivation(
+    input: &[u8],
+    salt: &[u8],
+    iterations: u32,
+    bit_length: usize,
+) -> Vec<u8> {
     let mut vec: Vec<u8> = iter::repeat(0).take(bit_length / 8).collect();
     pbkdf2::pbkdf2_hmac::<Sha256>(input, salt, iterations, &mut vec);
     return vec;

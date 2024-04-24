@@ -31,30 +31,24 @@ pub fn decrypt(
     decrypted
 }
 
-pub fn encrypt_ctr(
-    key: &[u8],
-    buffer: &mut [u8],
-    nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES],
-) {
+pub fn encrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES]) {
     type Aes128Ctr32LE = ctr::Ctr32LE<aes::Aes128>;
     let mut vec = nonce.to_vec();
     vec.push(0);
     vec.push(0);
     vec.push(0);
-    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..]).expect("Unable to create cipher from slices.");
+    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..])
+        .expect("Unable to create cipher from slices.");
     cipher.apply_keystream(buffer);
 }
 
-pub fn decrypt_ctr(
-    key: &[u8],
-    buffer: &mut [u8],
-    nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES],
-) {
+pub fn decrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES]) {
     type Aes128Ctr32LE = ctr::Ctr32LE<aes::Aes128>;
     let mut vec = nonce.to_vec();
     vec.push(0);
     vec.push(0);
     vec.push(0);
-    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..]).expect("Unable to create cipher from slices.");
+    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..])
+        .expect("Unable to create cipher from slices.");
     cipher.apply_keystream(buffer);
 }

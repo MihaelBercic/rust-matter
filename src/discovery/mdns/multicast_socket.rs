@@ -4,12 +4,15 @@ use std::net::{Ipv6Addr, SocketAddr, UdpSocket};
 use std::os::fd::FromRawFd;
 use std::str::FromStr;
 
-use libc::{AF_INET6, bind, c_char, in6_addr, perror, setsockopt, SO_REUSEADDR, SO_REUSEPORT, SOCK_DGRAM, sockaddr, sockaddr_in6, socket, socklen_t, SOL_SOCKET};
+use libc::{
+    AF_INET6, bind, c_char, in6_addr, perror, setsockopt, SO_REUSEADDR, SO_REUSEPORT, SOCK_DGRAM,
+    sockaddr, sockaddr_in6, socket, socklen_t, SOL_SOCKET,
+};
 use netif::Interface;
 
 pub struct MulticastSocket {
     pub udp_socket: UdpSocket,
-    buffer: [u8; 9000],
+    pub buffer: [u8; 9000],
 }
 
 impl MulticastSocket {
@@ -29,10 +32,24 @@ impl MulticastSocket {
                 sin6_flowinfo: 0,
                 sin6_scope_id: 0,
             } as *const _ as *const sockaddr;
-            if setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, cc as *const c_void, size_of::<i32>() as socklen_t) < 0 {
+            if setsockopt(
+                fd,
+                SOL_SOCKET,
+                SO_REUSEADDR,
+                cc as *const c_void,
+                size_of::<i32>() as socklen_t,
+            ) < 0
+            {
                 perror(error_text as *const c_char);
             }
-            if setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, cc as *const c_void, size_of::<i32>() as socklen_t) < 0 {
+            if setsockopt(
+                fd,
+                SOL_SOCKET,
+                SO_REUSEPORT,
+                cc as *const c_void,
+                size_of::<i32>() as socklen_t,
+            ) < 0
+            {
                 perror(error_text as *const c_char);
             }
             if bind(fd, x, size_of::<sockaddr_in6>() as socklen_t) < 0 {
@@ -40,8 +57,13 @@ impl MulticastSocket {
             }
         }
         let socket = unsafe { UdpSocket::from_raw_fd(fd) };
-        socket.join_multicast_v6(&multicast_ipv6, interface.scope_id().unwrap()).expect("Unable to join...");
-        return Self { udp_socket: socket, buffer: [0u8; 9000] };
+        socket
+            .join_multicast_v6(&multicast_ipv6, interface.scope_id().unwrap())
+            .expect("Unable to join...");
+        return Self {
+            udp_socket: socket,
+            buffer: [0u8; 9000],
+        };
     }
 
     pub fn receive_from(&mut self) -> std::io::Result<(usize, SocketAddr)> {

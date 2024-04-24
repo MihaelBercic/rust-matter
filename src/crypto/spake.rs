@@ -14,19 +14,31 @@ use crate::crypto::kdf::key_derivation;
 
 #[allow(non_upper_case_globals)]
 // const M: &str = "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f";
-const BYTES_M: [u8; 33] = [0x2, 0x88, 0x6e, 0x2f, 0x97, 0xac, 0xe4, 0x6e, 0x55, 0xba, 0x9d, 0xd7, 0x24, 0x25, 0x79, 0xf2, 0x99, 0x3b, 0x64, 0xe1, 0x6e, 0xf3, 0xdc, 0xab, 0x95, 0xaf, 0xd4, 0x97, 0x33, 0x3d, 0x8f, 0xa1, 0x2f];
-
+const BYTES_M: [u8; 33] = [
+    0x2, 0x88, 0x6e, 0x2f, 0x97, 0xac, 0xe4, 0x6e, 0x55, 0xba, 0x9d, 0xd7, 0x24, 0x25, 0x79, 0xf2,
+    0x99, 0x3b, 0x64, 0xe1, 0x6e, 0xf3, 0xdc, 0xab, 0x95, 0xaf, 0xd4, 0x97, 0x33, 0x3d, 0x8f, 0xa1,
+    0x2f,
+];
 
 // "CHIP PAKE V1 Commissioning" - The usage of CHIP here is intentional and due to implementation in the SDK before the name change, should not be renamed to Matter.
-const CONTEXT_PREFIX_VALUE: [u8; 26] = [0x43, 0x48, 0x49, 0x50, 0x20, 0x50, 0x41, 0x4b, 0x45, 0x20, 0x56, 0x31, 0x20, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x69, 0x6e, 0x67];
+const CONTEXT_PREFIX_VALUE: [u8; 26] = [
+    0x43, 0x48, 0x49, 0x50, 0x20, 0x50, 0x41, 0x4b, 0x45, 0x20, 0x56, 0x31, 0x20, 0x43, 0x6f, 0x6d,
+    0x6d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x69, 0x6e, 0x67,
+];
 
 // const N: &str = "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49";
-const BYTES_N: [u8; 33] = [0x3, 0xd8, 0xbb, 0xd6, 0xc6, 0x39, 0xc6, 0x29, 0x37, 0xb0, 0x4d, 0x99, 0x7f, 0x38, 0xc3, 0x77, 0x7, 0x19, 0xc6, 0x29, 0xd7, 0x1, 0x4d, 0x49, 0xa2, 0x4b, 0x4f, 0x98, 0xba, 0xa1, 0x29, 0x2b, 0x49];
-const NIST_P_256_ORDER: [u8; 32] = [0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+const BYTES_N: [u8; 33] = [
+    0x3, 0xd8, 0xbb, 0xd6, 0xc6, 0x39, 0xc6, 0x29, 0x37, 0xb0, 0x4d, 0x99, 0x7f, 0x38, 0xc3, 0x77,
+    0x7, 0x19, 0xc6, 0x29, 0xd7, 0x1, 0x4d, 0x49, 0xa2, 0x4b, 0x4f, 0x98, 0xba, 0xa1, 0x29, 0x2b,
+    0x49,
+];
+const NIST_P_256_ORDER: [u8; 32] = [
+    0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+];
 
 const CRYPTO_W_SIZE_BYTES: usize = CRYPTO_GROUP_SIZE_BYTES + 8;
 const CRYPTO_W_SIZE_BITS: usize = CRYPTO_W_SIZE_BYTES * 8;
-
 
 #[allow(non_snake_case)]
 pub struct Spake2P {
@@ -53,8 +65,10 @@ impl Spake2P {
             L: [0u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
             pA: [0u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
             pB: [0u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
-            M: AffinePoint::from_encoded_point(&EncodedPoint::from_bytes(&BYTES_M).unwrap()).unwrap(),
-            N: AffinePoint::from_encoded_point(&EncodedPoint::from_bytes(&BYTES_N).unwrap()).unwrap(),
+            M: AffinePoint::from_encoded_point(&EncodedPoint::from_bytes(&BYTES_M).unwrap())
+                .unwrap(),
+            N: AffinePoint::from_encoded_point(&EncodedPoint::from_bytes(&BYTES_N).unwrap())
+                .unwrap(),
             x: Self::generate_random(),
             y: Self::generate_random(),
             X: ProjectivePoint::IDENTITY,
@@ -70,7 +84,8 @@ impl Spake2P {
         byte w0[CRYPTO_GROUP_SIZE_BYTES] = w0s mod p
         byte w1[CRYPTO_GROUP_SIZE_BYTES] = w1s mod p
         */
-        let pbkdf = kdf::password_key_derivation(passcode, salt, iterations, 2 * CRYPTO_W_SIZE_BITS);
+        let pbkdf =
+            kdf::password_key_derivation(passcode, salt, iterations, 2 * CRYPTO_W_SIZE_BITS);
         let mut w0s = [0u8; CRYPTO_W_SIZE_BYTES];
         let mut w1s = [0u8; CRYPTO_W_SIZE_BYTES];
 
@@ -80,8 +95,10 @@ impl Spake2P {
 
         let w0 = BigUint::from_bytes_be(&w0s).rem(&order);
         let w1 = BigUint::from_bytes_be(&w1s).rem(&order);
-        self.w0.copy_from_slice(&w0.to_bytes_be()[0..CRYPTO_GROUP_SIZE_BYTES]);
-        self.w1.copy_from_slice(&w1.to_bytes_be()[0..CRYPTO_GROUP_SIZE_BYTES]);
+        self.w0
+            .copy_from_slice(&w0.to_bytes_be()[0..CRYPTO_GROUP_SIZE_BYTES]);
+        self.w1
+            .copy_from_slice(&w1.to_bytes_be()[0..CRYPTO_GROUP_SIZE_BYTES]);
     }
 
     /// Passcode is serialized as **little endian** <br>
@@ -90,7 +107,8 @@ impl Spake2P {
     pub fn compute_values_verifier(&mut self) {
         let w1_scalar = Scalar::from_repr(GenericArray::from(self.w1)).unwrap();
         let length = p256::AffinePoint::GENERATOR * w1_scalar;
-        self.L.copy_from_slice(length.to_encoded_point(false).as_bytes());
+        self.L
+            .copy_from_slice(length.to_encoded_point(false).as_bytes());
     }
 
     #[allow(non_snake_case)]
@@ -126,7 +144,9 @@ impl Spake2P {
         } else {
             // VERIFIER:   Z = h*y*(X - w0*M)      V = h*y*L
             let w_t_m = self.M * Scalar::from_repr(self.w0.into()).unwrap();
-            let L = ProjectivePoint::from_encoded_point(&EncodedPoint::from_bytes(&self.L).unwrap()).unwrap();
+            let L =
+                ProjectivePoint::from_encoded_point(&EncodedPoint::from_bytes(&self.L).unwrap())
+                    .unwrap();
             let Z = (self.X - w_t_m) * Scalar::from_repr(self.y.into()).unwrap();
             let V = L * Scalar::from_repr(self.y.into()).unwrap();
             self.Z = Z;
@@ -180,16 +200,27 @@ impl Spake2P {
         let length_w0 = self.w0.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
         let empty = ([0u8]).pad(PaddingMode::Left, 8, 0);
 
-        let tt = [context_length, context,
-            empty.clone(), empty.clone(),
-            length_M, M_as_bytes,
-            length_N, N_as_bytes,
-            length_pA, self.pA.to_vec(),
-            length_pB, self.pB.to_vec(),
-            length_Z, Z_as_bytes,
-            length_V, V_as_bytes,
-            length_w0, self.w0.to_vec()
-        ].concat();
+        let tt = [
+            context_length,
+            context,
+            empty.clone(),
+            empty.clone(),
+            length_M,
+            M_as_bytes,
+            length_N,
+            N_as_bytes,
+            length_pA,
+            self.pA.to_vec(),
+            length_pB,
+            self.pB.to_vec(),
+            length_Z,
+            Z_as_bytes,
+            length_V,
+            V_as_bytes,
+            length_w0,
+            self.w0.to_vec(),
+        ]
+        .concat();
         return tt;
     }
 
