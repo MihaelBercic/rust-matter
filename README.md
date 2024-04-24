@@ -5,7 +5,13 @@
 Documentation is a work in progress...
 
 ### Chapter 4: Secure channel (currently working on)
+
 - [ ] Discovery
+    - [x] MulticastSocket
+    - [x] mDNS Packet Header
+    - [x] mDNS Packet Label compression
+    - [x] mDNS Packet Records
+    - [ ] mDNS Packet building
 
 ### Chapter 3: Cryptographic Primitives
 
