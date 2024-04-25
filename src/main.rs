@@ -1,3 +1,4 @@
+use crate::discovery::mdns::mdns_structs::MDNSPacket;
 use crate::discovery::mdns::multicast_socket::MulticastSocket;
 
 mod discovery;
@@ -15,6 +16,7 @@ fn main() {
         .collect::<Vec<String>>()
         .join(",");
     let sample = String::from_utf8_lossy(data);
+    let packet = MDNSPacket::from(data);
     println!("{}", sample);
     println!(": [u8;{}] = [{}]", size, code)
 }

@@ -45,7 +45,7 @@ pub struct CompleteRecord {
 #[repr(u16)]
 #[derive(Debug)]
 pub enum RecordType {
-    Unsupported = 0,
+    Unsupported(u16) = 0,
     A = 1,
     NS = 2,
     CNAME = 5,
@@ -67,6 +67,7 @@ pub enum RecordType {
     DNAME = 39,
     APL = 42,
     DS = 43,
+    NSEC = 47,
 }
 
 impl From<u16> for RecordType {
@@ -93,7 +94,8 @@ impl From<u16> for RecordType {
             39 => DNAME,
             42 => APL,
             43 => DS,
-            _ => Unsupported,
+            47 => NSEC,
+            _ => Unsupported(value),
         }
     }
 }

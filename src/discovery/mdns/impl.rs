@@ -74,7 +74,7 @@ impl MDNSPacketHeader {
         let is_recursion_available = flags.bit_subset(7, 1) == 1;
         let response_code = flags.bit_subset(0, 4) as u8;
         return Self {
-            identification: 0,
+            identification: id,
             flags,
             is_response,
             opcode,
@@ -116,7 +116,7 @@ fn read_label(buffer: &mut ByteReader) -> String {
             let byte_as_usize = byte as usize;
             let next_byte = buffer.read().unwrap() as usize;
             let shifted = ((byte_as_usize & 0b00111111) << 8); // What's the point of this...
-            let position = shifted | next_byte;
+            let position = next_byte;
             let jump_position = position;
             if return_to == 0 {
                 return_to = buffer.position
