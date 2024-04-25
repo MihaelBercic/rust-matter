@@ -23,7 +23,6 @@ impl From<&[u8]> for MDNSPacket {
         let answer_count = byte_reader.read_u16::<BigEndian>().unwrap();
         let authority_count = byte_reader.read_u16::<BigEndian>().unwrap();
         let additional_count = byte_reader.read_u16::<BigEndian>().unwrap();
-        println!("QC: {}", query_count);
 
         for _ in 0..query_count {
             let query_record = read_record_information(&mut byte_reader);
