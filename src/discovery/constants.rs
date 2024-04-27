@@ -1,7 +1,8 @@
+#![allow(unused)]
+
 pub const MDNS_PORT: u16 = 5353;
 pub const LOCAL_DOMAIN: &str = ".local";
-pub const IPV6_ADDRESS: &str = "FF02::FB";
-pub const IPV6_INTERFACE: u32 = 0xFB;
+pub const IPV6_MULTICAST_ADDRESS: &str = "FF02::FB";
 
 pub const SAMPLE_PACKET: [u8; 285] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x04, 0x5f, 0x68, 0x61,

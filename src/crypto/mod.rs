@@ -10,12 +10,11 @@ use sha2::{Digest, Sha256};
 
 use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 
-pub(crate) mod constants;
-pub(crate) mod kdf;
-pub(crate) mod s2p_test_vectors;
-pub(crate) mod spake;
-#[allow(dead_code)]
-pub(crate) mod symmetric;
+pub mod constants;
+pub mod kdf;
+pub mod s2p_test_vectors;
+pub mod spake;
+pub mod symmetric;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -41,7 +40,7 @@ pub fn hash_message(message: &[u8]) -> [u8; 32] {
 
 /// Generates a hash of the [message] with the provided [key];
 pub fn hmac(key: &[u8], message: &[u8]) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
-    let mut mac = HmacSha256::new_from_slice(key).expect("HMAC should take any key size");
+    let mut mac = HmacSha256::new_from_slice(key).expect("HMAC takes any key size");
     mac.update(message);
     let result = mac.finalize();
     let mut output = [0u8; CRYPTO_GROUP_SIZE_BYTES];

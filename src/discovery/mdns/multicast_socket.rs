@@ -10,6 +10,8 @@ use libc::{
 };
 use netif::Interface;
 
+use crate::discovery::constants::IPV6_MULTICAST_ADDRESS;
+
 pub struct MulticastSocket {
     pub udp_socket: UdpSocket,
     pub buffer: [u8; 9000],
@@ -18,7 +20,7 @@ pub struct MulticastSocket {
 impl MulticastSocket {
     pub fn new(interface: Interface, port: u16) -> Self {
         let error_text = "OPT FAILED" as *const _;
-        let multicast_ipv6 = Ipv6Addr::from_str("ff02::fb").unwrap();
+        let multicast_ipv6 = Ipv6Addr::from_str(IPV6_MULTICAST_ADDRESS).unwrap();
         let fd = unsafe { socket(AF_INET6, SOCK_DGRAM, 0) };
         let option_value = 1;
         let cc = &option_value as *const _;

@@ -1,6 +1,6 @@
 use std::iter;
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::BigEndian;
 
 use crate::discovery::mdns::mdns_structs::{
     BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType,
@@ -113,9 +113,8 @@ fn read_label(buffer: &mut ByteReader) -> String {
         }
         let is_pointer = byte >= 0b11000000;
         if is_pointer {
-            let byte_as_usize = byte as usize;
             let next_byte = buffer.read().unwrap() as usize;
-            let shifted = ((byte_as_usize & 0b00111111) << 8); // What's the point of this...
+            // TODO: remove... let shifted = (byte_as_usize & 0b00111111) << 8; // What's the point of this...
             let position = next_byte;
             let jump_position = position;
             if return_to == 0 {
@@ -134,7 +133,7 @@ fn read_label(buffer: &mut ByteReader) -> String {
             break;
         }
     }
-    if (return_to > 0) {
+    if return_to > 0 {
         buffer.jump_to(return_to);
     }
     return String::from_utf8_lossy(&characters[..]).to_string();

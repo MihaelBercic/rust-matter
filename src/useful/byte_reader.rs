@@ -5,6 +5,7 @@ pub struct ByteReader<'a> {
     pub(crate) position: usize,
 }
 
+#[allow(unused)]
 impl<'a> ByteReader<'a> {
     pub fn new(buffer: &'a [u8]) -> Self {
         return Self {

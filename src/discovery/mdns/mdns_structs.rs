@@ -13,6 +13,7 @@ pub struct MDNSPacketHeader {
     pub response_code: u8,
 }
 
+#[allow(unused)]
 pub struct MDNSPacket {
     header: MDNSPacketHeader,
     query_count: u16,

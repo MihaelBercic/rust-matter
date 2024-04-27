@@ -1,8 +1,3 @@
-use std::io::Read;
-
-use byteorder::ReadBytesExt;
-use num_traits::ToPrimitive;
-
 #[cfg(test)]
 pub mod discovery_tests {
     use crate::discovery::constants::SAMPLE_PACKET;
@@ -10,8 +5,7 @@ pub mod discovery_tests {
 
     #[test]
     fn hello() {
-        let slice = &SAMPLE_PACKET[..];
-        let mdns_packet = MDNSPacket::from(slice);
+        let mdns_packet = MDNSPacket::from(&SAMPLE_PACKET);
     }
 
     #[test]
