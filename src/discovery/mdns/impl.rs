@@ -1,17 +1,10 @@
-use std::iter;
+use std::io::Write;
 
-use byteorder::BigEndian;
+use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::mdns_structs::{
-    BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType,
-};
+use crate::discovery::mdns::mdns_structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
+use crate::discovery::mdns::mdns_structs::RecordType::Unsupported;
 use crate::useful::byte_reader::ByteReader;
-
-impl Into<Vec<u8>> for RecordInformation {
-    fn into(self) -> Vec<u8> {
-        todo!()
-    }
-}
 
 impl From<&[u8]> for MDNSPacket {
     fn from(value: &[u8]) -> Self {
@@ -19,48 +12,145 @@ impl From<&[u8]> for MDNSPacket {
         let id = byte_reader.read_u16::<BigEndian>().unwrap();
         let flags = byte_reader.read_u16::<BigEndian>().unwrap();
         let header = MDNSPacketHeader::new(id, flags);
+
         let query_count = byte_reader.read_u16::<BigEndian>().unwrap();
         let answer_count = byte_reader.read_u16::<BigEndian>().unwrap();
         let authority_count = byte_reader.read_u16::<BigEndian>().unwrap();
         let additional_count = byte_reader.read_u16::<BigEndian>().unwrap();
 
-        for _ in 0..query_count {
-            let query_record = read_record_information(&mut byte_reader);
-            println!("Query: {:?}", query_record);
-        }
+        let query_records: Vec<RecordInformation> = (0..query_count).map(|_| read_record_information(&mut byte_reader)).collect();
+        let answer_records: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        let authority_records: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        let additional_records: Vec<CompleteRecord> = vec![]; // (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
 
-        for _ in 0..answer_count {
-            let complete_record = read_complete_record(&mut byte_reader);
-            println!("Answer {:?}", complete_record);
-        }
+        // println!("Header: {:#?}", header);
+        // println!(
+        //     "QC: {}, AnC: {}, AuC: {}, AdC: {}",
+        //     query_count, answer_count, authority_count, additional_count
+        // );
+        return MDNSPacket {
+            header,
+            query_records,
+            answer_records,
+            authority_records,
+            additional_records,
+        };
+    }
+}
 
-        for _ in 0..authority_count {
-            let complete_record = read_complete_record(&mut byte_reader);
-            println!("Authority {:?}", complete_record);
-        }
+impl Into<Vec<u8>> for MDNSPacket {
+    fn into(self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = vec![];
+        let header: [u8; 4] = self.header.into();
+        buffer.extend_from_slice(&header);
+        buffer.write_u16::<BigEndian>(self.query_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(self.answer_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(self.authority_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(self.additional_records.len() as u16).unwrap();
 
-        for _ in 0..additional_count {
-            let complete_record = read_complete_record(&mut byte_reader);
-            println!("Additional {:?}", complete_record);
-        }
+        for x in self.query_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in self.answer_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in self.authority_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in self.additional_records { buffer.extend::<Vec<u8>>(x.into()) }
 
-        println!("Header: {:#?}", header);
-        println!(
-            "QC: {}, AnC: {}, AuC: {}, AdC: {}",
-            query_count, answer_count, authority_count, additional_count
-        );
-        todo!("")
+        return buffer;
     }
 }
 
 impl Into<[u8; 4]> for MDNSPacketHeader {
     fn into(self) -> [u8; 4] {
         let mut buf = [0u8; 4];
+        let mut flags = 0u16;
+        flags |= if self.is_response { 1 } else { 0 };
+        flags <<= 4;
+        flags |= self.opcode as u16;
+        flags <<= 1;
+        flags |= if self.is_authoritative_answer { 1 } else { 0 };
+        flags <<= 1;
+        flags <<= 1;
+        flags |= if self.is_recursion_desired { 1 } else { 0 };
+        flags <<= 8;
+
         let id_as_bytes: [u8; 2] = self.identification.to_be_bytes(); // identification is u16
-        let flags_as_bytes: [u8; 2] = self.flags.to_be_bytes(); // identification is u16
+        let flags_as_bytes: [u8; 2] = flags.to_be_bytes(); // flags is u16
         buf[0..2].copy_from_slice(&id_as_bytes);
         buf[2..4].copy_from_slice(&flags_as_bytes);
+        println!("FLAGS: {:016b}", flags);
         return buf;
+    }
+}
+
+impl Into<Vec<u8>> for CompleteRecord {
+    fn into(self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = vec![];
+        let record_information: Vec<u8> = self.record_information.into();
+        buffer.extend(record_information);
+        buffer.write_u32::<BigEndian>(self.ttl).unwrap();
+        buffer.write_all(&self.data).unwrap();
+        return buffer;
+    }
+}
+
+impl Clone for RecordType {
+    fn clone(&self) -> Self {
+        return match self {
+            Unsupported(_) => Unsupported(0),
+            RecordType::A => RecordType::A,
+            RecordType::NS => RecordType::NS,
+            RecordType::CNAME => RecordType::CNAME,
+            RecordType::SOA => RecordType::SOA,
+            RecordType::PTR => RecordType::PTR,
+            RecordType::HINFO => RecordType::HINFO,
+            RecordType::MX => RecordType::MX,
+            RecordType::TXT => RecordType::TXT,
+            RecordType::RP => RecordType::RP,
+            RecordType::AFSDB => RecordType::AFSDB,
+            RecordType::SIG => RecordType::SIG,
+            RecordType::KEY => RecordType::KEY,
+            RecordType::AAAA => RecordType::AAAA,
+            RecordType::LOC => RecordType::LOC,
+            RecordType::SRV => RecordType::SRV,
+            RecordType::NAPTR => RecordType::NAPTR,
+            RecordType::KX => RecordType::KX,
+            RecordType::CERT => RecordType::CERT,
+            RecordType::DNAME => RecordType::DNAME,
+            RecordType::APL => RecordType::APL,
+            RecordType::DS => RecordType::DS,
+            RecordType::NSEC => RecordType::NSEC,
+        };
+    }
+}
+
+impl Clone for RecordInformation {
+    fn clone(&self) -> Self {
+        RecordInformation {
+            label: self.label.clone(),
+            record_type: self.record_type.clone(),
+            flags: self.flags,
+            class_code: self.class_code,
+            has_property: self.has_property,
+        }
+    }
+}
+
+impl Clone for CompleteRecord {
+    fn clone(&self) -> Self {
+        CompleteRecord {
+            record_information: self.record_information.clone(),
+            ttl: self.ttl,
+            data: self.data.clone(),
+        }
+    }
+}
+
+impl Into<Vec<u8>> for RecordInformation {
+    fn into(mut self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = vec![];
+        self.flags |= self.class_code;
+        buffer.write_all(&encode_label(&self.label)).unwrap();
+        buffer.write_u16::<BigEndian>(self.record_type.into()).unwrap();
+        buffer.write_u16::<BigEndian>(self.flags).unwrap();
+        return buffer;
     }
 }
 
@@ -103,7 +193,17 @@ bit_subset! {
     }
 }
 
-fn read_label(buffer: &mut ByteReader) -> String {
+pub fn encode_label(label: &str) -> Vec<u8> {
+    let mut encoded: Vec<u8> = vec![];
+    &for x in label.split(".") {
+        encoded.push(x.len() as u8);
+        encoded.extend_from_slice(x.as_bytes());
+    };
+    encoded.push(0); // Indicating the end of the label.
+    return encoded;
+}
+
+pub fn read_label(buffer: &mut ByteReader) -> String {
     let mut characters: Vec<u8> = vec![];
     let mut return_to: usize = 0;
     loop {
@@ -114,7 +214,6 @@ fn read_label(buffer: &mut ByteReader) -> String {
         let is_pointer = byte >= 0b11000000;
         if is_pointer {
             let next_byte = buffer.read().unwrap() as usize;
-            // TODO: remove... let shifted = (byte_as_usize & 0b00111111) << 8; // What's the point of this...
             let position = next_byte;
             let jump_position = position;
             if return_to == 0 {
@@ -154,16 +253,19 @@ fn read_record_information(buffer: &mut ByteReader) -> RecordInformation {
     };
 }
 
-fn read_complete_record(buffer: &mut ByteReader) -> CompleteRecord {
+fn read_complete_record(buffer: &mut ByteReader, discard_data: bool) -> CompleteRecord {
     let record_information = read_record_information(buffer);
     let ttl = buffer.read_u32::<BigEndian>().unwrap();
-    let data_length = buffer.read_u16::<BigEndian>().unwrap();
-    let mut data: Vec<u8> = iter::repeat(0u8).take(data_length as usize).collect();
-    buffer.copy_into(&mut data);
+    let data_length = buffer.read_u16::<BigEndian>().unwrap() as usize;
+    let mut data: Vec<u8> = vec![];
+    if discard_data {
+        buffer.jump_to(buffer.position + data_length)
+    } else {
+        buffer.copy_into(&mut data);
+    }
     return CompleteRecord {
         record_information,
         ttl,
-        data_length,
-        data,
+        data: data,
     };
 }

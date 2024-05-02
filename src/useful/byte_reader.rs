@@ -7,6 +7,7 @@ pub struct ByteReader<'a> {
 
 #[allow(unused)]
 impl<'a> ByteReader<'a> {
+    /// Initializes a new ByteReader struct with public position and jumping capabilities.
     pub fn new(buffer: &'a [u8]) -> Self {
         return Self {
             buffer,
@@ -14,6 +15,7 @@ impl<'a> ByteReader<'a> {
         };
     }
 
+    /// Reads a single byte and throws an error if out of bounds.
     pub fn read(&mut self) -> Result<u8, &str> {
         if !self.has_remaining() {
             return Err("Out of bounds");

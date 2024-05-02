@@ -15,15 +15,11 @@ pub struct MDNSPacketHeader {
 
 #[allow(unused)]
 pub struct MDNSPacket {
-    header: MDNSPacketHeader,
-    query_count: u16,
-    answer_count: u16,
-    authority_count: u16,
-    additional_count: u16,
-    query_records: Vec<RecordInformation>,
-    answer_records: Vec<CompleteRecord>,
-    authority_records: Vec<CompleteRecord>,
-    additional_records: Vec<CompleteRecord>,
+    pub header: MDNSPacketHeader,
+    pub query_records: Vec<RecordInformation>,
+    pub answer_records: Vec<CompleteRecord>,
+    pub authority_records: Vec<CompleteRecord>,
+    pub additional_records: Vec<CompleteRecord>,
 }
 
 #[derive(Debug)]
@@ -39,7 +35,6 @@ pub struct RecordInformation {
 pub struct CompleteRecord {
     pub record_information: RecordInformation,
     pub ttl: u32,
-    pub data_length: u16,
     pub data: Vec<u8>,
 }
 
@@ -97,6 +92,36 @@ impl From<u16> for RecordType {
             43 => DS,
             47 => NSEC,
             _ => Unsupported(value),
+        }
+    }
+}
+
+impl Into<u16> for RecordType {
+    fn into(self) -> u16 {
+        match self {
+            A => 1,
+            NS => 2,
+            CNAME => 5,
+            SOA => 6,
+            PTR => 12,
+            HINFO => 13,
+            MX => 15,
+            TXT => 16,
+            RP => 17,
+            AFSDB => 18,
+            SIG => 24,
+            KEY => 25,
+            AAAA => 28,
+            LOC => 29,
+            SRV => 33,
+            NAPTR => 35,
+            KX => 36,
+            CERT => 37,
+            DNAME => 39,
+            APL => 42,
+            DS => 43,
+            NSEC => 47,
+            _ => 0,
         }
     }
 }
