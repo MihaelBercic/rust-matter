@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::net::TcpListener;
+use std::net::UdpSocket;
 use std::ops::Add;
 use std::thread;
 use std::time::Duration;
@@ -23,7 +23,7 @@ fn main() {
     let mac_hex = hex::encode_upper(mac);
     let host_name = mac_hex.add(".local");
     let device_name = "thermostat.".to_string().add(PROTOCOL);
-    let tcp_socket = TcpListener::bind("[::]:0").expect("Unable to bind to tcp...");
+    let tcp_socket = UdpSocket::bind("[::]:0").expect("Unable to bind to tcp...");
     println!("{}", host_name);
 
     let mut buffer: Vec<u8> = vec![];
@@ -64,13 +64,13 @@ fn main() {
             has_property: false,
         },
         ttl: 90,
-        data: AAAARecord { address: "fdc3:de31:45b5:c843:14aa:95ef:2844:22e".to_string() }.into(),
+        data: AAAARecord { address: "fdc3:de31:45b5:c843:89:981b:33af:57d2".to_string() }.into(),
     };
 
     let mut map: HashMap<String, String> = HashMap::new();
-    map.insert("D".to_string(), "840".to_string());
+    map.insert("D".to_string(), "3".to_string());
     map.insert("CM".to_string(), "2".to_string());
-    map.insert("DT".to_string(), "301".to_string());
+    map.insert("DT".to_string(), "301".to_string()); // Thermostat device type.
     map.insert("DN".to_string(), "Termostat".to_string());
     // map.insert("VP".to_string(), "0xFFF1".to_string());
 
@@ -112,11 +112,13 @@ fn main() {
     socket.udp_socket.send_to(&buffer, "FF02::FB%en0:5353").unwrap();
 
     thread::spawn(move || {
+        let mut b = [0u8; 1000];
         loop {
-            let (stream, remote) = tcp_socket.accept().unwrap();
-            println!("Connected socket: {}", remote)
+            let (size, remote) = tcp_socket.recv_from(&mut b).unwrap();
+            println!("Received {} data on UDP socket...", size);
         }
     });
+    let mut packet: MDNSPacket;
 
     loop {
         let (size, sender) = socket.receive_from().unwrap();
@@ -129,18 +131,21 @@ fn main() {
         //     .join(",");
         // let sample = String::from_utf8_lossy(data);
         // println!("Message from {} IS ME?? {}", sender, sender.ip().to_string().contains("fdc3"));
-        let packet = MDNSPacket::from(data);
+        packet = MDNSPacket::from(data);
+
         let is_unicast = packet.query_records.iter().any(|q| q.has_property);
         if packet.query_records.iter().any(|q| q.label.contains("matter")) {
             println!("Is unicast: {} => {:?}", is_unicast, sender);
             // println!("{}", sample);
             // println!(": [u8;{}] = [{}]", size, code);
             thread::sleep(Duration::from_millis(150));
-            socket.udp_socket.send_to(&buffer, sender).unwrap();
+            if (is_unicast) {
+                socket.udp_socket.send_to(&buffer, sender).unwrap();
+            } else {
+                socket.udp_socket.send_to(&buffer, "FF02::FB%en0:5353").unwrap();
+            }
             thread::sleep(Duration::from_millis(200));
-            // socket.udp_socket.send_to(&buffer, "FF02::FB%en0:5353").unwrap();
             println!("Responding to both");
         } else {}
-        drop(packet);
     }
 }

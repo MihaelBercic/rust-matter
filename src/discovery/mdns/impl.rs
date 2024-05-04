@@ -20,9 +20,13 @@ impl From<&[u8]> for MDNSPacket {
 
         let query_records: Vec<RecordInformation> = (0..query_count).map(|_| read_record_information(&mut byte_reader)).collect();
         let answer_records: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        let authority_records: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        let authority_records: Vec<CompleteRecord> = vec![]; // (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
         let additional_records: Vec<CompleteRecord> = vec![]; // (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
 
+        println!("-------- Packet has: {} --------", answer_count);
+        for x in &answer_records {
+            println!("{:#?}", x);
+        }
         // println!("Header: {:#?}", header);
         // println!(
         //     "QC: {}, AnC: {}, AuC: {}, AdC: {}",
@@ -266,6 +270,6 @@ fn read_complete_record(buffer: &mut ByteReader, discard_data: bool) -> Complete
     return CompleteRecord {
         record_information,
         ttl,
-        data: data,
+        data,
     };
 }
