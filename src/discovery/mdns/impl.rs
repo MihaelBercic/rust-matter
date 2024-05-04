@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
@@ -20,18 +21,16 @@ impl From<&[u8]> for MDNSPacket {
 
         let query_records: Vec<RecordInformation> = (0..query_count).map(|_| read_record_information(&mut byte_reader)).collect();
         let answer_records: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        let authority_records: Vec<CompleteRecord> = vec![]; // (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        let additional_records: Vec<CompleteRecord> = vec![]; // (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        let authority_records: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        let additional_records: Vec<CompleteRecord> = (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
 
-        println!("-------- Packet has: {} --------", answer_count);
-        for x in &answer_records {
-            println!("{:#?}", x);
-        }
+        // let _: Vec<RecordInformation> = (0..query_count).map(|_| read_record_information(&mut byte_reader)).collect();
+        // let _: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        // let _: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        // let _: Vec<CompleteRecord> = (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+
+        // print!("\033cQC: {}, AnC: {}, AuC: {}, AdC: {}", query_count, answer_count, authority_count, additional_count);
         // println!("Header: {:#?}", header);
-        // println!(
-        //     "QC: {}, AnC: {}, AuC: {}, AdC: {}",
-        //     query_count, answer_count, authority_count, additional_count
-        // );
         return MDNSPacket {
             header,
             query_records,
@@ -217,8 +216,10 @@ pub fn read_label(buffer: &mut ByteReader) -> String {
         }
         let is_pointer = byte >= 0b11000000;
         if is_pointer {
+            let byte = byte as usize;
             let next_byte = buffer.read().unwrap() as usize;
-            let position = next_byte;
+            let shifted = (byte & 0b00111111) << 8;
+            let position = shifted | next_byte;
             let jump_position = position;
             if return_to == 0 {
                 return_to = buffer.position
@@ -226,7 +227,14 @@ pub fn read_label(buffer: &mut ByteReader) -> String {
             buffer.jump_to(jump_position);
         } else {
             let label_length = byte as usize;
-            let label_slice = buffer.read_multiple(label_length).unwrap();
+            let min = min(label_length, buffer.remaining_bytes());
+            let label_slice = buffer.read_multiple(min).unwrap();
+            if (label_length != min) {
+                println!("Label length: {}, {:08b}", label_length, label_length as u8);
+                println!("Missmatch and will be error: {}", String::from_utf8_lossy(label_slice));
+                println!("Missmatch and will be error: {}", String::from_utf8_lossy(buffer.buffer));
+                panic!("STOP");
+            }
             if !characters.is_empty() {
                 characters.extend_from_slice(".".as_bytes()); // Add dot
             }
@@ -239,7 +247,7 @@ pub fn read_label(buffer: &mut ByteReader) -> String {
     if return_to > 0 {
         buffer.jump_to(return_to);
     }
-    return String::from_utf8_lossy(&characters[..]).to_string();
+    return String::from_utf8(characters).unwrap();
 }
 
 fn read_record_information(buffer: &mut ByteReader) -> RecordInformation {

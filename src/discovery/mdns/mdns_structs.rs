@@ -35,7 +35,7 @@ pub struct RecordInformation {
 pub struct CompleteRecord {
     pub record_information: RecordInformation,
     pub ttl: u32,
-    pub data: Vec<u8>,
+    pub data: Vec<u8>, // Storing empty vectors for testing
 }
 
 #[repr(u16)]

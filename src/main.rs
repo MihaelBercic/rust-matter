@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::{stdout, Write};
 use std::net::UdpSocket;
 use std::ops::Add;
 use std::thread;
@@ -119,6 +120,7 @@ fn main() {
         }
     });
     let mut packet: MDNSPacket;
+    let mut total = 0usize;
 
     loop {
         let (size, sender) = socket.receive_from().unwrap();
@@ -132,10 +134,13 @@ fn main() {
         // let sample = String::from_utf8_lossy(data);
         // println!("Message from {} IS ME?? {}", sender, sender.ip().to_string().contains("fdc3"));
         packet = MDNSPacket::from(data);
+        total += 1;
+        print!("\rTotal: {}", total);
+        stdout().flush().unwrap();
 
         let is_unicast = packet.query_records.iter().any(|q| q.has_property);
         if packet.query_records.iter().any(|q| q.label.contains("matter")) {
-            println!("Is unicast: {} => {:?}", is_unicast, sender);
+            // println!("Is unicast: {} => {:?}", is_unicast, sender);
             // println!("{}", sample);
             // println!(": [u8;{}] = [{}]", size, code);
             thread::sleep(Duration::from_millis(150));
@@ -145,7 +150,7 @@ fn main() {
                 socket.udp_socket.send_to(&buffer, "FF02::FB%en0:5353").unwrap();
             }
             thread::sleep(Duration::from_millis(200));
-            println!("Responding to both");
-        } else {}
+            // println!("Responding to both");
+        }
     }
 }
