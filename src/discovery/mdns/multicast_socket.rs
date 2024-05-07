@@ -18,7 +18,7 @@ pub struct MulticastSocket {
 }
 
 impl MulticastSocket {
-    pub fn new(interface: Interface, port: u16) -> Self {
+    pub fn new(interface: &Interface, port: u16) -> Self {
         let error_text = "OPT FAILED" as *const _;
         let multicast_ipv6 = Ipv6Addr::from_str(IPV6_MULTICAST_ADDRESS).unwrap();
         let fd = unsafe { socket(AF_INET6, SOCK_DGRAM, 0) };

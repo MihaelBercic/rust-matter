@@ -7,8 +7,10 @@ use crate::discovery::mdns::mdns_structs::{BitSubset, CompleteRecord, MDNSPacket
 use crate::discovery::mdns::mdns_structs::RecordType::Unsupported;
 use crate::useful::byte_reader::ByteReader;
 
-impl From<&[u8]> for MDNSPacket {
-    fn from(value: &[u8]) -> Self {
+impl TryFrom<&[u8]> for MDNSPacket {
+    type Error = ();
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let mut byte_reader = ByteReader::new(value);
         let id = byte_reader.read_u16::<BigEndian>().unwrap();
         let flags = byte_reader.read_u16::<BigEndian>().unwrap();
@@ -23,21 +25,13 @@ impl From<&[u8]> for MDNSPacket {
         let answer_records: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
         let authority_records: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
         let additional_records: Vec<CompleteRecord> = (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-
-        // let _: Vec<RecordInformation> = (0..query_count).map(|_| read_record_information(&mut byte_reader)).collect();
-        // let _: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        // let _: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        // let _: Vec<CompleteRecord> = (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-
-        // print!("\033cQC: {}, AnC: {}, AuC: {}, AdC: {}", query_count, answer_count, authority_count, additional_count);
-        // println!("Header: {:#?}", header);
-        return MDNSPacket {
+        return Ok(MDNSPacket {
             header,
             query_records,
             answer_records,
             authority_records,
             additional_records,
-        };
+        });
     }
 }
 

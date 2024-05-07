@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::{stdout, Write};
 use std::net::UdpSocket;
 use std::ops::Add;
+use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
@@ -17,18 +18,16 @@ mod discovery;
 mod useful;
 
 fn main() {
-    let interface = netif::up().unwrap().find(|x| x.name() == "en0").unwrap();
-    let mut socket = MulticastSocket::new(interface, MDNS_PORT);
+    let interface = netif::up().unwrap().find(|x| x.name() == "en7").unwrap();
+    let mut socket = MulticastSocket::new(&interface, MDNS_PORT);
+    let my_ip = "fdc3:de31:45b5:c843:14aa:95ef:2844:22e";
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
     let mac_hex = hex::encode_upper(mac);
     let host_name = mac_hex.add(".local");
     let device_name = "thermostat.".to_string().add(PROTOCOL);
-    let tcp_socket = UdpSocket::bind("[::]:0").expect("Unable to bind to tcp...");
-    println!("{}", host_name);
+    let udp_socket = UdpSocket::bind("[::]:0").expect("Unable to bind to tcp...");
 
-    let mut buffer: Vec<u8> = vec![];
-    //     private val srvRecord = SRVRecord(recordName, targetName, settings.port, timeToLive = 4500, isCached = false)
     let ptr_record = CompleteRecord {
         record_information: RecordInformation {
             label: PROTOCOL.to_string(),
@@ -53,7 +52,7 @@ fn main() {
             target: host_name.clone(),
             priority: 0,
             weight: 0,
-            port: tcp_socket.local_addr().unwrap().port(),
+            port: udp_socket.local_addr().unwrap().port(),
         }.into(),
     };
     let aaaa_record = CompleteRecord {
@@ -65,7 +64,7 @@ fn main() {
             has_property: false,
         },
         ttl: 90,
-        data: AAAARecord { address: "fdc3:de31:45b5:c843:89:981b:33af:57d2".to_string() }.into(),
+        data: AAAARecord { address: my_ip.to_string() }.into(),
     };
 
     let mut map: HashMap<String, String> = HashMap::new();
@@ -104,53 +103,44 @@ fn main() {
         additional_records: vec![srv_record, aaaa_record, txt_record],
         authority_records: vec![],
     };
-
     let buffer: Vec<u8> = my_packet.into();
-    let as_binary: Vec<String> = buffer.clone().iter().map(|b| format!("{:08b}", b)).collect();
-    // println!("{}", as_binary.join(" "));
-    // println!("{}", String::from_utf8_lossy(&buffer));
 
-    socket.udp_socket.send_to(&buffer, "FF02::FB%en0:5353").unwrap();
+    socket.udp_socket.send_to(&buffer, format!("FF02::FB%{}:5353", &interface.name())).unwrap();
 
     thread::spawn(move || {
         let mut b = [0u8; 1000];
         loop {
-            let (size, remote) = tcp_socket.recv_from(&mut b).unwrap();
+            println!("Listening on: {:?}", udp_socket.local_addr());
+            let (size, remote) = udp_socket.recv_from(&mut b).unwrap();
             println!("Received {} data on UDP socket...", size);
         }
     });
-    let mut packet: MDNSPacket;
-    let mut total = 0usize;
 
+    let mut total = 0usize;
+    let mut failed = 0usize;
     loop {
         let (size, sender) = socket.receive_from().unwrap();
         let data = &socket.buffer[0..size];
-        // println!("{}", String::from_utf8_lossy(data));
-        // let code = data
-        //     .iter()
-        //     .map(|x| format!("{:#04x}", x))
-        //     .collect::<Vec<String>>()
-        //     .join(",");
-        // let sample = String::from_utf8_lossy(data);
-        // println!("Message from {} IS ME?? {}", sender, sender.ip().to_string().contains("fdc3"));
-        packet = MDNSPacket::from(data);
-        total += 1;
-        print!("\rTotal: {}", total);
-        stdout().flush().unwrap();
-
-        let is_unicast = packet.query_records.iter().any(|q| q.has_property);
-        if packet.query_records.iter().any(|q| q.label.contains("matter")) {
-            // println!("Is unicast: {} => {:?}", is_unicast, sender);
-            // println!("{}", sample);
-            // println!(": [u8;{}] = [{}]", size, code);
-            thread::sleep(Duration::from_millis(150));
-            if (is_unicast) {
-                socket.udp_socket.send_to(&buffer, sender).unwrap();
-            } else {
-                socket.udp_socket.send_to(&buffer, "FF02::FB%en0:5353").unwrap();
+        match MDNSPacket::try_from(data) {
+            Ok(packet) => {
+                total += 1;
+                let is_unicast = packet.query_records.iter().any(|q| q.has_property);
+                if packet.query_records.iter().any(|q| q.label.contains("matter")) {
+                    thread::sleep(Duration::from_millis(150));
+                    if (is_unicast) {
+                        socket.udp_socket.send_to(&buffer, sender).unwrap();
+                    } else {
+                        socket.udp_socket.send_to(&buffer, format!("FF02::FB%{}:5353", &interface.name())).unwrap();
+                    }
+                    thread::sleep(Duration::from_millis(200));
+                    // println!("Responding to both");
+                }
             }
-            thread::sleep(Duration::from_millis(200));
-            // println!("Responding to both");
+            Err(_) => {
+                failed += 1;
+            }
         }
+        print!("\rTotal: {}\tFailed {}", format!("{:5}", total), format!("{:5}", failed));
+        stdout().flush().unwrap();
     }
 }
