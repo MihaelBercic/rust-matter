@@ -1,20 +1,18 @@
 use std::ffi::c_void;
+use std::io;
 use std::mem::size_of;
-use std::net::{Ipv6Addr, SocketAddr, UdpSocket};
+use std::net::{Ipv6Addr, SocketAddr, ToSocketAddrs, UdpSocket};
 use std::os::fd::FromRawFd;
 use std::str::FromStr;
 
-use libc::{
-    AF_INET6, bind, c_char, in6_addr, perror, setsockopt, SO_REUSEADDR, SO_REUSEPORT, SOCK_DGRAM,
-    sockaddr, sockaddr_in6, socket, socklen_t, SOL_SOCKET,
-};
+use libc::{AF_INET6, bind, c_char, in6_addr, perror, setsockopt, SO_REUSEADDR, SO_REUSEPORT, SOCK_DGRAM, sockaddr, sockaddr_in6, socket, socklen_t, SOL_SOCKET};
 use netif::Interface;
 
-use matter::discovery::constants::IPV6_MULTICAST_ADDRESS;
+use crate::discovery::constants::IPV6_MULTICAST_ADDRESS;
 
 /// Holds information about the udp_socket constructed via libc and the buffer corresponding for data.
 pub struct MulticastSocket {
-    pub udp_socket: UdpSocket,
+    udp_socket: UdpSocket,
     pub buffer: [u8; 9000],
 }
 
@@ -68,6 +66,10 @@ impl MulticastSocket {
             udp_socket: socket,
             buffer: [0u8; 9000],
         };
+    }
+
+    pub fn send_to<A: ToSocketAddrs>(&self, buf: &[u8], sender: A) -> io::Result<usize> {
+        self.udp_socket.send_to(buf, sender)
     }
 
     pub fn receive_from(&mut self) -> std::io::Result<(usize, SocketAddr)> {

@@ -3,10 +3,7 @@ use std::io::Write;
 use byteorder::{BigEndian, WriteBytesExt};
 
 use crate::discovery::mdns::impls::encode_label;
-
-pub struct PTRRecord {
-    pub domain: String,
-}
+use crate::discovery::mdns::records::PTRRecord;
 
 impl Into<Vec<u8>> for PTRRecord {
     fn into(self) -> Vec<u8> {

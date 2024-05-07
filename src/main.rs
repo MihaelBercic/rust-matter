@@ -2,16 +2,14 @@ use std::collections::HashMap;
 use std::io::{stdout, Write};
 use std::net::UdpSocket;
 use std::ops::Add;
-use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
-use crate::discovery::constants::{MDNS_PORT, PROTOCOL};
-use crate::discovery::mdns::multicast_socket::MulticastSocket;
-use crate::discovery::mdns::structs::{CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
-
-mod discovery;
-mod useful;
+use matter::discovery::constants::*;
+use matter::discovery::mdns::multicast_socket::MulticastSocket;
+use matter::discovery::mdns::records::*;
+use matter::discovery::mdns::records::record_type::RecordType;
+use matter::discovery::mdns::structs::*;
 
 fn main() {
     let interface = netif::up().unwrap().find(|x| x.name() == "en7").unwrap();
@@ -110,10 +108,10 @@ fn main() {
                 let is_unicast = packet.query_records.iter().any(|q| q.has_property);
                 if packet.query_records.iter().any(|q| q.label.contains("matter")) {
                     thread::sleep(Duration::from_millis(150));
-                    if (is_unicast) {
-                        socket.udp_socket.send_to(&buffer, sender).unwrap();
+                    if is_unicast {
+                        socket.send_to(&buffer, sender).unwrap();
                     } else {
-                        socket.udp_socket.send_to(&buffer, format!("FF02::FB%{}:5353", &interface.name())).unwrap();
+                        socket.send_to(&buffer, format!("FF02::FB%{}:5353", &interface.name())).unwrap();
                     }
                     thread::sleep(Duration::from_millis(200));
                     // println!("Responding to both");

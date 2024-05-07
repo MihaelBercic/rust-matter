@@ -14,13 +14,13 @@ pub struct MDNSPacket {
     pub additional_records: Vec<CompleteRecord>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MDNSPacketHeader {
     pub identification: u16,
     pub flags: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RecordInformation {
     pub label: String,
     pub record_type: RecordType,
@@ -29,7 +29,7 @@ pub struct RecordInformation {
     pub has_property: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompleteRecord {
     pub record_information: RecordInformation,
     pub ttl: u32,

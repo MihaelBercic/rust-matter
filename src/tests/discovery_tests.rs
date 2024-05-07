@@ -4,15 +4,17 @@ pub mod discovery_tests {
     use std::ops::Add;
 
     use crate::discovery::constants::{ADD_ACCESSORY_PACKET, PROTOCOL};
-    use crate::discovery::mdns::records::aaaa_record::AAAARecord;
-    use crate::discovery::mdns::records::ptr_record::PTRRecord;
-    use crate::discovery::mdns::records::srv_record::SRVRecord;
-    use crate::discovery::mdns::structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
+    use crate::discovery::mdns::records::*;
+    use crate::discovery::mdns::records::AAAARecord;
+    use crate::discovery::mdns::records::PTRRecord;
+    use crate::discovery::mdns::records::record_type::*;
+    use crate::discovery::mdns::records::SRVRecord;
+    use crate::discovery::mdns::structs::*;
 
     #[test]
     fn hello() {
         // println!("{}", String::from_utf8_lossy(&SAMPLE_PACKET));
-        let mdns_packet = MDNSPacket::from(&ADD_ACCESSORY_PACKET[..]);
+        let mdns_packet = MDNSPacket::try_from(&ADD_ACCESSORY_PACKET[..]).expect("Should parse");
         let is_our_protocol = mdns_packet.query_records.iter().any(|q| q.label == PROTOCOL);
         println!("Is our protocol: {}", is_our_protocol);
     }
@@ -71,13 +73,6 @@ pub mod discovery_tests {
             header: MDNSPacketHeader {
                 identification: 0,
                 flags: 0,
-                is_response: true,
-                opcode: 0,
-                is_authoritative_answer: false,
-                is_truncated: false,
-                is_recursion_desired: false,
-                is_recursion_available: false,
-                response_code: 0,
             },
             query_records: vec![],
             answer_records: vec![ptr_record],

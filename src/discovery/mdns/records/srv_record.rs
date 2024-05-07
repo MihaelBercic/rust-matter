@@ -1,13 +1,7 @@
 use byteorder::{BigEndian, WriteBytesExt};
 
 use crate::discovery::mdns::impls::encode_label;
-
-pub struct SRVRecord {
-    pub target: String,
-    pub priority: u16,
-    pub weight: u16,
-    pub port: u16,
-}
+use crate::discovery::mdns::records::SRVRecord;
 
 impl Into<Vec<u8>> for SRVRecord {
     fn into(self) -> Vec<u8> {

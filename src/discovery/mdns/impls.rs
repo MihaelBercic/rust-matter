@@ -1,10 +1,9 @@
-use std::cmp::min;
 use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
-use crate::discovery::mdns::structs::RecordType::Unsupported;
+use crate::discovery::mdns::records::record_type::RecordType;
+use crate::discovery::mdns::structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation};
 use crate::useful::byte_reader::ByteReader;
 
 impl TryFrom<&[u8]> for MDNSPacket {
@@ -88,58 +87,6 @@ impl Into<Vec<u8>> for CompleteRecord {
     }
 }
 
-impl Clone for RecordType {
-    fn clone(&self) -> Self {
-        return match self {
-            Unsupported(_) => Unsupported(0),
-            RecordType::A => RecordType::A,
-            RecordType::NS => RecordType::NS,
-            RecordType::CNAME => RecordType::CNAME,
-            RecordType::SOA => RecordType::SOA,
-            RecordType::PTR => RecordType::PTR,
-            RecordType::HINFO => RecordType::HINFO,
-            RecordType::MX => RecordType::MX,
-            RecordType::TXT => RecordType::TXT,
-            RecordType::RP => RecordType::RP,
-            RecordType::AFSDB => RecordType::AFSDB,
-            RecordType::SIG => RecordType::SIG,
-            RecordType::KEY => RecordType::KEY,
-            RecordType::AAAA => RecordType::AAAA,
-            RecordType::LOC => RecordType::LOC,
-            RecordType::SRV => RecordType::SRV,
-            RecordType::NAPTR => RecordType::NAPTR,
-            RecordType::KX => RecordType::KX,
-            RecordType::CERT => RecordType::CERT,
-            RecordType::DNAME => RecordType::DNAME,
-            RecordType::APL => RecordType::APL,
-            RecordType::DS => RecordType::DS,
-            RecordType::NSEC => RecordType::NSEC,
-        };
-    }
-}
-
-impl Clone for RecordInformation {
-    fn clone(&self) -> Self {
-        RecordInformation {
-            label: self.label.clone(),
-            record_type: self.record_type.clone(),
-            flags: self.flags,
-            class_code: self.class_code,
-            has_property: self.has_property,
-        }
-    }
-}
-
-impl Clone for CompleteRecord {
-    fn clone(&self) -> Self {
-        CompleteRecord {
-            record_information: self.record_information.clone(),
-            ttl: self.ttl,
-            data: self.data.clone(),
-        }
-    }
-}
-
 impl Into<Vec<u8>> for RecordInformation {
     fn into(mut self) -> Vec<u8> {
         let mut buffer: Vec<u8> = vec![];
@@ -170,12 +117,18 @@ impl MDNSPacketHeader {
         Self { identification: id, flags }
     }
 
-    fn is_response(&self) -> bool { self.flags.bit_subset(15, 1) == 1 }
-    fn opcode(&self) -> u8 { self.flags.bit_subset(11, 4) as u8 }
+    pub fn is_response(&self) -> bool { self.flags.bit_subset(15, 1) == 1 }
+
+    pub fn opcode(&self) -> u8 { self.flags.bit_subset(11, 4) as u8 }
+
     pub fn is_authoritative_answer(&self) -> bool { self.flags.bit_subset(10, 1) == 1 }
+
     pub fn is_truncated(&self) -> bool { self.flags.bit_subset(9, 1) == 1 }
+
     pub fn is_recursion_desired(&self) -> bool { self.flags.bit_subset(8, 1) == 1 }
+
     pub fn is_recursion_available(&self) -> bool { self.flags.bit_subset(7, 1) == 1 }
+
     pub fn response_code(&self) -> u8 { self.flags.bit_subset(0, 4) as u8 }
 }
 
@@ -195,9 +148,9 @@ bit_subset! {
     }
 }
 
-pub fn encode_label(label: &str) -> Vec<u8> {
+pub(crate) fn encode_label(label: &str) -> Vec<u8> {
     let mut encoded: Vec<u8> = vec![];
-    &for x in label.split(".") {
+    for x in label.split(".") {
         encoded.push(x.len() as u8);
         encoded.extend_from_slice(x.as_bytes());
     };
@@ -205,7 +158,7 @@ pub fn encode_label(label: &str) -> Vec<u8> {
     return encoded;
 }
 
-pub fn read_label(buffer: &mut ByteReader) -> String {
+pub(crate) fn read_label(buffer: &mut ByteReader) -> String {
     let mut characters: Vec<u8> = vec![];
     let mut return_to: usize = 0;
     loop {
@@ -226,14 +179,7 @@ pub fn read_label(buffer: &mut ByteReader) -> String {
             buffer.jump_to(jump_position);
         } else {
             let label_length = byte as usize;
-            let min = min(label_length, buffer.remaining_bytes());
-            let label_slice = buffer.read_multiple(min).unwrap();
-            if (label_length != min) {
-                println!("Label length: {}, {:08b}", label_length, label_length as u8);
-                println!("Missmatch and will be error: {}", String::from_utf8_lossy(label_slice));
-                println!("Missmatch and will be error: {}", String::from_utf8_lossy(buffer.buffer));
-                panic!("STOP");
-            }
+            let label_slice = buffer.read_multiple(label_length).unwrap();
             if !characters.is_empty() {
                 characters.extend_from_slice(".".as_bytes()); // Add dot
             }

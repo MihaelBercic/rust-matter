@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
 use byteorder::{BigEndian, WriteBytesExt};
 
-pub struct TXTRecord {
-    pub map: HashMap<String, String>,
-}
+use crate::discovery::mdns::records::TXTRecord;
 
 impl Into<Vec<u8>> for TXTRecord {
     /// Encodes (key, value) pairs into desired Key=Value strings and encodes them using the [length][data].

@@ -2,6 +2,7 @@ use crate::discovery::mdns::records::record_type::RecordType::*;
 
 #[repr(u16)]
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum RecordType {
     Unsupported(u16) = 0,
     A = 1,

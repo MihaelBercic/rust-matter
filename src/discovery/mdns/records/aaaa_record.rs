@@ -2,10 +2,7 @@ use std::net::Ipv6Addr;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-#[derive(Debug)]
-pub struct AAAARecord {
-    pub address: String,
-}
+use crate::discovery::mdns::records::AAAARecord;
 
 impl Into<Vec<u8>> for AAAARecord {
     fn into(self) -> Vec<u8> {
