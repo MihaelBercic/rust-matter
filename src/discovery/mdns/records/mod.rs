@@ -1,5 +1,6 @@
-pub mod aaaa_record;
-pub mod a_record;
-pub mod ptr_record;
-pub mod srv_record;
-pub mod txt_record;
+mod aaaa_record;
+mod a_record;
+mod ptr_record;
+mod srv_record;
+mod txt_record;
+mod record_type;

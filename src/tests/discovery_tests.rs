@@ -4,10 +4,10 @@ pub mod discovery_tests {
     use std::ops::Add;
 
     use crate::discovery::constants::{ADD_ACCESSORY_PACKET, PROTOCOL};
-    use crate::discovery::mdns::mdns_structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
     use crate::discovery::mdns::records::aaaa_record::AAAARecord;
     use crate::discovery::mdns::records::ptr_record::PTRRecord;
     use crate::discovery::mdns::records::srv_record::SRVRecord;
+    use crate::discovery::mdns::structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
 
     #[test]
     fn hello() {

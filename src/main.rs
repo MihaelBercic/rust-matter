@@ -7,12 +7,8 @@ use std::thread;
 use std::time::Duration;
 
 use crate::discovery::constants::{MDNS_PORT, PROTOCOL};
-use crate::discovery::mdns::mdns_structs::{CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
 use crate::discovery::mdns::multicast_socket::MulticastSocket;
-use crate::discovery::mdns::records::aaaa_record::AAAARecord;
-use crate::discovery::mdns::records::ptr_record::PTRRecord;
-use crate::discovery::mdns::records::srv_record::SRVRecord;
-use crate::discovery::mdns::records::txt_record::TXTRecord;
+use crate::discovery::mdns::structs::{CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
 
 mod discovery;
 mod useful;
@@ -87,26 +83,13 @@ fn main() {
     };
 
     let my_packet = MDNSPacket {
-        header: MDNSPacketHeader {
-            identification: 0,
-            flags: 0,
-            is_response: true,
-            opcode: 0,
-            is_authoritative_answer: false,
-            is_truncated: false,
-            is_recursion_desired: false,
-            is_recursion_available: false,
-            response_code: 0,
-        },
+        header: MDNSPacketHeader::new_with_flags(1, true, 0, false, false),
         query_records: vec![],
         answer_records: vec![ptr_record],
         additional_records: vec![srv_record, aaaa_record, txt_record],
         authority_records: vec![],
     };
     let buffer: Vec<u8> = my_packet.into();
-
-    socket.udp_socket.send_to(&buffer, format!("FF02::FB%{}:5353", &interface.name())).unwrap();
-
     thread::spawn(move || {
         let mut b = [0u8; 1000];
         loop {

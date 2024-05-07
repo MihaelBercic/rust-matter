@@ -3,8 +3,8 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::mdns_structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
-use crate::discovery::mdns::mdns_structs::RecordType::Unsupported;
+use crate::discovery::mdns::structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation, RecordType};
+use crate::discovery::mdns::structs::RecordType::Unsupported;
 use crate::useful::byte_reader::ByteReader;
 
 impl TryFrom<&[u8]> for MDNSPacket {
@@ -58,14 +58,14 @@ impl Into<[u8; 4]> for MDNSPacketHeader {
     fn into(self) -> [u8; 4] {
         let mut buf = [0u8; 4];
         let mut flags = 0u16;
-        flags |= if self.is_response { 1 } else { 0 };
+        flags |= if self.is_response() { 1 } else { 0 };
         flags <<= 4;
-        flags |= self.opcode as u16;
+        flags |= self.opcode() as u16;
         flags <<= 1;
-        flags |= if self.is_authoritative_answer { 1 } else { 0 };
+        flags |= if self.is_authoritative_answer() { 1 } else { 0 };
         flags <<= 1;
         flags <<= 1;
-        flags |= if self.is_recursion_desired { 1 } else { 0 };
+        flags |= if self.is_recursion_desired() { 1 } else { 0 };
         flags <<= 8;
 
         let id_as_bytes: [u8; 2] = self.identification.to_be_bytes(); // identification is u16
@@ -152,26 +152,31 @@ impl Into<Vec<u8>> for RecordInformation {
 }
 
 impl MDNSPacketHeader {
-    fn new(id: u16, flags: u16) -> Self {
-        let is_response = flags.bit_subset(15, 1) == 1;
-        let opcode = flags.bit_subset(11, 4) as u8;
-        let is_authoritative_answer = flags.bit_subset(10, 1) == 1;
-        let is_truncated = flags.bit_subset(9, 1) == 1;
-        let is_recursion_desired = flags.bit_subset(8, 1) == 1;
-        let is_recursion_available = flags.bit_subset(7, 1) == 1;
-        let response_code = flags.bit_subset(0, 4) as u8;
-        return Self {
-            identification: id,
-            flags,
-            is_response,
-            opcode,
-            is_authoritative_answer,
-            is_truncated,
-            is_recursion_desired,
-            is_recursion_available,
-            response_code,
-        };
+    pub fn new(id: u16, flags: u16) -> Self {
+        Self { identification: id, flags }
     }
+
+    pub fn new_with_flags(id: u16, is_response: bool, opcode: u16, is_authoritative: bool, is_recursion_desired: bool) -> Self {
+        let mut flags = 0u16;
+        flags |= is_response as u16;
+        flags <<= 4;
+        flags |= opcode;
+        flags <<= 1;
+        flags |= is_authoritative as u16;
+        flags <<= 1;
+        flags <<= 1;
+        flags |= is_recursion_desired as u16;
+        flags <<= 8;
+        Self { identification: id, flags }
+    }
+
+    fn is_response(&self) -> bool { self.flags.bit_subset(15, 1) == 1 }
+    fn opcode(&self) -> u8 { self.flags.bit_subset(11, 4) as u8 }
+    pub fn is_authoritative_answer(&self) -> bool { self.flags.bit_subset(10, 1) == 1 }
+    pub fn is_truncated(&self) -> bool { self.flags.bit_subset(9, 1) == 1 }
+    pub fn is_recursion_desired(&self) -> bool { self.flags.bit_subset(8, 1) == 1 }
+    pub fn is_recursion_available(&self) -> bool { self.flags.bit_subset(7, 1) == 1 }
+    pub fn response_code(&self) -> u8 { self.flags.bit_subset(0, 4) as u8 }
 }
 
 macro_rules! bit_subset {

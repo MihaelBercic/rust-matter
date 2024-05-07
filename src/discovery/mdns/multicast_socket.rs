@@ -10,14 +10,16 @@ use libc::{
 };
 use netif::Interface;
 
-use crate::discovery::constants::IPV6_MULTICAST_ADDRESS;
+use matter::discovery::constants::IPV6_MULTICAST_ADDRESS;
 
+/// Holds information about the udp_socket constructed via libc and the buffer corresponding for data.
 pub struct MulticastSocket {
     pub udp_socket: UdpSocket,
     pub buffer: [u8; 9000],
 }
 
 impl MulticastSocket {
+    /// Constructs a new MulticastSocket instance which binds to 5353 port and allows for ADDR and PORT reuse.
     pub fn new(interface: &Interface, port: u16) -> Self {
         let error_text = "OPT FAILED" as *const _;
         let multicast_ipv6 = Ipv6Addr::from_str(IPV6_MULTICAST_ADDRESS).unwrap();

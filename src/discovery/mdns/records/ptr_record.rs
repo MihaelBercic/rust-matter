@@ -2,7 +2,7 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::r#impl::encode_label;
+use crate::discovery::mdns::impls::encode_label;
 
 pub struct PTRRecord {
     pub domain: String,

@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::r#impl::encode_label;
+use crate::discovery::mdns::impls::encode_label;
 
 pub struct SRVRecord {
     pub target: String,

@@ -7,6 +7,7 @@ pub struct TXTRecord {
 }
 
 impl Into<Vec<u8>> for TXTRecord {
+    /// Encodes (key, value) pairs into desired Key=Value strings and encodes them using the [length][data].
     fn into(self) -> Vec<u8> {
         let mut buffer: Vec<u8> = vec![];
         let pairs: Vec<String> = self.map.iter().map(|(a, b)| format!("{}={}", a, b)).collect();
@@ -16,18 +17,8 @@ impl Into<Vec<u8>> for TXTRecord {
             buffer.push(pair.len() as u8);
             buffer.extend(pair.as_bytes());
         }
-        println!("{}", buffer.iter().map(|x| format!("{:02x}", x)).collect::<Vec<String>>().join(" "));
         return buffer;
     }
 }
 
-/*
-        val dataLength = dataMap.size + dataMap.toString().replace(cleanupRegex, "").length
-        buffer.putShort(dataLength.toShort())
-        dataMap.forEach { (key, value) ->
-            val string = "$key=$value"
-            val length = string.length
-            buffer.put((length and 255).toByte())
-            buffer.put(string.toByteArray())
-        }
- */
+//TODO: Remove debugging println!("{}", buffer.iter().map(|x| format!("{:02x}", x)).collect::<Vec<String>>().join(" "));

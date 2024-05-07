@@ -1,42 +1,4 @@
-use crate::discovery::mdns::mdns_structs::RecordType::{*, Unsupported};
-
-#[derive(Debug)]
-pub struct MDNSPacketHeader {
-    pub identification: u16,
-    pub flags: u16,
-    pub is_response: bool,
-    pub opcode: u8,
-    pub is_authoritative_answer: bool,
-    pub is_truncated: bool,
-    pub is_recursion_desired: bool,
-    pub is_recursion_available: bool,
-    pub response_code: u8,
-}
-
-#[allow(unused)]
-pub struct MDNSPacket {
-    pub header: MDNSPacketHeader,
-    pub query_records: Vec<RecordInformation>,
-    pub answer_records: Vec<CompleteRecord>,
-    pub authority_records: Vec<CompleteRecord>,
-    pub additional_records: Vec<CompleteRecord>,
-}
-
-#[derive(Debug)]
-pub struct RecordInformation {
-    pub label: String,
-    pub record_type: RecordType,
-    pub flags: u16,
-    pub class_code: u16,
-    pub has_property: bool,
-}
-
-#[derive(Debug)]
-pub struct CompleteRecord {
-    pub record_information: RecordInformation,
-    pub ttl: u32,
-    pub data: Vec<u8>, // Storing empty vectors for testing
-}
+use crate::discovery::mdns::records::record_type::RecordType::*;
 
 #[repr(u16)]
 #[derive(Debug)]
@@ -126,6 +88,3 @@ impl Into<u16> for RecordType {
     }
 }
 
-pub trait BitSubset {
-    fn bit_subset(&self, from_bit: usize, count: u32) -> Self;
-}
