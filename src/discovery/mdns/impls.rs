@@ -1,29 +1,29 @@
-use std::io::Write;
+use std::io;
+use std::io::{Cursor, Read, Write};
 
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::discovery::mdns::records::record_type::RecordType;
 use crate::discovery::mdns::structs::{BitSubset, CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation};
-use crate::useful::byte_reader::ByteReader;
 
 impl TryFrom<&[u8]> for MDNSPacket {
-    type Error = ();
+    type Error = io::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let mut byte_reader = ByteReader::new(value);
-        let id = byte_reader.read_u16::<BigEndian>().unwrap();
-        let flags = byte_reader.read_u16::<BigEndian>().unwrap();
+        let mut byte_reader = Cursor::new(value);
+        let id = byte_reader.read_u16::<BigEndian>()?;
+        let flags = byte_reader.read_u16::<BigEndian>()?;
         let header = MDNSPacketHeader::new(id, flags);
 
-        let query_count = byte_reader.read_u16::<BigEndian>().unwrap();
-        let answer_count = byte_reader.read_u16::<BigEndian>().unwrap();
-        let authority_count = byte_reader.read_u16::<BigEndian>().unwrap();
-        let additional_count = byte_reader.read_u16::<BigEndian>().unwrap();
+        let query_count = byte_reader.read_u16::<BigEndian>()?;
+        let answer_count = byte_reader.read_u16::<BigEndian>()?;
+        let authority_count = byte_reader.read_u16::<BigEndian>()?;
+        let additional_count = byte_reader.read_u16::<BigEndian>()?;
 
-        let query_records: Vec<RecordInformation> = (0..query_count).map(|_| read_record_information(&mut byte_reader)).collect();
-        let answer_records: Vec<CompleteRecord> = (0..answer_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        let authority_records: Vec<CompleteRecord> = (0..authority_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
-        let additional_records: Vec<CompleteRecord> = (0..additional_count).map(|_| read_complete_record(&mut byte_reader, true)).collect();
+        let query_records: Vec<RecordInformation> = (0..query_count).filter_map(|_| read_record_information(&mut byte_reader).ok()).collect();
+        let answer_records: Vec<CompleteRecord> = (0..answer_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
+        let authority_records: Vec<CompleteRecord> = (0..authority_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
+        let additional_records: Vec<CompleteRecord> = (0..additional_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
         return Ok(MDNSPacket {
             header,
             query_records,
@@ -158,71 +158,70 @@ pub(crate) fn encode_label(label: &str) -> Vec<u8> {
     return encoded;
 }
 
-pub(crate) fn read_label(buffer: &mut ByteReader) -> String {
+pub(crate) fn read_label(buffer: &mut Cursor<&[u8]>) -> Result<String, io::Error> {
     let mut characters: Vec<u8> = vec![];
-    let mut return_to: usize = 0;
+    let mut return_to: u64 = 0;
     loop {
-        let byte = buffer.read().unwrap();
-        if byte == 0 {
-            break;
-        }
+        let byte = match buffer.read_u8() {
+            Ok(b) => { if b == 0 { break; } else { b } }
+            Err(_) => { break; }
+        };
         let is_pointer = byte >= 0b11000000;
         if is_pointer {
-            let byte = byte as usize;
-            let next_byte = buffer.read().unwrap() as usize;
+            let byte = byte as u64;
+            let next_byte = buffer.read_u8().unwrap() as u64;
             let shifted = (byte & 0b00111111) << 8;
             let position = shifted | next_byte;
             let jump_position = position;
             if return_to == 0 {
-                return_to = buffer.position
+                return_to = buffer.position();
             }
-            buffer.jump_to(jump_position);
+            buffer.set_position(jump_position);
         } else {
             let label_length = byte as usize;
-            let label_slice = buffer.read_multiple(label_length).unwrap();
+            let mut label_slice: Vec<u8> = vec![0u8; label_length];
+            buffer.read_exact(&mut label_slice)?;
             if !characters.is_empty() {
                 characters.extend_from_slice(".".as_bytes()); // Add dot
             }
-            characters.extend_from_slice(label_slice);
-        }
-        if !buffer.has_remaining() {
-            break;
+            characters.extend(label_slice);
         }
     }
     if return_to > 0 {
-        buffer.jump_to(return_to);
+        buffer.set_position(return_to);
     }
-    return String::from_utf8(characters).unwrap();
+    let built_string = String::from_utf8(characters).unwrap_or_else(|_| "Unknown".to_string());
+    return Ok(built_string);
 }
 
-fn read_record_information(buffer: &mut ByteReader) -> RecordInformation {
-    let label = read_label(buffer);
+fn read_record_information(buffer: &mut Cursor<&[u8]>) -> Result<RecordInformation, io::Error> {
+    let label = read_label(buffer)?;
     let record_type = buffer.read_u16::<BigEndian>().unwrap(); // Get Into ENUM value somehow
     let flags = buffer.read_u16::<BigEndian>().unwrap();
     let class_code = flags & (0xFFFF - 1);
     let has_property = flags.bit_subset(15, 1) == 1;
-    return RecordInformation {
+    return Ok(RecordInformation {
         label,
         record_type: RecordType::from(record_type),
         flags,
         class_code,
         has_property,
-    };
+    });
 }
 
-fn read_complete_record(buffer: &mut ByteReader, discard_data: bool) -> CompleteRecord {
-    let record_information = read_record_information(buffer);
+fn read_complete_record(buffer: &mut Cursor<&[u8]>, discard_data: bool) -> Result<CompleteRecord, io::Error> {
+    let record_information = read_record_information(buffer)?;
     let ttl = buffer.read_u32::<BigEndian>().unwrap();
-    let data_length = buffer.read_u16::<BigEndian>().unwrap() as usize;
+    let data_length = buffer.read_u16::<BigEndian>().unwrap() as u64;
     let mut data: Vec<u8> = vec![];
     if discard_data {
-        buffer.jump_to(buffer.position + data_length)
+        buffer.set_position(buffer.position() + data_length)
     } else {
-        buffer.copy_into(&mut data);
+        buffer.read_exact(&mut data)?;
     }
-    return CompleteRecord {
+    return Ok(CompleteRecord {
         record_information,
         ttl,
         data,
-    };
+    });
 }

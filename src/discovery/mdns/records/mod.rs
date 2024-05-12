@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 pub mod aaaa_record;
 pub mod ptr_record;
 pub mod srv_record;
@@ -15,11 +13,11 @@ pub struct SRVRecord {
 }
 
 pub struct TXTRecord {
-    pub map: HashMap<String, String>,
+    pub text: String,
 }
 
-pub struct PTRRecord {
-    pub domain: String,
+pub struct PTRRecord<'a> {
+    pub domain: &'a String,
 }
 
 

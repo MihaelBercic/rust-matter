@@ -6,6 +6,7 @@ pub trait BitSubset {
 }
 
 #[allow(unused)]
+#[derive(Debug)]
 pub struct MDNSPacket {
     pub header: MDNSPacketHeader,
     pub query_records: Vec<RecordInformation>,
