@@ -36,7 +36,7 @@ fn main() {
         let matter_message = MatterMessage::try_from(&b[..size]);
         match matter_message {
             Ok(matter) => {
-                println!("Successfully parsed matter message!");
+                println!("Successfully parsed matter message! => {}", String::from_utf8_lossy(&matter.integrity_check));
             }
             Err(error) => {
                 println!("Yikes {:?}", error);

@@ -14,9 +14,10 @@ mod cryptography_tests {
     use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BITS;
     use crate::crypto::s2p_test_vectors::test_vectors::RFC_T;
     use crate::crypto::spake::Spake2P;
+    use crate::discovery::mdns::structs::BitSubset;
 
     #[test]
-    fn random_bytes_test() {
+    fn random_bytes_generator() {
         let short_bytes = random_bytes::<10>();
         println!("{}B = {}", 10, hex::encode(short_bytes));
 
@@ -32,32 +33,16 @@ mod cryptography_tests {
         let sample = b"mihael";
         let hash = crypto::hash_message(sample);
         let hex = hex::encode(hash);
-        assert_eq!(
-            hex,
-            "a1ec7aff7a3ce85b3784176861b4995fe092eea0f417443d4ba77ae96a9f812e"
-        );
+        assert_eq!(hex, "a1ec7aff7a3ce85b3784176861b4995fe092eea0f417443d4ba77ae96a9f812e");
     }
 
     #[test]
-    fn crypto_hmac_test() {
-        let sample_key = b"my secret and secure key";
+    fn crypto_hmac() {
+        let sample_key = b"my secret and communication key";
         let sample_input_message = b"input message";
         let hmac = crypto::hmac(sample_key, sample_input_message);
         let hex = hex::encode(hmac);
-        assert_eq!(
-            hex,
-            "97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9"
-        )
-    }
-
-    #[test]
-    fn crypto_hmac_verify() {
-        let sample_key = b"my secret and secure key";
-        let sample_input_message = b"input message";
-        let x = hex::decode("97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9")
-            .unwrap();
-        let hmac = crypto::verify_hmac(sample_key, sample_input_message, &x);
-        hmac.expect("Verification was not successful.")
+        crypto::verify_hmac(sample_key, sample_input_message, &hex::decode(&hex).unwrap()).expect("Verification was not successful.");
     }
 
     #[test]
@@ -112,7 +97,7 @@ mod cryptography_tests {
             },
             &taken,
         )
-        .expect("Issue encrypting the payload.");
+            .expect("Issue encrypting the payload.");
         let encrypted_payload = Payload {
             msg: &encrypted[..],
             aad: &[],
@@ -194,6 +179,24 @@ mod cryptography_tests {
             assert_eq!(rfc.TT, tt[..]);
             let confirmation = spake.compute_confirmation(&tt);
              */
+        }
+    }
+
+    #[test]
+    fn random_bit_generator() {
+        for x in (0..=128).step_by(4) {
+            for _ in 0..10 {
+                let int: Vec<u8> = crypto::random_bits(x);
+                let mut last_bit: usize = int.len() * 8;
+                'byte_loop: for mut byte in &int {
+                    for shift in (0..=7).rev() {
+                        if byte.bit_subset(shift, 1) == 1 { break 'byte_loop; }
+                        last_bit -= 1;
+                    }
+                }
+                println!("{} => {}: {}", x, last_bit, int.iter().map(|x| format!("{:08b}", x)).collect::<Vec<String>>().join(" "));
+                assert!(last_bit <= x + 1);
+            }
         }
     }
 }

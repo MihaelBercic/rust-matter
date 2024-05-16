@@ -25,6 +25,13 @@ impl TryFrom<&[u8]> for MatterMessage {
     }
 }
 
+impl MatterMessage {
+    fn is_secure(&self) -> bool {
+        let header = &self.header;
+        header.session_id == 0 && header.security_flags.session_type() == Unicast
+    }
+}
+
 impl MatterMessageHeader {
     fn try_from(reader: &mut Cursor<&[u8]>) -> Result<Self, io::Error> {
         let payload_length = reader.read_u16::<LittleEndian>()?;

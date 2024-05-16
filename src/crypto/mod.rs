@@ -102,3 +102,19 @@ pub fn random_bytes<const N: usize>() -> [u8; N] {
     }
     return array;
 }
+
+
+pub fn random_bits(len: usize) -> Vec<u8> {
+    let mut rng = thread_rng();
+    let mut bytes: Vec<u8> = vec![];
+    let mut current = 0u8;
+    for i in 1..=len {
+        current |= if rng.gen_bool(0.5) { 1 } else { 0 };
+        if i % 8 == 0 || i == len {
+            bytes.insert(0, current);
+            current = 0;
+        } else {}
+        current <<= 1;
+    }
+    return bytes;
+}

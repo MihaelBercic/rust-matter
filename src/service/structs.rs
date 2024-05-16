@@ -31,6 +31,7 @@ pub struct MatterMessageExtension {
     pub(crate) data: Vec<u8>,
 }
 
+#[derive(PartialEq)]
 pub enum MatterSessionType {
     Unicast,
     Group,

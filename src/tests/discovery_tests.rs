@@ -5,7 +5,7 @@ pub mod discovery_tests {
     use crate::discovery::mdns::structs::*;
 
     #[test]
-    fn hello() {
+    fn mdns_packet_decode() {
         // println!("{}", String::from_utf8_lossy(&SAMPLE_PACKET));
         let mdns_packet = MDNSPacket::try_from(&ADD_ACCESSORY_PACKET[..]).expect("Should parse");
         let is_our_protocol = mdns_packet.query_records.iter().any(|q| q.label == PROTOCOL);
