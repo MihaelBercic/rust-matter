@@ -113,8 +113,9 @@ pub fn random_bits(len: usize) -> Vec<u8> {
         if i % 8 == 0 || i == len {
             bytes.insert(0, current);
             current = 0;
-        } else {}
-        current <<= 1;
+        } else {
+            current <<= 1;
+        }
     }
     return bytes;
 }
