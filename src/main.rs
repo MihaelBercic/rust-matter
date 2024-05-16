@@ -3,9 +3,13 @@ use std::ops::Add;
 
 use matter::discovery::constants::*;
 use matter::discovery::mdns_service::{CommissionState, DeviceType, MDNSService};
+use matter::service::protocol::communication::counters::{GLOBAL_UNENCRYPTED_COUNTER, initialize_counter};
 use matter::service::structs::MatterMessage;
 
 fn main() {
+    initialize_counter(&mut GLOBAL_UNENCRYPTED_COUNTER);
+
+
     let interface = netif::up().unwrap().find(|x| x.name() == "en7").unwrap();
 
     let my_ip = "fdc3:de31:45b5:c843:14aa:95ef:2844:22e".to_string();

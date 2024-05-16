@@ -1,3 +1,3 @@
 pub mod structs;
-mod matter_impls;
-mod protocol;
+pub mod matter_impls;
+pub mod protocol;
