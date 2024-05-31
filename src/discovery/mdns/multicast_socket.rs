@@ -72,7 +72,7 @@ impl MulticastSocket {
         self.udp_socket.send_to(buf, sender)
     }
 
-    pub fn receive_from(&mut self) -> std::io::Result<(usize, SocketAddr)> {
+    pub fn receive_from(&mut self) -> io::Result<(usize, SocketAddr)> {
         return self.udp_socket.recv_from(&mut self.buffer);
     }
 }

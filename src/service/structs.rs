@@ -6,14 +6,14 @@ pub struct MatterMessage {
 
 #[derive(Debug)]
 pub struct MatterMessageHeader {
-    pub(crate) payload_length: u16,
-    pub(crate) flags: MatterMessageFlags,
-    pub(crate) session_id: u16,
-    pub(crate) security_flags: MatterSecurityFlags,
-    pub(crate) message_counter: u32,
-    pub(crate) source_node_id: Option<[u8; 8]>,
-    pub(crate) destination_node_id: Option<MatterDestinationID>,
-    pub(crate) message_extensions: Option<MatterMessageExtension>,
+    pub payload_length: u16,
+    pub flags: MatterMessageFlags,
+    pub session_id: u16,
+    pub security_flags: MatterSecurityFlags,
+    pub message_counter: u32,
+    pub source_node_id: Option<[u8; 8]>,
+    pub destination_node_id: Option<MatterDestinationID>,
+    pub message_extensions: Option<MatterMessageExtension>,
 }
 
 #[derive(Debug)]
@@ -28,7 +28,7 @@ pub struct MatterSecurityFlags {
 
 #[derive(Debug)]
 pub struct MatterMessageExtension {
-    pub(crate) data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 #[derive(PartialEq)]
@@ -38,10 +38,10 @@ pub enum MatterSessionType {
     ReservedForFuture,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum MatterDestinationID {
-    Short(u16),
-    Long(u64),
-    ShortGroupID,
-    LongGroupID,
+    Group(u16),
+    Node(u64),
+    GroupID,
+    NodeID,
 }

@@ -1,8 +1,8 @@
-const PROTOCOL_ID_SECURE_CHANNEL: u16 = 0x0000;
-const PROTOCOL_ID_INTERACTION_MODEL: u16 = 0x0001;
-const PROTOCOL_ID_BDX: u16 = 0x0002;
-const PROTOCOL_ID_USER_DIRECTED_COMMISSIONING: u16 = 0x0003;
-const PROTOCOL_ID_FOR_TESTING: u16 = 0x0004;
+pub const PROTOCOL_ID_SECURE_CHANNEL: u16 = 0x0000;
+pub const PROTOCOL_ID_INTERACTION_MODEL: u16 = 0x0001;
+pub const PROTOCOL_ID_BDX: u16 = 0x0002;
+pub const PROTOCOL_ID_USER_DIRECTED_COMMISSIONING: u16 = 0x0003;
+pub const PROTOCOL_ID_FOR_TESTING: u16 = 0x0004;
 
 pub struct ProtocolMessage {
     pub flags: ProtocolExchangeFlags,
@@ -20,6 +20,6 @@ pub struct ProtocolExchangeFlags {
 }
 
 pub struct ProtocolSecuredExtensions {
-    data_length: u16,
-    data: Vec<u8>,
+    pub data_length: u16,
+    pub data: Vec<u8>,
 }

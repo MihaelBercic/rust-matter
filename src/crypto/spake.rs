@@ -106,7 +106,7 @@ impl Spake2P {
     /// 00000005 = 05:00:00:00
     pub fn compute_values_verifier(&mut self) {
         let w1_scalar = Scalar::from_repr(GenericArray::from(self.w1)).unwrap();
-        let length = p256::AffinePoint::GENERATOR * w1_scalar;
+        let length = AffinePoint::GENERATOR * w1_scalar;
         self.L
             .copy_from_slice(length.to_encoded_point(false).as_bytes());
     }
@@ -198,7 +198,7 @@ impl Spake2P {
         let length_Z = Z_as_bytes.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
         let length_V = V_as_bytes.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
         let length_w0 = self.w0.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let empty = ([0u8]).pad(PaddingMode::Left, 8, 0);
+        let empty = [0u8].pad(PaddingMode::Left, 8, 0);
 
         let tt = [
             context_length,
@@ -220,7 +220,7 @@ impl Spake2P {
             length_w0,
             self.w0.to_vec(),
         ]
-        .concat();
+            .concat();
         return tt;
     }
 
@@ -245,9 +245,9 @@ impl Spake2P {
 
 #[allow(non_snake_case)]
 pub struct S2PConfirmation {
-    cA: [u8; 32],
-    cB: [u8; 32],
-    Ke: [u8; 16],
+    pub cA: [u8; 32],
+    pub cB: [u8; 32],
+    pub Ke: [u8; 16],
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -262,8 +262,8 @@ pub enum Spake2VerifierState {
 
 #[allow(non_snake_case)]
 pub struct Spake2PSharedValues {
-    Z: BigUint,
-    V: BigUint,
+    pub Z: BigUint,
+    pub V: BigUint,
 }
 
 #[derive(PartialEq, Debug)]

@@ -11,6 +11,6 @@ impl Into<Vec<u8>> for AAAARecord {
         buffer.write_u16::<BigEndian>(16).unwrap();
         buffer.extend_from_slice(&ip.octets());
         println!("{}", buffer.iter().map(|x| format!("0x{:02x}", x)).collect::<Vec<String>>().join(" "));
-        return buffer;
+        buffer
     }
 }

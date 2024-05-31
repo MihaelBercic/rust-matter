@@ -7,7 +7,7 @@ use matter::service::protocol::communication::counters::{GLOBAL_UNENCRYPTED_COUN
 use matter::service::structs::MatterMessage;
 
 fn main() {
-    initialize_counter(&mut GLOBAL_UNENCRYPTED_COUNTER);
+    initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);
 
 
     let interface = netif::up().unwrap().find(|x| x.name() == "en7").unwrap();
@@ -33,14 +33,14 @@ fn main() {
     mdns_service.start_advertising(&interface);
 
     let mut b = [0u8; 1000];
+    println!("Listening on: {:?}", &udp_socket.local_addr());
     loop {
-        println!("Listening on: {:?}", &udp_socket.local_addr());
-        let (size, remote) = udp_socket.recv_from(&mut b).unwrap();
+        let (size, _) = udp_socket.recv_from(&mut b).unwrap();
         println!("Received {} data on UDP socket...", size);
         let matter_message = MatterMessage::try_from(&b[..size]);
         match matter_message {
             Ok(matter) => {
-                println!("Successfully parsed matter message! => {}", String::from_utf8_lossy(&matter.integrity_check));
+                matter.process();
             }
             Err(error) => {
                 println!("Yikes {:?}", error);

@@ -3,8 +3,11 @@ use std::io::{Cursor, Read};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+use MatterDestinationID::NodeID;
+
 use crate::discovery::mdns::structs::BitSubset;
 use crate::service::structs::{MatterDestinationID, MatterMessage, MatterMessageExtension, MatterMessageFlags, MatterMessageHeader, MatterSecurityFlags, MatterSessionType};
+use crate::service::structs::MatterDestinationID::GroupID;
 use crate::service::structs::MatterSessionType::{Group, ReservedForFuture, Unicast};
 
 impl TryFrom<&[u8]> for MatterMessage {
@@ -25,15 +28,34 @@ impl TryFrom<&[u8]> for MatterMessage {
     }
 }
 
+
 impl MatterMessage {
-    fn is_secure(&self) -> bool {
+    pub fn is_secure_unicast_session(&self) -> bool {
         let header = &self.header;
         header.session_id == 0 && header.security_flags.session_type() == Unicast
+    }
+
+    pub fn process(self) {
+        let header = &self.header;
+        let flags = &header.flags;
+        let security_flags = &header.security_flags;
+        if flags.version() != 0 { return; }
+        match security_flags.session_type() {
+            Unicast => {
+                if flags.type_of_destination() == Some(GroupID) { return; }
+            }
+            Group => {
+                if flags.type_of_destination() == None { return; }
+                if !flags.is_source_present() { return; }
+            }
+            _ => {}
+        }
+        if self.is_secure_unicast_session() {}
     }
 }
 
 impl MatterMessageHeader {
-    fn try_from(reader: &mut Cursor<&[u8]>) -> Result<Self, io::Error> {
+    pub fn try_from(reader: &mut Cursor<&[u8]>) -> Result<Self, io::Error> {
         let payload_length = reader.read_u16::<LittleEndian>()?;
         let flags = MatterMessageFlags { flags: reader.read_u8()? };
         let session_id = reader.read_u16::<LittleEndian>()?;
@@ -47,8 +69,8 @@ impl MatterMessageHeader {
             None
         };
         let destination_node_id = match flags.type_of_destination() {
-            Some(MatterDestinationID::LongGroupID) => Some(MatterDestinationID::Long(reader.read_u64::<LittleEndian>()?)),
-            Some(MatterDestinationID::ShortGroupID) => Some(MatterDestinationID::Short(reader.read_u16::<LittleEndian>()?)),
+            Some(NodeID) => Some(MatterDestinationID::Node(reader.read_u64::<LittleEndian>()?)),
+            Some(GroupID) => Some(MatterDestinationID::Group(reader.read_u16::<LittleEndian>()?)),
             _ => None
         };
 
@@ -75,38 +97,38 @@ impl MatterMessageHeader {
 }
 
 impl MatterMessageFlags {
-    fn version(&self) -> u8 {
+    pub fn version(&self) -> u8 {
         self.flags >> 4
     }
 
-    fn is_source_present(&self) -> bool {
+    pub fn is_source_present(&self) -> bool {
         self.flags.bit_subset(2, 1) == 1
     }
 
-    fn type_of_destination(&self) -> Option<MatterDestinationID> {
+    pub fn type_of_destination(&self) -> Option<MatterDestinationID> {
         let destination = self.flags.bit_subset(0, 2);
         return match destination {
-            1 => Some(MatterDestinationID::LongGroupID),
-            2 => Some(MatterDestinationID::ShortGroupID),
+            1 => Some(NodeID),
+            2 => Some(GroupID),
             _ => None
         };
     }
 }
 
 impl MatterSecurityFlags {
-    fn is_encoded_with_privacy(&self) -> bool {
+    pub fn is_encoded_with_privacy(&self) -> bool {
         self.flags.bit_subset(7, 1) == 1
     }
 
-    fn is_control_message(&self) -> bool {
+    pub fn is_control_message(&self) -> bool {
         self.flags.bit_subset(6, 1) == 1
     }
 
-    fn has_message_extensions(&self) -> bool {
+    pub fn has_message_extensions(&self) -> bool {
         self.flags.bit_subset(5, 1) == 1
     }
 
-    fn session_type(&self) -> MatterSessionType {
+    pub fn session_type(&self) -> MatterSessionType {
         match self.flags.bit_subset(0, 2) {
             0 => Unicast,
             1 => Group,

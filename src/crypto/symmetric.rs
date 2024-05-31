@@ -32,7 +32,7 @@ pub fn decrypt(
 }
 
 pub fn encrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES]) {
-    type Aes128Ctr32LE = ctr::Ctr32LE<aes::Aes128>;
+    type Aes128Ctr32LE = ctr::Ctr32LE<Aes128>;
     let mut vec = nonce.to_vec();
     vec.push(0);
     vec.push(0);
@@ -43,7 +43,7 @@ pub fn encrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NO
 }
 
 pub fn decrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES]) {
-    type Aes128Ctr32LE = ctr::Ctr32LE<aes::Aes128>;
+    type Aes128Ctr32LE = ctr::Ctr32LE<Aes128>;
     let mut vec = nonce.to_vec();
     vec.push(0);
     vec.push(0);

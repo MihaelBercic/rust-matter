@@ -26,6 +26,6 @@ pub fn password_key_derivation(
 }
 
 pub struct PBKDFParameterSet {
-    iterations: u32,
-    salt: [u8; 32],
+    pub iterations: u32,
+    pub salt: [u8; 32],
 }
