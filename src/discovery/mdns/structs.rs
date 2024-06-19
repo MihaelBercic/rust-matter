@@ -1,8 +1,12 @@
+use std::ops::RangeInclusive;
+
 use crate::discovery::mdns::records::record_type::RecordType;
 
 /// A trait which allows for individual bit inspection.
 pub trait BitSubset {
     fn bit_subset(&self, from_bit: usize, count: u32) -> Self;
+
+    fn set_bits(self, range: RangeInclusive<Self>, value: Self) -> Self where Self: Sized;
 }
 
 #[allow(unused)]

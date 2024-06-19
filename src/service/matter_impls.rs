@@ -1,5 +1,5 @@
-use std::{io, iter};
 use std::io::{Cursor, Read};
+use std::iter;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -9,17 +9,19 @@ use crate::discovery::mdns::structs::BitSubset;
 use crate::service::structs::{MatterDestinationID, MatterMessage, MatterMessageExtension, MatterMessageFlags, MatterMessageHeader, MatterSecurityFlags, MatterSessionType};
 use crate::service::structs::MatterDestinationID::GroupID;
 use crate::service::structs::MatterSessionType::{Group, ReservedForFuture, Unicast};
+use crate::useful::MatterError;
 
 impl TryFrom<&[u8]> for MatterMessage {
-    type Error = io::Error;
-
+    type Error = MatterError;
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let mut reader = Cursor::new(value);
         let header = MatterMessageHeader::try_from(&mut reader)?;
-        let mut payload: Vec<u8> = vec![0u8; header.payload_length as usize];
+        let contains_mic = !header.is_unsecured_unicast_sesson();
+        let left = value.len() - reader.position() as usize;
+        let mut payload: Vec<u8> = vec![0u8; left];
         reader.read_exact(&mut payload)?;
         let mut integrity_check: Vec<u8> = vec![];
-        reader.read_to_end(&mut integrity_check)?;
+        if contains_mic { reader.read_to_end(&mut integrity_check)?; }
         Ok(Self {
             header,
             payload,
@@ -29,42 +31,14 @@ impl TryFrom<&[u8]> for MatterMessage {
 }
 
 
-impl MatterMessage {
-    pub fn is_secure_unicast_session(&self) -> bool {
-        let header = &self.header;
-        header.session_id == 0 && header.security_flags.session_type() == Unicast
-    }
-
-    pub fn process(self) {
-        let header = &self.header;
-        let flags = &header.flags;
-        let security_flags = &header.security_flags;
-        if flags.version() != 0 { return; }
-        match security_flags.session_type() {
-            Unicast => {
-                if flags.type_of_destination() == Some(GroupID) { return; }
-            }
-            Group => {
-                if flags.type_of_destination() == None { return; }
-                if !flags.is_source_present() { return; }
-            }
-            _ => {}
-        }
-        if self.is_secure_unicast_session() {}
-    }
-}
-
 impl MatterMessageHeader {
-    pub fn try_from(reader: &mut Cursor<&[u8]>) -> Result<Self, io::Error> {
-        let payload_length = reader.read_u16::<LittleEndian>()?;
+    pub fn try_from(reader: &mut Cursor<&[u8]>) -> Result<Self, MatterError> {
         let flags = MatterMessageFlags { flags: reader.read_u8()? };
         let session_id = reader.read_u16::<LittleEndian>()?;
         let security_flags = MatterSecurityFlags { flags: reader.read_u8()? };
         let message_counter = reader.read_u32::<LittleEndian>()?;
-        let source_node_id: Option<[u8; 8]> = if flags.is_source_present() {
-            let mut buff = [0u8; 8];
-            reader.read_exact(&mut buff)?;
-            Some(buff)
+        let source_node_id: Option<u64> = if flags.is_source_present() {
+            Some(reader.read_u64::<LittleEndian>()?)
         } else {
             None
         };
@@ -84,7 +58,6 @@ impl MatterMessageHeader {
         };
 
         Ok(Self {
-            payload_length,
             flags,
             session_id,
             security_flags,
@@ -93,6 +66,18 @@ impl MatterMessageHeader {
             destination_node_id,
             message_extensions,
         })
+    }
+
+    pub fn is_secure_unicast_session(&self) -> bool {
+        self.session_id != 0 && self.security_flags.session_type() == Unicast
+    }
+
+    pub fn is_unsecured_unicast_sesson(&self) -> bool {
+        self.session_id == 0 && self.security_flags.session_type() == Unicast
+    }
+
+    pub fn is_group_session(&self) -> bool {
+        self.security_flags.session_type() == MatterSessionType::Group
     }
 }
 

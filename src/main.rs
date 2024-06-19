@@ -8,11 +8,9 @@ use matter::service::structs::MatterMessage;
 
 fn main() {
     initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);
-
-
-    let interface = netif::up().unwrap().find(|x| x.name() == "en7").unwrap();
-
+    let interface = netif::up().unwrap().find(|x| x.name() == "en0").unwrap();
     let my_ip = "fdc3:de31:45b5:c843:14aa:95ef:2844:22e".to_string();
+    let my_ip = "fdc3:de31:45b5:c843:89:981b:33af:57d2".to_string();
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
     let mac_hex = hex::encode_upper(mac);
     let host_name = mac_hex.add(".local");
@@ -37,11 +35,10 @@ fn main() {
     loop {
         let (size, _) = udp_socket.recv_from(&mut b).unwrap();
         println!("Received {} data on UDP socket...", size);
+        println!("const FIRST_PACKET_SAMPLE: [u8; {}] = [{}];", size, &b[..size].iter().map(|x| format!("0x{:02x}", x).to_string()).collect::<Vec<String>>().join(","));
         let matter_message = MatterMessage::try_from(&b[..size]);
         match matter_message {
-            Ok(matter) => {
-                matter.process();
-            }
+            Ok(matter) => {}
             Err(error) => {
                 println!("Yikes {:?}", error);
             }
