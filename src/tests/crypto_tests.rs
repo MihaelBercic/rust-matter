@@ -188,7 +188,7 @@ mod cryptography_tests {
             for _ in 0..10 {
                 let int: Vec<u8> = crypto::random_bits(x);
                 let mut last_bit: usize = int.len() * 8;
-                'byte_loop: for mut byte in &int {
+                'byte_loop: for byte in &int {
                     for shift in (0..=7).rev() {
                         if byte.bit_subset(shift, 1) == 1 { break 'byte_loop; }
                         last_bit -= 1;

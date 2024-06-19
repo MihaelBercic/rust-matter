@@ -2,35 +2,20 @@ use std::io::{Cursor, Read};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::discovery::mdns::structs::BitSubset;
-use crate::service::protocol::structs::{ProtocolExchangeFlags, ProtocolMessage, ProtocolSecuredExtensions};
-use crate::useful::MatterError;
+use crate::service::protocol::exchange_flags::ProtocolExchangeFlags;
+use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::utils::MatterError;
 
-impl ProtocolExchangeFlags {
-    /// A flag bit indicates whether the message was sent by the initiator.
-    pub fn sent_by_initiator(&self) -> bool {
-        self.byte.bit_subset(0, 1) == 1
-    }
-
-    /// A flag bit indicates whether this message serves as an acknowledgement.
-    pub fn is_acknowledgement(&self) -> bool {
-        self.byte.bit_subset(1, 1) == 1
-    }
-
-    /// A flag bit indicates whether the sender requests for acknowledgment packet.
-    pub fn needs_acknowledgement(&self) -> bool {
-        self.byte.bit_subset(2, 1) == 1
-    }
-
-    /// A flag bit indicates whether secured extensions are present in the packet.
-    pub fn is_secured_extensions_present(&self) -> bool {
-        self.byte.bit_subset(3, 1) == 1
-    }
-
-    /// A flag bit indicates whether vendor information is present in the packet.
-    pub fn is_vendor_present(&self) -> bool {
-        self.byte.bit_subset(4, 1) == 1
-    }
+#[derive(Debug)]
+pub struct ProtocolMessage {
+    pub exchange_flags: ProtocolExchangeFlags,
+    pub opcode: u8,
+    pub exchange_id: u16,
+    pub protocol_vendor_id: Option<u16>,
+    pub protocol_id: u16,
+    pub acknowledged_message_counter: Option<u32>,
+    pub secured_extensions: Option<ProtocolSecuredExtensions>,
+    pub payload: Vec<u8>,
 }
 
 impl TryFrom<&[u8]> for ProtocolMessage {

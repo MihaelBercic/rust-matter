@@ -153,7 +153,7 @@ bit_subset! {
 
 
         /// Set bits (range is half inclusive).
-        fn set_bits(mut self, range: RangeInclusive<Self>, value: Self) -> Self {
+        fn set_bits(&mut self, range: RangeInclusive<Self>, value: Self) -> Self {
             let _debug_clone = self.clone();
             let bits = Self::BITS as Self;
             let bits_used = range.end() + 1 - range.start();
@@ -163,8 +163,8 @@ bit_subset! {
             let left_mask = if left_mask_shift >= bits {0} else {Self::MAX << left_mask_shift};
             let right_mask = if right_mask_shift >= bits {0} else {Self::MAX >> right_mask_shift};
             let mask = left_mask | right_mask;
-            self &= mask;
-            self |= shifted_value;
+            *self &= mask;
+            *self |= shifted_value;
             println!("Bits used:      {}/{}
 Self:           {:08b}
 Shifted value:  {:08b}
@@ -172,7 +172,7 @@ Left mask:      {:08b}
 Right mask:     {:08b}
 Self After:     {:08b}
 ", bits_used, bits, _debug_clone, shifted_value, left_mask, right_mask, self);
-            self
+            *self
         }
 
 //         fn set_bits(mut self, from_bit: u32, value: Self) -> Self {

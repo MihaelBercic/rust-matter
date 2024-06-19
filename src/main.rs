@@ -3,8 +3,9 @@ use std::ops::Add;
 
 use matter::discovery::constants::*;
 use matter::discovery::mdns_service::{CommissionState, DeviceType, MDNSService};
+use matter::service::enums::MatterMessage;
+use matter::service::message::MatterMessage;
 use matter::service::protocol::communication::counters::{GLOBAL_UNENCRYPTED_COUNTER, initialize_counter};
-use matter::service::structs::MatterMessage;
 
 fn main() {
     initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);

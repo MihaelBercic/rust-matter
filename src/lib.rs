@@ -1,15 +1,13 @@
 use std::collections::HashMap;
 
 use crate::service::protocol::communication::message_reception::MessageReceptionState;
-use crate::transport::Transport;
 
 mod tests;
 pub mod crypto;
 pub mod discovery;
-pub mod useful;
+pub mod utils;
 pub mod service;
-pub mod transport;
-pub mod mrp;
+pub mod constants;
 
 pub struct Matter {
     pub reception_states: HashMap<u64, MessageReceptionState>,
