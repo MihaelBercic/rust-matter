@@ -1,4 +1,5 @@
 pub mod opcodes;
 pub mod counters;
 pub mod message_reception;
-pub mod exhange;
+pub mod exchange;
+mod enums;

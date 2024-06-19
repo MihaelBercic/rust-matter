@@ -4,11 +4,15 @@ use std::time::Duration;
 
 use netif::Interface;
 
-use crate::discovery::constants::{MDNS_PORT, PROTOCOL};
+use crate::constants::{MDNS_PORT, PROTOCOL};
+use crate::discovery::enums::{CommissionState, DeviceType};
 use crate::discovery::mdns::multicast_socket::MulticastSocket;
+use crate::discovery::mdns::packet::MDNSPacket;
+use crate::discovery::mdns::packet_header::MDNSPacketHeader;
 use crate::discovery::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
+use crate::discovery::mdns::records::complete_record::CompleteRecord;
+use crate::discovery::mdns::records::record_information::RecordInformation;
 use crate::discovery::mdns::records::record_type::RecordType;
-use crate::discovery::mdns::structs::{CompleteRecord, MDNSPacket, MDNSPacketHeader, RecordInformation};
 
 pub struct MDNSService {
     pub udp_port: u16,
@@ -127,17 +131,4 @@ impl MDNSService {
             }
         });
     }
-}
-
-#[repr(u8)]
-#[derive(Copy, Clone)]
-pub enum CommissionState {
-    NotCommissioned = 2,
-    Commissioned = 0,
-}
-
-#[repr(u16)]
-#[derive(Copy, Clone)]
-pub enum DeviceType {
-    Thermostat = 301
 }

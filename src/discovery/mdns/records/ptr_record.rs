@@ -2,7 +2,7 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::impls::encode_label;
+use crate::discovery::mdns::packet::encode_label;
 use crate::discovery::mdns::records::PTRRecord;
 
 impl Into<Vec<u8>> for PTRRecord<'_> {

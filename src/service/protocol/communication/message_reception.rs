@@ -1,4 +1,4 @@
-use p256::PublicKey;
+use crate::service::protocol::communication::enums::MessageType;
 
 pub struct MessageReceptionState {
     pub source_node_id: u64,
@@ -49,12 +49,3 @@ impl MessageReceptionState {
     }
 }
 
-pub enum MessageType {
-    Data,
-    Control,
-}
-
-pub enum EncryptionLevel {
-    Unencrypted,
-    Encrypted(PublicKey),
-}

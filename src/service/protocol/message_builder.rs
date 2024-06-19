@@ -1,7 +1,7 @@
-use crate::discovery::mdns::structs::BitSubset;
 use crate::service::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::service::protocol::message::ProtocolMessage;
 use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::utils::bit_subset::BitSubset;
 
 pub struct ProtocolMessageBuilder {
     message: ProtocolMessage,

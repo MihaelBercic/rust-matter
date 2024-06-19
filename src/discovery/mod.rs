@@ -1,4 +1,2 @@
 pub mod mdns;
-pub mod constants;
-pub mod mdns_service;
-
+pub mod enums;

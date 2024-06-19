@@ -1,6 +1,6 @@
-use crate::discovery::mdns::structs::BitSubset;
 use crate::service::enums::MatterSessionType;
 use crate::service::enums::MatterSessionType::{Group, ReservedForFuture, Unicast};
+use crate::utils::bit_subset::BitSubset;
 
 #[derive(Debug)]
 pub struct MatterSecurityFlags {

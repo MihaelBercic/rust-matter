@@ -14,7 +14,7 @@ mod cryptography_tests {
     use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BITS;
     use crate::crypto::s2p_test_vectors::test_vectors::RFC_T;
     use crate::crypto::spake::Spake2P;
-    use crate::discovery::mdns::structs::BitSubset;
+    use crate::utils::bit_subset::BitSubset;
 
     #[test]
     fn random_bytes_generator() {

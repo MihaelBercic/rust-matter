@@ -8,7 +8,7 @@ use std::str::FromStr;
 use libc::{AF_INET6, bind, c_char, in6_addr, perror, setsockopt, SO_REUSEADDR, SO_REUSEPORT, SOCK_DGRAM, sockaddr, sockaddr_in6, socket, socklen_t, SOL_SOCKET};
 use netif::Interface;
 
-use crate::discovery::constants::IPV6_MULTICAST_ADDRESS;
+use crate::constants::IPV6_MULTICAST_ADDRESS;
 
 /// Holds information about the udp_socket constructed via libc and the buffer corresponding for data.
 pub struct MulticastSocket {

@@ -1,6 +1,8 @@
 use std::fmt;
 use std::io;
 
+pub mod bit_subset;
+
 #[derive(Debug)]
 pub enum MatterLayer {
     Transport,

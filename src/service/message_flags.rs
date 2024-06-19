@@ -1,6 +1,6 @@
-use crate::discovery::mdns::structs::BitSubset;
 use crate::service::enums::MatterDestinationID;
 use crate::service::enums::MatterDestinationID::{GroupID, NodeID};
+use crate::utils::bit_subset::BitSubset;
 
 #[derive(Debug)]
 pub struct MatterMessageFlags {

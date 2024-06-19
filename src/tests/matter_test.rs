@@ -1,11 +1,7 @@
-use std::collections::HashMap;
-
-use crate::discovery::mdns::structs::BitSubset;
 use crate::Matter;
-use crate::service::message::MatterMessage;
-use crate::service::protocol::communication::exhange::Exchange;
 use crate::service::protocol::message_builder::ProtocolMessageBuilder;
 use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::utils::bit_subset::BitSubset;
 
 #[test]
 fn matter_setup() {
@@ -46,17 +42,15 @@ fn set_bits() {
     x.set_bits(3..=7, 0b10101);
     assert_eq!(x, 0b1010_1000);
     x = u8::MAX;
-    assert_eq!(0b1111_1111u8.set_bits(0..=4, 0b00110), 0b1110_0110);
-    assert_eq!(0b1111_1111u8.set_bits(0..=0, 0), 0b1111_1110);
-    assert_eq!(0u8.set_bits(3..=3, 1), 0b0000_1000);
-    assert_eq!(0u8.set_bits(3..=5, 0b111), 0b0011_1000);
-}
-
-pub struct ExchangeManager {
-    pub exchanges: HashMap<u16, Exchange>,
-}
-
-pub struct TransportLayerr {
-    incoming_queue: Vec<MatterMessage>,
-    outgoing_queue: Vec<MatterMessage>,
+    x.set_bits(0..=4, 0b00110);
+    assert_eq!(x, 0b1110_0110);
+    x = u8::MAX;
+    x.set_bits(0..=0, 0);
+    assert_eq!(x, 0b1111_1110);
+    x = 0;
+    x.set_bits(3..=3, 1);
+    assert_eq!(x, 0b0000_1000);
+    x = 0;
+    x.set_bits(3..=5, 0b111);
+    assert_eq!(x, 0b0011_1000);
 }
