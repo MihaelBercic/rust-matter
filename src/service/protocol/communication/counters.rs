@@ -17,6 +17,7 @@ pub fn initialize_counter(counter: &AtomicU32) {
     println!("Counter initialised to {}", number_be);
 }
 
+/// Increases the counter by one (1).
 pub fn increase_counter(counter: &AtomicU32) {
     counter.fetch_add(1, Relaxed);
 }
