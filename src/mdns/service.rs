@@ -5,14 +5,14 @@ use std::time::Duration;
 use netif::Interface;
 
 use crate::constants::{MDNS_PORT, PROTOCOL};
-use crate::discovery::enums::{CommissionState, DeviceType};
-use crate::discovery::mdns::multicast_socket::MulticastSocket;
-use crate::discovery::mdns::packet::MDNSPacket;
-use crate::discovery::mdns::packet_header::MDNSPacketHeader;
-use crate::discovery::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
-use crate::discovery::mdns::records::complete_record::CompleteRecord;
-use crate::discovery::mdns::records::record_information::RecordInformation;
-use crate::discovery::mdns::records::record_type::RecordType;
+use crate::mdns::enums::{CommissionState, DeviceType};
+use crate::mdns::multicast_socket::MulticastSocket;
+use crate::mdns::packet::MDNSPacket;
+use crate::mdns::packet_header::MDNSPacketHeader;
+use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
+use crate::mdns::records::complete_record::CompleteRecord;
+use crate::mdns::records::record_information::RecordInformation;
+use crate::mdns::records::record_type::RecordType;
 
 pub struct MDNSService {
     pub udp_port: u16,

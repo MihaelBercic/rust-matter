@@ -2,8 +2,8 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::packet::encode_label;
-use crate::discovery::mdns::records::record_type::RecordType;
+use crate::mdns::packet::encode_label;
+use crate::mdns::records::record_type::RecordType;
 
 ///
 /// @author Mihael Berčič

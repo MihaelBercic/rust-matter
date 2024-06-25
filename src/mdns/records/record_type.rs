@@ -1,4 +1,4 @@
-use crate::discovery::mdns::records::record_type::RecordType::*;
+use crate::mdns::records::record_type::RecordType::*;
 
 #[repr(u16)]
 #[derive(Debug)]

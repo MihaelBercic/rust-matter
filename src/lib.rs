@@ -4,7 +4,7 @@ use crate::service::protocol::communication::message_reception::MessageReception
 
 mod tests;
 pub mod crypto;
-pub mod discovery;
+pub mod mdns;
 pub mod utils;
 pub mod service;
 pub mod constants;

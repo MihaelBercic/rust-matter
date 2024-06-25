@@ -3,10 +3,10 @@ use std::io::{Cursor, Read};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::discovery::mdns::packet_header::MDNSPacketHeader;
-use crate::discovery::mdns::records::complete_record::CompleteRecord;
-use crate::discovery::mdns::records::record_information::RecordInformation;
-use crate::discovery::mdns::records::record_type::RecordType;
+use crate::mdns::packet_header::MDNSPacketHeader;
+use crate::mdns::records::complete_record::CompleteRecord;
+use crate::mdns::records::record_information::RecordInformation;
+use crate::mdns::records::record_type::RecordType;
 use crate::utils::bit_subset::BitSubset;
 
 ///

@@ -1,7 +1,7 @@
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::packet::encode_label;
-use crate::discovery::mdns::records::SRVRecord;
+use crate::mdns::packet::encode_label;
+use crate::mdns::records::SRVRecord;
 
 impl Into<Vec<u8>> for SRVRecord {
     fn into(self) -> Vec<u8> {

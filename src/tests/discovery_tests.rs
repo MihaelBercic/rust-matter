@@ -2,8 +2,8 @@
 pub mod discovery_tests {
     use crate::constants::PROTOCOL;
     use crate::crypto::random_bits;
-    use crate::discovery::mdns::packet::MDNSPacket;
-    use crate::discovery::mdns::records::TXTRecord;
+    use crate::mdns::packet::MDNSPacket;
+    use crate::mdns::records::TXTRecord;
     use crate::tests::constants::ADD_ACCESSORY_PACKET;
     use crate::utils::bit_subset::BitSubset;
 

@@ -2,7 +2,7 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::records::record_information::RecordInformation;
+use crate::mdns::records::record_information::RecordInformation;
 
 #[derive(Debug, Clone)]
 pub struct CompleteRecord {

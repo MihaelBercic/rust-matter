@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::discovery::mdns::records::TXTRecord;
+use crate::mdns::records::TXTRecord;
 
 impl Into<Vec<u8>> for TXTRecord {
     /// Encodes (key, value) pairs into desired Key=Value strings and encodes them using the [length][data].
