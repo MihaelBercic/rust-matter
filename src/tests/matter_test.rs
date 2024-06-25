@@ -53,4 +53,8 @@ fn set_bits() {
     x = 0;
     x.set_bits(3..=5, 0b111);
     assert_eq!(x, 0b0011_1000);
+
+    x = 0;
+    x.set_bits(4..=5, 0b11);
+    assert_eq!(x, 0b0011_0000);
 }

@@ -85,6 +85,12 @@ impl ProtocolMessageBuilder {
         self.set_is_secured_extensions_present(true)
     }
 
+    /// Sets the payload of the [Protocol Message](ProtocolMessage).
+    pub fn set_payload(mut self, payload: &[u8]) -> Self {
+        self.message.payload.copy_from_slice(payload);
+        self
+    }
+
     /// Returns the built [ProtocolMessage].
     pub fn build(self) -> ProtocolMessage {
         self.message
