@@ -4,6 +4,7 @@ use ccm::aead::{Aead, Payload};
 use ccm::aead::generic_array::GenericArray;
 use ccm::consts::{U13, U16};
 use ctr::cipher::{KeyIvInit, StreamCipher};
+
 use crate::crypto::constants::{CRYPTO_AEAD_NONCE_LENGTH_BYTES, CRYPTO_PRIVACY_NONCE_LENGTH_BYTES};
 
 pub fn encrypt<'a>(
@@ -30,30 +31,24 @@ pub fn decrypt(
     decrypted
 }
 
-pub fn encrypt_ctr(
-    key: &[u8],
-    buffer: &mut [u8],
-    nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES],
-) {
-    type Aes128Ctr32LE = ctr::Ctr32LE<aes::Aes128>;
+pub fn encrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES]) {
+    type Aes128Ctr32LE = ctr::Ctr32LE<Aes128>;
     let mut vec = nonce.to_vec();
     vec.push(0);
     vec.push(0);
     vec.push(0);
-    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..]).expect("Unable to create cipher from slices.");
+    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..])
+        .expect("Unable to create cipher from slices.");
     cipher.apply_keystream(buffer);
 }
 
-pub fn decrypt_ctr(
-    key: &[u8],
-    buffer: &mut [u8],
-    nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES],
-) {
-    type Aes128Ctr32LE = ctr::Ctr32LE<aes::Aes128>;
+pub fn decrypt_ctr(key: &[u8], buffer: &mut [u8], nonce: &[u8; CRYPTO_PRIVACY_NONCE_LENGTH_BYTES]) {
+    type Aes128Ctr32LE = ctr::Ctr32LE<Aes128>;
     let mut vec = nonce.to_vec();
     vec.push(0);
     vec.push(0);
     vec.push(0);
-    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..]).expect("Unable to create cipher from slices.");
+    let mut cipher = Aes128Ctr32LE::new_from_slices(key, &vec[..])
+        .expect("Unable to create cipher from slices.");
     cipher.apply_keystream(buffer);
 }

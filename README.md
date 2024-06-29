@@ -5,7 +5,14 @@
 Documentation is a work in progress...
 
 ### Chapter 4: Secure channel (currently working on)
+
 - [ ] Discovery
+    - [x] MulticastSocket
+    - [x] mDNS Packet Header
+    - [x] mDNS Packet Label compression
+    - [x] mDNS Packet Records
+    - [x] mDNS Packet building
+    - [x] mDNS Service advertising
 
 ### Chapter 3: Cryptographic Primitives
 
@@ -19,3 +26,8 @@ Documentation is a work in progress...
 - [x] ECDH
 - [x] Certificate validation
 - [x] SPAKE2+
+
+### Chapter 4: Message Protocol
+
+- [ ] Matter message builder
+- [ ] Protocol message builder

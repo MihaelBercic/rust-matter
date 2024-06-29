@@ -10,12 +10,11 @@ use sha2::{Digest, Sha256};
 
 use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 
-#[allow(dead_code)]
-pub(crate) mod symmetric;
-pub(crate) mod kdf;
-pub(crate) mod constants;
-pub(crate) mod spake;
-pub(crate) mod s2p_test_vectors;
+pub mod constants;
+pub mod kdf;
+pub mod s2p_test_vectors;
+pub mod spake;
+pub mod symmetric;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -29,7 +28,6 @@ pub struct EccKeyPair {
     pub public_key: PublicKey,
 }
 
-
 /// Uses SHA-256 to hash the provided message.
 pub fn hash_message(message: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();
@@ -42,7 +40,7 @@ pub fn hash_message(message: &[u8]) -> [u8; 32] {
 
 /// Generates a hash of the [message] with the provided [key];
 pub fn hmac(key: &[u8], message: &[u8]) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
-    let mut mac = HmacSha256::new_from_slice(key).expect("HMAC should take any key size");
+    let mut mac = HmacSha256::new_from_slice(key).expect("HMAC takes any key size");
     mac.update(message);
     let result = mac.finalize();
     let mut output = [0u8; CRYPTO_GROUP_SIZE_BYTES];
@@ -103,4 +101,21 @@ pub fn random_bytes<const N: usize>() -> [u8; N] {
         array[i] = rng.gen_range(0..255)
     }
     return array;
+}
+
+
+pub fn random_bits(len: usize) -> Vec<u8> {
+    let mut rng = thread_rng();
+    let mut bytes: Vec<u8> = vec![];
+    let mut current = 0u8;
+    for i in 1..=len {
+        current |= if rng.gen_bool(0.5) { 1 } else { 0 };
+        if i % 8 == 0 || i == len {
+            bytes.insert(0, current);
+            current = 0;
+        } else {
+            current <<= 1;
+        }
+    }
+    return bytes;
 }
