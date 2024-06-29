@@ -1,4 +1,7 @@
+use std::sync::atomic::Ordering;
+
 use crate::Matter;
+use crate::service::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
 use crate::service::protocol::message_builder::ProtocolMessageBuilder;
 use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
@@ -16,20 +19,21 @@ fn protocol_message_builder() {
     let message = ProtocolMessageBuilder::new()
         .set_opcode(10)
         .set_is_sent_by_initiator(true)
-        .set_needs_acknowledgement(true)
+        .set_acknowledged_message_counter(Some(GLOBAL_UNENCRYPTED_COUNTER.load(Ordering::Relaxed)))
         .set_vendor(123)
-        .set_secure_extensions(ProtocolSecuredExtensions {
-            data_length: 0,
-            data: vec![],
-        })
+        .set_secure_extensions(ProtocolSecuredExtensions { data_length: 0, data: vec![] })
+        .set_payload("protocol_payload".as_bytes())
         .build();
 
     assert_eq!(message.opcode, 10);
     assert_eq!(message.exchange_flags.sent_by_initiator(), true);
-    assert_eq!(message.exchange_flags.needs_acknowledgement(), true);
+    assert_eq!(message.exchange_flags.needs_acknowledgement(), false);
+    assert_eq!(message.exchange_flags.is_acknowledgement(), true);
     assert_eq!(message.exchange_flags.is_vendor_present(), true);
     assert_eq!(message.protocol_vendor_id, Some(123));
     assert_eq!(message.exchange_flags.is_secured_extensions_present(), true);
+    assert_eq!(message.payload, "protocol_payload".as_bytes());
+    assert_ne!(message.payload, "matter_payload".as_bytes());
 }
 
 #[test]

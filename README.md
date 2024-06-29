@@ -11,8 +11,8 @@ Documentation is a work in progress...
     - [x] mDNS Packet Header
     - [x] mDNS Packet Label compression
     - [x] mDNS Packet Records
-  - [x] mDNS Packet building
-  - [x] mDNS Service advertising
+    - [x] mDNS Packet building
+    - [x] mDNS Service advertising
 
 ### Chapter 3: Cryptographic Primitives
 

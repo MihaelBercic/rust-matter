@@ -49,18 +49,6 @@ impl ProtocolMessageBuilder {
         self
     }
 
-    /// Sets the flag bit that indicates whether secured extensions are present in the packet.
-    fn set_is_secured_extensions_present(mut self, is_present: bool) -> Self {
-        self.message.exchange_flags.byte.set_bits(3..=3, is_present as u8);
-        self
-    }
-
-    /// Sets the flag bit that indicates whether vendor information is present in the packet.
-    fn set_is_vendor_present(mut self, is_present: bool) -> Self {
-        self.message.exchange_flags.byte.set_bits(4..=4, is_present as u8);
-        self
-    }
-
     /// Sets the exchange id of the message.
     pub fn set_exchange_id(mut self, exchange_id: u16) -> Self {
         self.message.exchange_id = exchange_id;
@@ -85,9 +73,28 @@ impl ProtocolMessageBuilder {
         self.set_is_secured_extensions_present(true)
     }
 
+    /// Sets the counter of the message.
+    pub fn set_acknowledged_message_counter(mut self, counter: Option<u32>) -> Self {
+        self.message.acknowledged_message_counter = counter;
+        if counter != None { self.set_is_acknowledgement(true) } else { self }
+    }
+
+    /// Sets the flag bit that indicates whether secured extensions are present in the packet.
+    fn set_is_secured_extensions_present(mut self, is_present: bool) -> Self {
+        self.message.exchange_flags.byte.set_bits(3..=3, is_present as u8);
+        self
+    }
+
+    /// Sets the flag bit that indicates whether vendor information is present in the packet.
+    fn set_is_vendor_present(mut self, is_present: bool) -> Self {
+        self.message.exchange_flags.byte.set_bits(4..=4, is_present as u8);
+        self
+    }
+
     /// Sets the payload of the [Protocol Message](ProtocolMessage).
     pub fn set_payload(mut self, payload: &[u8]) -> Self {
-        self.message.payload.copy_from_slice(payload);
+        self.message.payload.clear();
+        self.message.payload.extend_from_slice(payload);
         self
     }
 
