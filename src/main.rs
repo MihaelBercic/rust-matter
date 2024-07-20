@@ -5,8 +5,8 @@ use std::net::UdpSocket;
 use std::ops::Add;
 
 use matter::constants::PROTOCOL;
-use matter::discovery::enums::{CommissionState, DeviceType};
-use matter::discovery::mdns::service::MDNSService;
+use matter::mdns::enums::{CommissionState, DeviceType};
+use matter::mdns::service::MDNSService;
 use matter::service::message::MatterMessage;
 use matter::service::protocol::communication::counters::{GLOBAL_UNENCRYPTED_COUNTER, initialize_counter};
 
