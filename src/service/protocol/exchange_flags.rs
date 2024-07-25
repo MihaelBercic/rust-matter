@@ -1,6 +1,6 @@
 use crate::utils::bit_subset::BitSubset;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ProtocolExchangeFlags {
     pub byte: u8,
 }

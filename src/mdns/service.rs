@@ -100,8 +100,8 @@ impl MDNSService {
             authority_records: vec![],
         }.into();
 
-        let mut total = 0usize;
-        let mut failed = 0usize;
+        let mut _total = 0usize;
+        let mut _failed = 0usize;
         let mdns_dst = format!("FF02::FB%{}:5353", &interface.name());
         thread::spawn(move || {
             loop {
@@ -109,7 +109,7 @@ impl MDNSService {
                 let data = &socket.buffer[0..size];
                 match MDNSPacket::try_from(data) {
                     Ok(packet) => {
-                        total += 1;
+                        _total += 1;
                         let is_unicast = packet.query_records.iter().any(|q| q.has_property);
                         if packet.query_records.iter().any(|q| q.label.contains("matter")) {
                             thread::sleep(Duration::from_millis(150));
@@ -123,10 +123,10 @@ impl MDNSService {
                         }
                     }
                     Err(_) => {
-                        failed += 1;
+                        _failed += 1;
                     }
                 }
-                print!("\rTotal: {}\tFailed {}", format!("{:5}", total), format!("{:5}", failed));
+                // print!("\rTotal: {}\tFailed {}", format!("{:5}", total), format!("{:5}", failed));
                 stdout().flush().unwrap();
             }
         });

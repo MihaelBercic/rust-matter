@@ -2,7 +2,7 @@ use crate::service::enums::MatterSessionType;
 use crate::service::enums::MatterSessionType::{Group, ReservedForFuture, Unicast};
 use crate::utils::bit_subset::BitSubset;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct MatterSecurityFlags {
     pub(crate) flags: u8,
 }
@@ -26,5 +26,34 @@ impl MatterSecurityFlags {
             1 => Group,
             _ => ReservedForFuture
         }
+    }
+
+    /// Sets the flags indicating whether the message is encoded with Privacy features or not.
+    pub fn set_privacy_encoded(&mut self, encoded: bool) -> &mut Self {
+        self.flags.set_bits(7..=7, encoded as u8);
+        return self;
+    }
+
+    /// Sets the flag indicating whether the message is Control or Data message.
+    pub fn set_is_control_message(&mut self, is_control: bool) -> &mut Self {
+        self.flags.set_bits(6..=6, is_control as u8);
+        return self;
+    }
+
+    /// Sets a flag whether the message contains message extensions or not.
+    pub fn set_has_message_extensions(&mut self, has_extensions: bool) -> &mut Self {
+        self.flags.set_bits(5..=5, has_extensions as u8);
+        return self;
+    }
+
+    /// Sets the session type of the matter message.
+    pub fn set_session_type(&mut self, session_type: MatterSessionType) -> &mut Self {
+        let value = match session_type {
+            Unicast => 0,
+            Group => 1,
+            ReservedForFuture => 2
+        };
+        self.flags.set_bits(0..=2, value);
+        return self;
     }
 }

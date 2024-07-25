@@ -1,7 +1,12 @@
 use std::sync::atomic::Ordering;
 
 use crate::Matter;
+use crate::service::enums::MatterDestinationID::Node;
+use crate::service::enums::MatterSessionType::Group;
+use crate::service::message::MatterMessage;
+use crate::service::message_builder::MatterMessageBuilder;
 use crate::service::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
+use crate::service::protocol::message::ProtocolMessage;
 use crate::service::protocol::message_builder::ProtocolMessageBuilder;
 use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
@@ -25,6 +30,12 @@ fn protocol_message_builder() {
         .set_payload("protocol_payload".as_bytes())
         .build();
 
+    let bytes: Vec<u8> = message.as_bytes();
+    let decoded_message = ProtocolMessage::try_from(&bytes[..]).unwrap();
+
+    println!("{:?}", message);
+    println!("{:?}", decoded_message);
+
     assert_eq!(message.opcode, 10);
     assert_eq!(message.exchange_flags.sent_by_initiator(), true);
     assert_eq!(message.exchange_flags.needs_acknowledgement(), false);
@@ -34,6 +45,33 @@ fn protocol_message_builder() {
     assert_eq!(message.exchange_flags.is_secured_extensions_present(), true);
     assert_eq!(message.payload, "protocol_payload".as_bytes());
     assert_ne!(message.payload, "matter_payload".as_bytes());
+    assert_eq!(decoded_message, message);
+}
+
+#[test]
+fn matter_message_builder() {
+    let message_builder = MatterMessageBuilder::new();
+    let message = message_builder
+        .set_version(1)
+        .set_session_type(Group)
+        .set_privacy_encoded(true)
+        .set_destination(Node(15))
+        .set_payload("hello".as_bytes())
+        .build();
+    let bytes = message.to_bytes();
+    let decoded_message = MatterMessage::try_from(&bytes[..]).unwrap();
+
+    println!("{:?}", message);
+    println!("{:?}", decoded_message);
+
+    assert_eq!(decoded_message, message);
+    assert_eq!(message.header.flags.version(), 1);
+    assert_eq!(message.header.security_flags.session_type(), Group);
+    assert_eq!(message.header.security_flags.is_encoded_with_privacy(), true);
+    assert_eq!(message.header.destination_node_id.unwrap(), Node(15));
+    assert_ne!(bytes.len(), 0);
+
+    assert_eq!(message.payload, decoded_message.payload);
 }
 
 #[test]

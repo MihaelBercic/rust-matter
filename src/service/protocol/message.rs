@@ -1,12 +1,12 @@
 use std::io::{Cursor, Read};
 
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::service::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::MatterError;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ProtocolMessage {
     pub exchange_flags: ProtocolExchangeFlags,
     pub opcode: u8,
@@ -16,6 +16,33 @@ pub struct ProtocolMessage {
     pub acknowledged_message_counter: Option<u32>,
     pub secured_extensions: Option<ProtocolSecuredExtensions>,
     pub payload: Vec<u8>,
+}
+
+impl ProtocolMessage {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut data: Vec<u8> = vec![];
+        data.write_u8(self.exchange_flags.byte).expect("Unable to write exchange flags...");
+        data.write_u8(self.opcode).expect("Unable to write opcode...");
+        data.write_u16::<LittleEndian>(self.exchange_id).expect("Unable to write exchange id...");
+        match self.protocol_vendor_id {
+            Some(vendor) => data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."),
+            None => {}
+        }
+        data.write_u16::<LittleEndian>(self.protocol_id).expect("Unable to write Protocol id...");
+        match self.acknowledged_message_counter {
+            None => {}
+            Some(counter) => data.write_u32::<LittleEndian>(counter).expect("Unable to write ACK message counter...")
+        }
+        match &self.secured_extensions {
+            None => {}
+            Some(extensions) => {
+                data.write_u16::<LittleEndian>(extensions.data_length).expect("Unable to write Extensions Data Length...");
+                data.extend(&extensions.data);
+            }
+        }
+        data.extend(&self.payload);
+        return data;
+    }
 }
 
 impl TryFrom<&[u8]> for ProtocolMessage {
@@ -52,3 +79,4 @@ impl TryFrom<&[u8]> for ProtocolMessage {
         })
     }
 }
+

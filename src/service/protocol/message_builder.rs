@@ -76,7 +76,10 @@ impl ProtocolMessageBuilder {
     /// Sets the counter of the message.
     pub fn set_acknowledged_message_counter(mut self, counter: Option<u32>) -> Self {
         self.message.acknowledged_message_counter = counter;
-        if counter != None { self.set_is_acknowledgement(true) } else { self }
+        match counter {
+            Some(_) => self.set_is_acknowledgement(true),
+            None => self,
+        }
     }
 
     /// Sets the flag bit that indicates whether secured extensions are present in the packet.
