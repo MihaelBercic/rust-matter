@@ -2,7 +2,8 @@ use std::sync::atomic::Ordering;
 
 use crate::Matter;
 use crate::service::enums::MatterDestinationID::Node;
-use crate::service::enums::MatterSessionType::Group;
+use crate::service::enums::MatterDestinationType::NodeID;
+use crate::service::enums::MatterSessionType::{Group, Unicast};
 use crate::service::message::MatterMessage;
 use crate::service::message_builder::MatterMessageBuilder;
 use crate::service::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
@@ -56,6 +57,7 @@ fn matter_message_builder() {
         .set_session_type(Group)
         .set_privacy_encoded(true)
         .set_destination(Node(15))
+        .set_session_type(Unicast)
         .set_payload("hello".as_bytes())
         .build();
     let bytes = message.to_bytes();
@@ -66,12 +68,12 @@ fn matter_message_builder() {
 
     assert_eq!(decoded_message, message);
     assert_eq!(message.header.flags.version(), 1);
-    assert_eq!(message.header.security_flags.session_type(), Group);
+    assert_eq!(message.header.security_flags.session_type(), Unicast);
     assert_eq!(message.header.security_flags.is_encoded_with_privacy(), true);
     assert_eq!(message.header.destination_node_id.unwrap(), Node(15));
+    assert_eq!(message.header.flags.type_of_destination(), Some(NodeID));
+    assert_eq!(message.payload, "hello".as_bytes());
     assert_ne!(bytes.len(), 0);
-
-    assert_eq!(message.payload, decoded_message.payload);
 }
 
 #[test]
