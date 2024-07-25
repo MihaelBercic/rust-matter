@@ -8,18 +8,22 @@ pub struct MatterSecurityFlags {
 }
 
 impl MatterSecurityFlags {
+    /// Indicates whether additional privacy decoding is required.
     pub fn is_encoded_with_privacy(&self) -> bool {
         self.flags.bit_subset(7, 1) == 1
     }
 
+    /// Indicates whether the message is Data or Control message type.
     pub fn is_control_message(&self) -> bool {
         self.flags.bit_subset(6, 1) == 1
     }
 
+    /// Indicator whether the message has message extensions or not.
     pub fn has_message_extensions(&self) -> bool {
         self.flags.bit_subset(5, 1) == 1
     }
 
+    /// Retrieves the session type of the matter message.
     pub fn session_type(&self) -> MatterSessionType {
         match self.flags.bit_subset(0, 2) {
             0 => Unicast,
