@@ -22,6 +22,7 @@ pub mod secure;
 pub mod constants;
 pub mod network;
 
+/// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
 pub fn start() {
     let udp_socket = Arc::new(UdpSocket::bind("[::]:0").expect("Unable to bind to tcp..."));
     mdns::service::start_advertising(&udp_socket);
