@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::net::UdpSocket;
-use std::ops::Add;
 use std::sync::Arc;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
@@ -25,11 +24,10 @@ pub mod network;
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
 pub fn start() {
     let udp_socket = Arc::new(UdpSocket::bind("[::]:0").expect("Unable to bind to tcp..."));
-    mdns::service::start_advertising(&udp_socket);
-
     let (processing_sender, processing_receiver) = channel::<NetworkMessage>();
     let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
 
+    mdns::service::start_advertising(&udp_socket);
     start_listening_thread(processing_sender.clone(), udp_socket.clone());
     start_outgoing_thread(outgoing_receiver, udp_socket);
     start_processing_thread(processing_receiver, outgoing_sender).join().expect("Unable to start the thread for processing messages...");
@@ -55,24 +53,23 @@ fn start_listening_thread(processing_sender: Sender<NetworkMessage>, udp_socket:
 }
 
 /// Message processing thread
-fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
+fn start_processing_thread(receiver: Receiver<NetworkMessage>, _outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
     thread::spawn(move || {
-        let reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-        let group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-        let group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
+        let _reception_states: HashMap<u64, MessageReceptionState> = Default::default();
+        let _group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
+        let _group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
 
         loop {
             let message_to_process = receiver.recv();
             match message_to_process {
                 Ok(network_message) => {
-                    let protocol_message = parse_protocol_message(&network_message.message);
+                    let _protocol_message = parse_protocol_message(&network_message.message);
                     println!("Processing the message {:?}", network_message.message);
                     process_message(network_message);
                     // A()
                     // B()
                     // C()
                     // D()
-                    // outgoing_sender.send();
                 }
                 Err(error) => println!("Unable to receive the message {:?}", error)
             }
@@ -117,7 +114,7 @@ pub fn process_message(network_message: NetworkMessage) {
                     .set_destination(Node(matter_message.header.source_node_id.unwrap()))
                     .set_payload(&protocol_message.as_bytes()[..])
                     .build();
-                let response_message = NetworkMessage {
+                let _response_message = NetworkMessage {
                     address: network_message.address,
                     message: matter_message,
                     retry_counter: 0,

@@ -2,7 +2,7 @@ use std::fmt;
 use std::io;
 
 pub mod bit_subset;
-mod byte_encodable;
+pub mod byte_encodable;
 
 #[derive(Debug)]
 pub enum MatterLayer {

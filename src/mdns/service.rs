@@ -139,7 +139,7 @@ impl MDNSService {
 pub fn start_advertising(udp_socket: &UdpSocket) {
     initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);
     let interface = netif::up().unwrap().find(|x| x.name() == "en0").unwrap();
-    let my_ip = "fdc3:de31:45b5:c843:14aa:95ef:2844:22e".to_string();
+    // let my_ip = "fdc3:de31:45b5:c843:14aa:95ef:2844:22e".to_string();
     let my_ip = "fdc3:de31:45b5:c843:89:981b:33af:57d2".to_string();
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
     let mac_hex = hex::encode_upper(mac);

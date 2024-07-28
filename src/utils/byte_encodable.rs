@@ -1,3 +1,4 @@
+#![allow(unused)]
 ///
 /// @author Mihael Berčič
 /// @date 28. 7. 24
