@@ -1,5 +1,5 @@
-use crate::service::enums::MatterSessionType;
-use crate::service::enums::MatterSessionType::{Group, ReservedForFuture, Unicast};
+use crate::secure::enums::MatterSessionType;
+use crate::secure::enums::MatterSessionType::{Group, ReservedForFuture, Unicast};
 use crate::utils::bit_subset::BitSubset;
 
 #[derive(Debug, Eq, PartialEq, Clone)]

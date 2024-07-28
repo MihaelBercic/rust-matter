@@ -1,5 +1,5 @@
-use crate::service::enums::MatterDestinationType;
-use crate::service::enums::MatterDestinationType::{GroupID, NodeID};
+use crate::secure::enums::MatterDestinationType;
+use crate::secure::enums::MatterDestinationType::{GroupID, NodeID};
 use crate::utils::bit_subset::BitSubset;
 
 #[derive(Debug, Eq, PartialEq, Clone)]

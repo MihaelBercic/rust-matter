@@ -1,4 +1,4 @@
-use crate::service::protocol::communication::enums::MessageType;
+use crate::secure::protocol::communication::enums::MessageType;
 
 pub struct MessageReceptionState {
     pub source_node_id: u64,

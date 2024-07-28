@@ -1,15 +1,17 @@
 use std::sync::atomic::Ordering;
+use std::sync::mpsc::channel;
+use std::thread;
 
 use crate::Matter;
-use crate::service::enums::MatterDestinationID::Node;
-use crate::service::enums::MatterDestinationType::NodeID;
-use crate::service::enums::MatterSessionType::{Group, Unicast};
-use crate::service::message::MatterMessage;
-use crate::service::message_builder::MatterMessageBuilder;
-use crate::service::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
-use crate::service::protocol::message::ProtocolMessage;
-use crate::service::protocol::message_builder::ProtocolMessageBuilder;
-use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::secure::enums::MatterDestinationID::Node;
+use crate::secure::enums::MatterDestinationType::NodeID;
+use crate::secure::enums::MatterSessionType::{Group, Unicast};
+use crate::secure::message::MatterMessage;
+use crate::secure::message_builder::MatterMessageBuilder;
+use crate::secure::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
+use crate::secure::protocol::message::ProtocolMessage;
+use crate::secure::protocol::message_builder::ProtocolMessageBuilder;
+use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
 
 #[test]
@@ -60,7 +62,7 @@ fn matter_message_builder() {
         .set_session_type(Unicast)
         .set_payload("hello".as_bytes())
         .build();
-    let bytes = message.to_bytes();
+    let bytes = message.as_bytes();
     let decoded_message = MatterMessage::try_from(&bytes[..]).unwrap();
 
     println!("{:?}", message);
@@ -101,4 +103,29 @@ fn set_bits() {
     x = 0;
     x.set_bits(4..=5, 0b11);
     assert_eq!(x, 0b0011_0000);
+}
+
+#[test]
+fn queue_test() {
+    let (tx, rx) = channel::<u8>();
+    thread::spawn(move || {
+        let sender = tx.clone();
+        for i in 0..5 {
+            let _ = sender.send(i);
+        }
+    });
+
+    thread::spawn(move || {
+        let mut total_received = 0;
+        while total_received < 5 {
+            match rx.recv() {
+                Ok(id) => {
+                    assert_eq!(total_received, id);
+                    total_received += 1;
+                }
+                Err(error) => { panic!("{:#?}", error) }
+            }
+        }
+        assert_eq!(total_received, 5);
+    }).join().expect("Unable to join the thread...");
 }

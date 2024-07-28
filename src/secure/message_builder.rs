@@ -1,10 +1,10 @@
-use crate::service::enums::{MatterDestinationID, MatterDestinationType, MatterSessionType};
-use crate::service::enums::MatterDestinationType::{GroupID, NodeID};
-use crate::service::message::MatterMessage;
-use crate::service::message_extension::MatterMessageExtension;
-use crate::service::message_flags::MatterMessageFlags;
-use crate::service::message_header::MatterMessageHeader;
-use crate::service::security_flags::MatterSecurityFlags;
+use crate::secure::enums::{MatterDestinationID, MatterDestinationType, MatterSessionType};
+use crate::secure::enums::MatterDestinationType::{GroupID, NodeID};
+use crate::secure::message::MatterMessage;
+use crate::secure::message_extension::MatterMessageExtension;
+use crate::secure::message_flags::MatterMessageFlags;
+use crate::secure::message_header::MatterMessageHeader;
+use crate::secure::security_flags::MatterSecurityFlags;
 
 ///
 /// @author Mihael Berčič

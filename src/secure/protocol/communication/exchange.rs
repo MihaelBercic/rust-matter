@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::service::protocol::communication::enums::ExchangeRole;
+use crate::secure::protocol::communication::enums::ExchangeRole;
 
 pub struct Exchange {
     id: u16,

@@ -2,8 +2,8 @@ use std::io::{Cursor, Read};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::service::protocol::exchange_flags::ProtocolExchangeFlags;
-use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::secure::protocol::exchange_flags::ProtocolExchangeFlags;
+use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::MatterError;
 
 #[derive(Debug, Eq, PartialEq)]

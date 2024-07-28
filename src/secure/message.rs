@@ -1,6 +1,6 @@
 use std::io::{Cursor, Read};
 
-use crate::service::message_header::MatterMessageHeader;
+use crate::secure::message_header::MatterMessageHeader;
 use crate::utils::MatterError;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -30,7 +30,7 @@ impl TryFrom<&[u8]> for MatterMessage {
 }
 
 impl MatterMessage {
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         let mut data = vec![];
         let header_as_bytes = &self.header.to_bytes();
         data.extend_from_slice(&header_as_bytes);

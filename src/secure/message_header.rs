@@ -3,11 +3,11 @@ use std::iter;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::service::enums::{MatterDestinationID, MatterDestinationType};
-use crate::service::enums::MatterSessionType::{Group, Unicast};
-use crate::service::message_extension::MatterMessageExtension;
-use crate::service::message_flags::MatterMessageFlags;
-use crate::service::security_flags::MatterSecurityFlags;
+use crate::secure::enums::{MatterDestinationID, MatterDestinationType};
+use crate::secure::enums::MatterSessionType::{Group, Unicast};
+use crate::secure::message_extension::MatterMessageExtension;
+use crate::secure::message_flags::MatterMessageFlags;
+use crate::secure::security_flags::MatterSecurityFlags;
 use crate::utils::MatterError;
 
 #[derive(Debug, Eq, PartialEq, Clone)]

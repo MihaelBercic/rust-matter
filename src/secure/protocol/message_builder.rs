@@ -1,6 +1,6 @@
-use crate::service::protocol::exchange_flags::ProtocolExchangeFlags;
-use crate::service::protocol::message::ProtocolMessage;
-use crate::service::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::secure::protocol::exchange_flags::ProtocolExchangeFlags;
+use crate::secure::protocol::message::ProtocolMessage;
+use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
 
 pub struct ProtocolMessageBuilder {

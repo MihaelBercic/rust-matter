@@ -18,7 +18,17 @@ pub enum MatterDestinationType {
 }
 
 pub enum MatterDeviceState {
-    Unpaired,
-    Pairing,
-    Paired,
+    Uncommissioned,
+    Commissioning,
+    Commissioned,
+    Operational,
+}
+
+#[derive(Debug)]
+pub enum MessageType {
+    Command,
+    Response,
+    Event,
+    Acknowledgment,
+    Unknown,
 }
