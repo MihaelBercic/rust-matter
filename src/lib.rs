@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use std::net::UdpSocket;
 use std::ops::Add;
 use std::sync::Arc;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
+use std::thread::JoinHandle;
 
 use crate::network::network_message::NetworkMessage;
 use crate::secure::enums::MatterDestinationID::Node;
@@ -21,62 +22,51 @@ pub mod secure;
 pub mod constants;
 pub mod network;
 
-pub trait ByteEncodable {
-    fn from_bytes(bytes: &[u8]) -> Self;
-    fn to_bytes(&self) -> Vec<u8>;
-}
-
 pub fn start() {
-    let reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-    let group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-    let group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-
     let udp_socket = Arc::new(UdpSocket::bind("[::]:0").expect("Unable to bind to tcp..."));
     mdns::service::start_advertising(&udp_socket);
 
     let (processing_sender, processing_receiver) = channel::<NetworkMessage>();
     let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
 
+    start_listening_thread(processing_sender.clone(), udp_socket.clone());
+    start_outgoing_thread(outgoing_receiver, udp_socket);
+    start_processing_thread(processing_receiver, outgoing_sender).join().expect("Unable to start the thread for processing messages...");
+}
 
-    let udp_socket_clone = udp_socket.clone();
-    let processing_sender_clone = processing_sender.clone();
-    /// Thread that is listening on the UDP socket for any incoming messages...
+/// Thread that is listening on the UDP socket for any incoming messages...
+fn start_listening_thread(processing_sender: Sender<NetworkMessage>, udp_socket: Arc<UdpSocket>) -> JoinHandle<()> {
     thread::spawn(move || {
         let mut buffer = [0u8; 1000];
-        println!("Listening on: {:?}", udp_socket_clone.local_addr());
+        println!("Listening on: {:?}", udp_socket.local_addr());
         loop {
-            let (size, sender) = udp_socket_clone.recv_from(&mut buffer).unwrap();
+            let (size, sender) = udp_socket.recv_from(&mut buffer).unwrap();
             println!("Received {} data on UDP socket...", size);
             match MatterMessage::try_from(&buffer[..size]) {
                 Ok(matter_message) => {
                     let network_message = NetworkMessage { address: sender, message: matter_message, retry_counter: 0 };
-                    processing_sender_clone.send(network_message).unwrap()
+                    processing_sender.send(network_message).unwrap()
                 }
                 Err(error) => println!("Yikes {:?}", error)
             }
         }
-    });
+    })
+}
 
-    /// Outgoing message processing thread
+/// Message processing thread
+fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
     thread::spawn(move || {
-        loop {
-            let outgoing_message = outgoing_receiver.recv();
-            match outgoing_message {
-                Ok(network_message) => {
-                    udp_socket.send_to(&network_message.message.as_bytes(), network_message.address).expect("U");
-                }
-                Err(_) => {}
-            }
-        }
-    });
+        let reception_states: HashMap<u64, MessageReceptionState> = Default::default();
+        let group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
+        let group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
 
-    /// Message processing thread
-    thread::spawn(move || {
         loop {
-            let message_to_process = processing_receiver.recv();
+            let message_to_process = receiver.recv();
             match message_to_process {
                 Ok(network_message) => {
+                    let protocol_message = parse_protocol_message(&network_message.message);
                     println!("Processing the message {:?}", network_message.message);
+                    process_message(network_message);
                     // A()
                     // B()
                     // C()
@@ -86,9 +76,31 @@ pub fn start() {
                 Err(error) => println!("Unable to receive the message {:?}", error)
             }
         }
-    }).join().expect("Unable to start the thread for processing messages...");
+    })
 }
 
+/// Outgoing message processing thread
+fn start_outgoing_thread(receiver: Receiver<NetworkMessage>, udp_socket: Arc<UdpSocket>) -> JoinHandle<()> {
+    thread::spawn(move || {
+        loop {
+            let outgoing_message = receiver.recv();
+            match outgoing_message {
+                Ok(network_message) => {
+                    udp_socket.send_to(&network_message.message.as_bytes(), network_message.address).expect("U");
+                }
+                Err(_) => {}
+            }
+        }
+    })
+}
+
+fn parse_protocol_message(matter_message: &MatterMessage) -> ProtocolMessage {
+    let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..]);
+    match protocol_message {
+        Ok(protocol_message) => protocol_message,
+        Err(error) => panic!("Unable to parse the matter {:?}...", error)
+    }
+}
 
 pub fn process_message(network_message: NetworkMessage) {
     let matter_message = network_message.message;
