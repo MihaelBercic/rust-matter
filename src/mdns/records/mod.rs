@@ -27,3 +27,8 @@ pub struct PTRRecord<'a> {
 pub struct AAAARecord {
     pub address: String,
 }
+
+#[derive(Debug)]
+pub struct ARecord {
+    pub address: String,
+}

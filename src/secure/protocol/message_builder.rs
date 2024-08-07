@@ -1,5 +1,7 @@
+use crate::secure::protocol::enums::ProtocolOpcode;
 use crate::secure::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::secure::protocol::message::ProtocolMessage;
+use crate::secure::protocol::protocol_id::ProtocolID;
 use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
 
@@ -13,10 +15,10 @@ impl ProtocolMessageBuilder {
         Self {
             message: ProtocolMessage {
                 exchange_flags: ProtocolExchangeFlags { byte: 0 },
-                opcode: 0,
+                opcode: ProtocolOpcode::StatusReport,
                 exchange_id: 0,
                 protocol_vendor_id: None,
-                protocol_id: 0,
+                protocol_id: ProtocolID::ProtocolSecureChannel,
                 acknowledged_message_counter: None,
                 secured_extensions: None,
                 payload: vec![],
@@ -26,7 +28,7 @@ impl ProtocolMessageBuilder {
 
 
     /// Sets the opcode of the message.
-    pub fn set_opcode(mut self, opcode: u8) -> Self {
+    pub fn set_opcode(mut self, opcode: ProtocolOpcode) -> Self {
         self.message.opcode = opcode;
         self
     }
@@ -62,7 +64,7 @@ impl ProtocolMessageBuilder {
     }
 
     /// Sets the message protocol.
-    pub fn set_protocol(mut self, protocol_id: u16) -> Self {
+    pub fn set_protocol(mut self, protocol_id: ProtocolID) -> Self {
         self.message.protocol_id = protocol_id;
         self
     }
@@ -74,12 +76,9 @@ impl ProtocolMessageBuilder {
     }
 
     /// Sets the counter of the message.
-    pub fn set_acknowledged_message_counter(mut self, counter: Option<u32>) -> Self {
-        self.message.acknowledged_message_counter = counter;
-        match counter {
-            Some(_) => self.set_is_acknowledgement(true),
-            None => self,
-        }
+    pub fn set_acknowledged_message_counter(mut self, counter: u32) -> Self {
+        self.message.acknowledged_message_counter = Some(counter);
+        self.set_is_acknowledgement(true)
     }
 
     /// Sets the flag bit that indicates whether secured extensions are present in the packet.

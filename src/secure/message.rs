@@ -33,7 +33,7 @@ impl MatterMessage {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut data = vec![];
         let header_as_bytes = &self.header.to_bytes();
-        data.extend_from_slice(&header_as_bytes);
+        data.extend_from_slice(header_as_bytes);
         data.extend(&self.payload);
         data.extend(&self.integrity_check);
         data

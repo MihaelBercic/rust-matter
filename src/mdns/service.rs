@@ -15,7 +15,7 @@ use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
 use crate::mdns::records::complete_record::CompleteRecord;
 use crate::mdns::records::record_information::RecordInformation;
 use crate::mdns::records::record_type::RecordType;
-use crate::secure::protocol::communication::counters::{GLOBAL_UNENCRYPTED_COUNTER, initialize_counter};
+use crate::secure::protocol::communication::counters::{GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER, initialize_counter};
 
 pub struct MDNSService {
     pub udp_port: u16,
@@ -72,7 +72,7 @@ impl MDNSService {
         };
 
 
-        let txt_values = format!("D={}\nCM={}\nDT={}\nDN={}\nVP={}+{}",
+        let txt_values = format!("D={}\nCM={}\nDT={}\nDN={}\nVP={}+{}\nPH=8\nPI=69", // TODO: PH=8 => Hold Reset PI=69 seconds...
                                  self.discriminator,
                                  self.commission_state as u8,
                                  self.device_type as u16,
@@ -106,6 +106,7 @@ impl MDNSService {
         let mut _total = 0usize;
         let mut _failed = 0usize;
         let mdns_dst = format!("FF02::FB%{}:5353", &interface.name());
+        // let mdns_dst = "224.0.0.251:5353".to_string();
         thread::spawn(move || {
             loop {
                 let (size, sender) = socket.receive_from().unwrap();
@@ -138,9 +139,13 @@ impl MDNSService {
 
 pub fn start_advertising(udp_socket: &UdpSocket) {
     initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);
+    initialize_counter(&GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER);
+    initialize_counter(&GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER);
+
     let interface = netif::up().unwrap().find(|x| x.name() == "en0").unwrap();
     // let my_ip = "fdc3:de31:45b5:c843:14aa:95ef:2844:22e".to_string();
     let my_ip = "fdc3:de31:45b5:c843:89:981b:33af:57d2".to_string();
+    // let my_ip = "192.168.1.13".to_string();
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
     let mac_hex = hex::encode_upper(mac);
     let host_name = mac_hex.add(".local");

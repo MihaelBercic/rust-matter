@@ -9,3 +9,6 @@ pub mod constants;
 
 #[cfg(test)]
 pub mod matter_test;
+
+#[cfg(test)]
+pub mod tlv_test;

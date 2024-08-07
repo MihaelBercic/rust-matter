@@ -31,6 +31,3 @@ impl ProtocolExchangeFlags {
         self.byte.bit_subset(4, 1) == 1
     }
 }
-
-
-pub fn testing_to_see() {}

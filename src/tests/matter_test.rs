@@ -2,7 +2,6 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc::channel;
 use std::thread;
 
-use crate::Matter;
 use crate::secure::enums::MatterDestinationID::Node;
 use crate::secure::enums::MatterDestinationType::NodeID;
 use crate::secure::enums::MatterSessionType::{Group, Unicast};
@@ -15,25 +14,17 @@ use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
 
 #[test]
-fn matter_setup() {
-    let _matter = Matter::new();
-
-    // let matter_service = MatterService::new();
-    // matter_service.process(matter_message);
-}
-
-#[test]
 fn protocol_message_builder() {
     let message = ProtocolMessageBuilder::new()
         .set_opcode(10)
         .set_is_sent_by_initiator(true)
-        .set_acknowledged_message_counter(Some(GLOBAL_UNENCRYPTED_COUNTER.load(Ordering::Relaxed)))
+        .set_acknowledged_message_counter(Some(GLOBAL_UNENCRYPTED_COUNTER.load(Ordering::Relaxed)).unwrap())
         .set_vendor(123)
         .set_secure_extensions(ProtocolSecuredExtensions { data_length: 0, data: vec![] })
         .set_payload("protocol_payload".as_bytes())
         .build();
 
-    let bytes: Vec<u8> = message.as_bytes();
+    let bytes: Vec<u8> = message.to_bytes();
     let decoded_message = ProtocolMessage::try_from(&bytes[..]).unwrap();
 
     println!("{:?}", message);

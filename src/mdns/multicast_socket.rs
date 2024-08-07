@@ -1,4 +1,5 @@
 use std::ffi::c_void;
+use std::fmt::Debug;
 use std::io;
 use std::mem::size_of;
 use std::net::{Ipv6Addr, SocketAddr, ToSocketAddrs, UdpSocket};
@@ -68,7 +69,8 @@ impl MulticastSocket {
         };
     }
 
-    pub fn send_to<A: ToSocketAddrs>(&self, buf: &[u8], sender: A) -> io::Result<usize> {
+    pub fn send_to<A: ToSocketAddrs + Debug>(&self, buf: &[u8], sender: A) -> io::Result<usize> {
+        println!("Sending MDNS data to {:?}!", sender);
         self.udp_socket.send_to(buf, sender)
     }
 
