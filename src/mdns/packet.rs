@@ -66,7 +66,7 @@ impl Into<Vec<u8>> for MDNSPacket {
         for x in self.authority_records { buffer.extend::<Vec<u8>>(x.into()) }
         for x in self.additional_records { buffer.extend::<Vec<u8>>(x.into()) }
 
-        return buffer;
+        buffer
     }
 }
 
@@ -113,7 +113,7 @@ pub(crate) fn read_label(buffer: &mut Cursor<&[u8]>) -> Result<String, io::Error
         buffer.set_position(return_to);
     }
     let built_string = String::from_utf8(characters).unwrap_or_else(|_| "Unknown".to_string());
-    return Ok(built_string);
+    Ok(built_string)
 }
 
 pub(crate) fn read_record_information(buffer: &mut Cursor<&[u8]>) -> Result<RecordInformation, io::Error> {
@@ -122,29 +122,29 @@ pub(crate) fn read_record_information(buffer: &mut Cursor<&[u8]>) -> Result<Reco
     let flags = buffer.read_u16::<BigEndian>().unwrap();
     let class_code = flags & (0xFFFF - 1);
     let has_property = flags.bit_subset(15, 1) == 1;
-    return Ok(RecordInformation {
+    Ok(RecordInformation {
         label,
         record_type: RecordType::from(record_type),
         flags,
         class_code,
         has_property,
-    });
+    })
 }
 
 pub(crate) fn read_complete_record(buffer: &mut Cursor<&[u8]>, discard_data: bool) -> Result<CompleteRecord, io::Error> {
     let record_information = read_record_information(buffer)?;
-    let ttl = buffer.read_u32::<BigEndian>().unwrap();
-    let data_length = buffer.read_u16::<BigEndian>().unwrap() as u64;
+    let ttl = buffer.read_u32::<BigEndian>()?;
+    let data_length = buffer.read_u16::<BigEndian>()? as u64;
     let mut data: Vec<u8> = vec![];
     if discard_data {
         buffer.set_position(buffer.position() + data_length)
     } else {
         buffer.read_exact(&mut data)?;
     }
-    return Ok(CompleteRecord {
+    Ok(CompleteRecord {
         record_information,
         ttl,
         data,
-    });
+    })
 }
 

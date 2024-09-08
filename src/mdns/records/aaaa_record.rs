@@ -10,7 +10,7 @@ impl Into<Vec<u8>> for AAAARecord {
         let mut buffer: Vec<u8> = vec![];
         buffer.write_u16::<BigEndian>(16).unwrap();
         buffer.extend_from_slice(&ip.octets());
-        println!("{}", buffer.iter().map(|x| format!("0x{:02x}", x)).collect::<Vec<String>>().join(" "));
+        // println!("{}", buffer.iter().map(|x| format!("0x{:02x}", x)).collect::<Vec<String>>().join(" "));
         buffer
     }
 }
@@ -21,7 +21,7 @@ impl Into<Vec<u8>> for ARecord {
         let mut buffer: Vec<u8> = vec![];
         buffer.write_u16::<BigEndian>(4).unwrap();
         buffer.extend_from_slice(&ip.octets());
-        println!("{}", buffer.iter().map(|x| format!("0x{:02x}", x)).collect::<Vec<String>>().join(" "));
+        // println!("{}", buffer.iter().map(|x| format!("0x{:02x}", x)).collect::<Vec<String>>().join(" "));
         buffer
     }
 }

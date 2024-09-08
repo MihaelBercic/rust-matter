@@ -1,8 +1,7 @@
 use crate::mdns::records::record_type::RecordType::*;
 
 #[repr(u16)]
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum RecordType {
     Unsupported(u16) = 0,
     A = 1,

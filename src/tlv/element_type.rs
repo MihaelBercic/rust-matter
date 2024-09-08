@@ -1,6 +1,6 @@
 use std::io::{Cursor, Read};
 
-use byteorder::{LE, ReadBytesExt, WriteBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use p256::pkcs8::der::Writer;
 
 use crate::tlv::create_tlv;
@@ -46,30 +46,58 @@ pub enum ElementType {
 
 impl ElementType {
     pub(crate) fn into_u64(self) -> Result<u64, MatterError> {
-        return match self {
+        match self {
             Unsigned64(value) => Ok(value),
             Unsigned32(value) => Ok(value as u64),
             Unsigned16(value) => Ok(value as u64),
             Unsigned8(value) => Ok(value as u64),
             _ => Err(MatterError::new(Application, "Not possible to be matched into u64..."))
-        };
+        }
+    }
+
+    pub(crate) fn into_octet_string(self) -> Result<Vec<u8>, MatterError> {
+        match self {
+            OctetString8(value) => Ok(value),
+            OctetString16(value) => Ok(value),
+            OctetString32(value) => Ok(value),
+            OctetString64(value) => Ok(value),
+            _ => Err(MatterError::new(Application, "Not possible to be matched into string..."))
+        }
+    }
+
+    pub(crate) fn into_string(self) -> Result<String, MatterError> {
+        match self {
+            UTFString8(value) => Ok(value),
+            UTFString16(value) => Ok(value),
+            UTFString32(value) => Ok(value),
+            UTFString64(value) => Ok(value),
+            _ => Err(MatterError::new(Application, "Not possible to be matched into string..."))
+        }
     }
 
     pub(crate) fn into_u32(self) -> Result<u32, MatterError> {
-        return match self {
+        match self {
             Unsigned32(value) => Ok(value),
             Unsigned16(value) => Ok(value as u32),
             Unsigned8(value) => Ok(value as u32),
             _ => Err(MatterError::new(Application, "Not possible to be matched into u32..."))
-        };
+        }
     }
 
     pub(crate) fn into_u16(self) -> Result<u16, MatterError> {
-        return match self {
+        match self {
             Unsigned16(value) => Ok(value),
             Unsigned8(value) => Ok(value as u16),
             _ => Err(MatterError::new(Application, "Not possible to be matched into u16..."))
-        };
+        }
+    }
+
+    pub(crate) fn into_boolean(self) -> Result<bool, MatterError> {
+        match self {
+            BooleanFalse => Ok(false),
+            BooleanTrue => Ok(true),
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u16..."))
+        }
     }
 
 

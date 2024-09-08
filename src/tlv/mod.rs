@@ -3,6 +3,7 @@ use std::io::Cursor;
 use crate::network::enums::Pet;
 use crate::tlv::control::Control;
 use crate::tlv::element_type::ElementType;
+use crate::tlv::element_type::ElementType::{Unsigned16, Unsigned32, Unsigned64, Unsigned8};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_control::TagControl::Anonymous0;
@@ -57,4 +58,14 @@ pub fn tlv_as_hex(element_type: ElementType) -> String {
 
 pub fn parse_tlv(data: &[u8]) -> TLV {
     TLV::try_from_cursor(&mut Cursor::new(data)).unwrap()
+}
+
+pub fn create_unsigned<T: Into<u64>>(value: T) -> ElementType {
+    let x: u64 = value.into();
+    match x {
+        0..=0xFF => Unsigned8(x as u8),
+        0x100..=0xFF_FF => Unsigned16(x as u16),
+        0x10000..=0xFF_FF_FF_FF => Unsigned32(x as u32),
+        _ => Unsigned64(x)
+    }
 }

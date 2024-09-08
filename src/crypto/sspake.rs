@@ -1,5 +1,3 @@
-use std::cmp::max;
-use std::iter;
 use std::ops::Rem;
 
 use num_bigint::BigUint;
@@ -238,34 +236,6 @@ pub enum Spake2Mode {
     Verifier(Spake2VerifierState),
 }
 
-pub trait Extensions {
-    fn pad(&self, mode: PaddingMode, size: usize, value: u8) -> Vec<u8>;
-}
-
-pub enum PaddingMode {
-    Left,
-    Right,
-}
-
-impl Extensions for [u8] {
-    fn pad(&self, mode: PaddingMode, size: usize, value: u8) -> Vec<u8> {
-        let mut vector: Vec<u8> = vec![];
-        let length = self.len();
-        let padding_needed = max(size - length, 0);
-        let adding: Vec<u8> = iter::repeat(value).take(padding_needed).collect();
-        match mode {
-            PaddingMode::Left => {
-                vector.extend(&adding);
-                vector.extend_from_slice(&self);
-            }
-            PaddingMode::Right => {
-                vector.extend_from_slice(&self);
-                vector.extend(&adding);
-            }
-        }
-        return vector;
-    }
-}
 
 #[allow(non_snake_case)]
 pub struct PAKEValuesResponder {

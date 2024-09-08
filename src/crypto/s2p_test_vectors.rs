@@ -17,6 +17,8 @@
 
 #[cfg(test)]
 pub mod test_vectors {
+    use crate::crypto::s2p_test_vectors::S2TVString;
+
     // Based on vectors used in the RFC
     #[allow(non_snake_case)]
     pub struct RFCTestVector {
@@ -494,4 +496,95 @@ pub mod test_vectors {
             TT_len: 535,
         },
     ];
+
+    pub fn get_test_vectors() -> Vec<S2TVString<'static>> {
+        vec![
+            S2TVString {
+                Context: "SPAKE2+-P256-SHA256-HKDF draft-01",
+                idProver: "client",
+                idVerifier: "server",
+                w0: "e6887cf9bdfb7579c69bf47928a84514b5e355ac034863f7ffaf4390e67d798c",
+                w1: "24b5ae4abda868ec9336ffc3b78ee31c5755bef1759227ef5372ca139b94e512",
+                L: "0495645cfb74df6e58f9748bb83a86620bab7c82e107f57d6870da8cbcb2ff9f7063a14b6402c62f99afcb9706a4d1a143273259fe76f1c605a3639745a92154b9",
+                x: "8b0f3f383905cf3a3bb955ef8fb62e24849dd349a05ca79aafb18041d30cbdb6",
+                shareP: "04af09987a593d3bac8694b123839422c3cc87e37d6b41c1d630f000dd64980e537ae704bcede04ea3bec9b7475b32fa2ca3b684be14d11645e38ea6609eb39e7e",
+                y: "2e0895b0e763d6d5a9564433e64ac3cac74ff897f6c3445247ba1bab40082a91",
+                shareV: "04417592620aebf9fd203616bbb9f121b730c258b286f890c5f19fea833a9c900cbe9057bc549a3e19975be9927f0e7614f08d1f0a108eede5fd7eb5624584a4f4",
+                Z: "0471a35282d2026f36bf3ceb38fcf87e3112a4452f46e9f7b47fd769cfb570145b62589c76b7aa1eb6080a832e5332c36898426912e29c40ef9e9c742eee82bf30",
+                V: "046718981bf15bc4db538fc1f1c1d058cb0eececf1dbe1b1ea08a4e25275d382e82b348c8131d8ed669d169c2e03a858db7cf6ca2853a4071251a39fbe8cfc39bc",
+                TT: "21000000000000005350414b45322b2d503235362d5348413235362d484b44462064726166742d30310600000000000000636c69656e740600000000000000736572766572410000000000000004886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f5ff355163e43ce224e0b0e65ff02ac8e5c7be09419c785e0ca547d55a12e2d20410000000000000004d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b4907d60aa6bfade45008a636337f5168c64d9bd36034808cd564490b1e656edbe7410000000000000004af09987a593d3bac8694b123839422c3cc87e37d6b41c1d630f000dd64980e537ae704bcede04ea3bec9b7475b32fa2ca3b684be14d11645e38ea6609eb39e7e410000000000000004417592620aebf9fd203616bbb9f121b730c258b286f890c5f19fea833a9c900cbe9057bc549a3e19975be9927f0e7614f08d1f0a108eede5fd7eb5624584a4f441000000000000000471a35282d2026f36bf3ceb38fcf87e3112a4452f46e9f7b47fd769cfb570145b62589c76b7aa1eb6080a832e5332c36898426912e29c40ef9e9c742eee82bf304100000000000000046718981bf15bc4db538fc1f1c1d058cb0eececf1dbe1b1ea08a4e25275d382e82b348c8131d8ed669d169c2e03a858db7cf6ca2853a4071251a39fbe8cfc39bc2000000000000000e6887cf9bdfb7579c69bf47928a84514b5e355ac034863f7ffaf4390e67d798c",
+                K_main: "f9cab9adcc0ed8e5a4db11a8505914b2801db297654816eb4f02868129b9dc89",
+                K_confirmP: "0d248d7d19234f1486b2efba5179c52d",
+                K_confirmV: "556291df26d705a2caedd6474dd0079b",
+                HMAC_K_confirmP_shareV: "d4376f2da9c72226dd151b77c2919071155fc22a2068d90b5faa6c78c11e77dd",
+                HMAC_K_confirmV_shareP: "0660a680663e8c5695956fb22dff298b1d07a526cf3cc591adfecd1f6ef6e02e",
+                K_shared: "0c5f8ccd1413423a54f6c1fb26ff01534a87f893779c6e68666d772bfd91f3e7",
+            }
+        ]
+    }
 }
+#[allow(non_snake_case)]
+pub struct Spake2TestVector {
+    context: Vec<u8>,
+    id_prover: Vec<u8>,
+    id_verifier: Vec<u8>,
+    pub w0: [u8; 32],
+    pub w1: [u8; 32],
+    pub x: [u8; 32],
+    pub X: [u8; 65],
+    pub y: [u8; 32],
+    pub Y: [u8; 65],
+    pub Z: [u8; 65],
+    pub V: [u8; 65],
+    pub L: [u8; 65],
+    pub cA: [u8; 32],
+    pub cB: [u8; 32],
+    pub Ke: [u8; 16],
+    pub TT: [u8; 547],
+}
+
+#[allow(non_snake_case)]
+pub struct S2TVString<'a> {
+    pub Context: &'a str,
+    pub idProver: &'a str,
+    pub idVerifier: &'a str,
+    pub w0: &'a str,
+    pub w1: &'a str,
+    pub L: &'a str,
+    pub x: &'a str,
+    pub shareP: &'a str,
+    pub y: &'a str,
+    pub shareV: &'a str,
+    pub Z: &'a str,
+    pub V: &'a str,
+    pub TT: &'a str,
+    pub K_main: &'a str,
+    pub K_confirmP: &'a str,
+    pub K_confirmV: &'a str,
+    pub HMAC_K_confirmP_shareV: &'a str,
+    pub HMAC_K_confirmV_shareP: &'a str,
+    pub K_shared: &'a str,
+}
+
+/*
+
+Context                     = b"PAKE2+-P256-SHA256-HKDF-SHA256-HMAC-SHA256 Test Vectors"
+idProver                    = b"client"
+idVerifier                  = b"server"
+w0                          = 0xbb8e1bbcf3c48f62c08db243652ae55d3e5586053fca77102994f23ad95491b3
+w1                          = 0x7e945f34d78785b8a3ef44d0df5a1a97d6b3b460409a345ca7830387a74b1dba
+L                           = 0x04eb7c9db3d9a9eb1f8adab81b5794c1f13ae3e225efbe91ea487425854c7fc00f00bfedcbd09b2400142d40a14f2064ef31dfaa903b91d1faea7093d835966efd
+x                           = 0xd1232c8e8693d02368976c174e2088851b8365d0d79a9eee709c6a05a2fad539
+shareP                      = 0x04ef3bd051bf78a2234ec0df197f7828060fe9856503579bb1733009042c15c0c1de127727f418b5966afadfdd95a6e4591d171056b333dab97a79c7193e341727
+y                           = 0x717a72348a182085109c8d3917d6c43d59b224dc6a7fc4f0483232fa6516d8b3
+shareV                      = 0x04c0f65da0d11927bdf5d560c69e1d7d939a05b0e88291887d679fcadea75810fb5cc1ca7494db39e82ff2f50665255d76173e09986ab46742c798a9a68437b048
+Z                           = 0x04bbfce7dd7f277819c8da21544afb7964705569bdf12fb92aa388059408d50091a0c5f1d3127f56813b5337f9e4e67e2ca633117a4fbd559946ab474356c41839
+V                           = 0x0458bf27c6bca011c9ce1930e8984a797a3419797b936629a5a937cf2f11c8b9514b82b993da8a46e664f23db7c01edc87faa530db01c2ee405230b18997f16b68
+TT                          = 0x38000000000000005350414b45322b2d503235362d5348413235362d484b44462d5348413235362d484d41432d534841323536205465737420566563746f72730600000000000000636c69656e740600000000000000736572766572410000000000000004886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f5ff355163e43ce224e0b0e65ff02ac8e5c7be09419c785e0ca547d55a12e2d20410000000000000004d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b4907d60aa6bfade45008a636337f5168c64d9bd36034808cd564490b1e656edbe7410000000000000004ef3bd051bf78a2234ec0df197f7828060fe9856503579bb1733009042c15c0c1de127727f418b5966afadfdd95a6e4591d171056b333dab97a79c7193e341727410000000000000004c0f65da0d11927bdf5d560c69e1d7d939a05b0e88291887d679fcadea75810fb5cc1ca7494db39e82ff2f50665255d76173e09986ab46742c798a9a68437b048410000000000000004bbfce7dd7f277819c8da21544afb7964705569bdf12fb92aa388059408d50091a0c5f1d3127f56813b5337f9e4e67e2ca633117a4fbd559946ab474356c4183941000000000000000458bf27c6bca011c9ce1930e8984a797a3419797b936629a5a937cf2f11c8b9514b82b993da8a46e664f23db7c01edc87faa530db01c2ee405230b18997f16b682000000000000000bb8e1bbcf3c48f62c08db243652ae55d3e5586053fca77102994f23ad95491b3
+K_main                      = 0x4c59e1ccf2cfb961aa31bd9434478a1089b56cd11542f53d3576fb6c2a438a29
+K_confirmP                  = 0x871ae3f7b78445e34438fb284504240239031c39d80ac23eb5ab9be5ad6db58a
+K_confirmV                  = 0xccd53c7c1fa37b64a462b40db8be101cedcf838950162902054e644b400f1680
+HMAC(K_confirmP, shareV)    = 0x926cc713504b9b4d76c9162ded04b5493e89109f6d89462cd33adc46fda27527
+HMAC(K_confirmV, shareP)    = 0x9747bcc4f8fe9f63defee53ac9b07876d907d55047e6ff2def2e7529089d3e68
+K_shared                    = 0x0c5f8ccd1413423a54f6c1fb26ff01534a87f893779c6e68666d772bfd91f3e7
+ */

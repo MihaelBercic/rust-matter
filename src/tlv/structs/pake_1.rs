@@ -9,7 +9,7 @@ use crate::utils::MatterLayer::Application;
 /// @author Mihael Berčič
 /// @date 7. 8. 24
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pake1 {
     pub p_a: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
 }

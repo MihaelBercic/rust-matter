@@ -1,11 +1,11 @@
-use hmac::{Hmac, Mac};
 use hmac::digest::MacError;
+use hmac::{Hmac, Mac};
 use p256::ecdh::EphemeralSecret;
-use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
 use p256::ecdsa::signature::Signer;
+use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
 use p256::elliptic_curve::rand_core::OsRng;
 use p256::PublicKey;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use sha2::{Digest, Sha256};
 
 use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
@@ -43,9 +43,7 @@ pub fn hmac(key: &[u8], message: &[u8]) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
     let mut mac = HmacSha256::new_from_slice(key).expect("HMAC takes any key size");
     mac.update(message);
     let result = mac.finalize();
-    let mut output = [0u8; CRYPTO_GROUP_SIZE_BYTES];
-    output.copy_from_slice(&result.into_bytes()[..]);
-    output
+    result.into_bytes().try_into().unwrap()
 }
 
 /// Verifies HMAC hash using the [key], [message] and [hashed message](code_bytes);
@@ -100,7 +98,7 @@ pub fn random_bytes<const N: usize>() -> [u8; N] {
     for i in 0..N {
         array[i] = rng.gen_range(0..255)
     }
-    return array;
+    array
 }
 
 

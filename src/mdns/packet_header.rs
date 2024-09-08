@@ -28,8 +28,7 @@ impl Into<[u8; 4]> for MDNSPacketHeader {
         let flags_as_bytes: [u8; 2] = flags.to_be_bytes(); // flags is u16
         buf[0..2].copy_from_slice(&id_as_bytes);
         buf[2..4].copy_from_slice(&flags_as_bytes);
-        println!("FLAGS: {:016b}", flags);
-        return buf;
+        buf
     }
 }
 

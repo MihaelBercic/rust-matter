@@ -5,3 +5,4 @@
 pub mod pbkdf_param_request;
 pub mod pbkdf_param_response;
 pub mod pake_1;
+pub mod pake_2;

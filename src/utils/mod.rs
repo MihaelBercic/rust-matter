@@ -3,6 +3,7 @@ use std::io;
 
 pub mod bit_subset;
 pub mod byte_encodable;
+pub mod padding;
 
 #[derive(Debug)]
 pub enum MatterLayer {

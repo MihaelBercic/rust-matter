@@ -1,22 +1,24 @@
-use std::sync::atomic::Ordering;
-use std::sync::mpsc::channel;
-use std::thread;
-
+use crate::crypto::spake::generate_bytes_from_passcode;
 use crate::secure::enums::MatterDestinationID::Node;
 use crate::secure::enums::MatterDestinationType::NodeID;
 use crate::secure::enums::MatterSessionType::{Group, Unicast};
 use crate::secure::message::MatterMessage;
 use crate::secure::message_builder::MatterMessageBuilder;
 use crate::secure::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
+use crate::secure::protocol::enums::ProtocolOpcode;
+use crate::secure::protocol::enums::ProtocolOpcode::PASEPake1;
 use crate::secure::protocol::message::ProtocolMessage;
 use crate::secure::protocol::message_builder::ProtocolMessageBuilder;
 use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
+use std::sync::atomic::Ordering;
+use std::sync::mpsc::channel;
+use std::thread;
 
 #[test]
 fn protocol_message_builder() {
     let message = ProtocolMessageBuilder::new()
-        .set_opcode(10)
+        .set_opcode(ProtocolOpcode::PASEPake1)
         .set_is_sent_by_initiator(true)
         .set_acknowledged_message_counter(Some(GLOBAL_UNENCRYPTED_COUNTER.load(Ordering::Relaxed)).unwrap())
         .set_vendor(123)
@@ -30,7 +32,7 @@ fn protocol_message_builder() {
     println!("{:?}", message);
     println!("{:?}", decoded_message);
 
-    assert_eq!(message.opcode, 10);
+    assert_eq!(message.opcode, PASEPake1);
     assert_eq!(message.exchange_flags.sent_by_initiator(), true);
     assert_eq!(message.exchange_flags.needs_acknowledgement(), false);
     assert_eq!(message.exchange_flags.is_acknowledgement(), true);
@@ -120,3 +122,22 @@ fn queue_test() {
         assert_eq!(total_received, 5);
     }).join().expect("Unable to join the thread...");
 }
+
+#[test]
+fn passcode_test() {
+    let passcode = 18924017;
+    let integer = generate_bytes_from_passcode(passcode);
+    let hex_format = integer.map(|b| format!("{:02x}", b)).join(":");
+    assert_eq!(hex_format, "f1:c1:20:01");
+
+    let passcode = 00000005;
+    let integer = generate_bytes_from_passcode(passcode);
+    let hex_format = integer.map(|b| format!("{:02x}", b)).join(":");
+    assert_eq!(hex_format, "05:00:00:00");
+
+    let passcode = 20202021;
+    let integer = generate_bytes_from_passcode(passcode);
+    let hex_format = integer.map(|b| format!("{:08b}", b)).join(" ");
+    assert_eq!(hex_format, "00100101 01000010 00110100 00000001");
+}
+

@@ -14,8 +14,8 @@ pub struct SRVRecord {
     pub port: u16,
 }
 
-pub struct TXTRecord {
-    pub text: String,
+pub struct TXTRecord<'a> {
+    pub pairs: Vec<(&'a str, String)>,
 }
 
 pub struct PTRRecord<'a> {
