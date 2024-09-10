@@ -3,7 +3,7 @@
 
 use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::hash_message;
-use crate::crypto::spake::Values::Responder;
+use crate::crypto::spake::Values::Initiator;
 use crate::crypto::spake::{generate_bytes_from_passcode, SPAKE2P};
 use crate::mdns::enums::{CommissionState, DeviceType};
 use crate::network::network_message::NetworkMessage;
@@ -149,7 +149,8 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                     context.extend_from_slice(&request_tlv.to_bytes());
                                     context.extend_from_slice(&response_tlv.to_bytes());
                                     let context = hash_message(&context);
-                                    let transcript = spake.compute_transcript(&context, &[], &[], Responder(responder), &pake.p_a, &p_b);
+                                    let initiator = spake.compute_values_initiator(&test_passcode, &test_salt, iterations);
+                                    let transcript = spake.compute_transcript(&context, &[], &[], Initiator(initiator), &pake.p_a, &p_b);
                                     let confirmation = spake.compute_confirmation(&transcript, &pake.p_a, &p_b, 256);
                                     let pake2 = Pake2 { p_b, c_b: confirmation.cB };
                                     let pake_tlv: TLV = pake2.into();

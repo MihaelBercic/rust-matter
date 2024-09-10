@@ -3,7 +3,6 @@ pub mod discovery_tests {
     use crate::constants::PROTOCOL;
     use crate::crypto::random_bits;
     use crate::mdns::packet::MDNSPacket;
-    use crate::mdns::records::TXTRecord;
     use crate::tests::constants::ADD_ACCESSORY_PACKET;
     use crate::utils::bit_subset::BitSubset;
 
@@ -13,15 +12,6 @@ pub mod discovery_tests {
         let mdns_packet = MDNSPacket::try_from(&ADD_ACCESSORY_PACKET[..]).expect("Should parse");
         let is_our_protocol = mdns_packet.query_records.iter().any(|q| q.label == PROTOCOL);
         println!("Is our protocol: {}", is_our_protocol);
-    }
-
-    #[test]
-    fn txt_record_test() {
-        let values = format!("A={}\nB={}\nC={}", 1, 2, 33);
-        let txt = TXTRecord { text: values };
-        let bytes: Vec<u8> = txt.into();
-        println!("{}", bytes.iter().map(|x| format!("0x{:x}", x)).collect::<Vec<String>>().join(" "));
-        println!("{}", String::from_utf8_lossy(&bytes));
     }
 
     #[test]

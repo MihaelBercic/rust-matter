@@ -3,12 +3,15 @@ use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values_initiator::ValuesInitiator;
 use crate::crypto::spake::values_responder::ValuesResponder;
 use crate::crypto::{hash_message, hmac, kdf, random_bytes};
-use crate::utils::padding::{Extensions, PaddingMode};
+use crate::utils::padding::Extensions;
+use crate::utils::MatterError;
+use byteorder::{WriteBytesExt, LE};
 use crypto_bigint::{nlimbs, Encoding, NonZero, Random, Uint, U256};
 use p256::elliptic_curve::generic_array::GenericArray;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
 use p256::elliptic_curve::PrimeField;
 use p256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar};
+use std::error::Error;
 use std::ops::Rem;
 
 ///
@@ -118,40 +121,27 @@ impl SPAKE2P {
                     lengthInBytes(V)        || V                  ||
                     lengthInBytes(w0)       || w0
         */
-
-        let w0 = match &values {
+        let mut w0 = match &values {
             Values::Responder(r) => r.w0,
             Values::Initiator(i) => i.w0
         };
 
         let (Z, V) = self.compute_shared(values, p_b, p_a);
-
-        let context_length = context.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let M_as_bytes = self.M.to_encoded_point(false).as_bytes().to_vec();
-        let N_as_bytes = self.N.to_encoded_point(false).as_bytes().to_vec();
         let Z_as_bytes = Z.to_encoded_point(false).as_bytes().to_vec();
         let V_as_bytes = V.to_encoded_point(false).as_bytes().to_vec();
-        let length_M = M_as_bytes.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let length_N = N_as_bytes.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let length_pA = p_a.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let length_pB = p_b.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let length_Z = Z_as_bytes.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let length_V = V_as_bytes.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
-        let length_w0 = w0.len().to_le_bytes().pad(PaddingMode::Left, 8, 0);
 
-
-        [
-            context_length, context.to_vec(),
-            id_p.len().to_le_bytes().pad(PaddingMode::Left, 8, 0), id_p.to_vec(),
-            id_v.len().to_le_bytes().pad(PaddingMode::Left, 8, 0), id_v.to_vec(),
-            length_M, M_as_bytes,
-            length_N, N_as_bytes,
-            length_pA, p_a.to_vec(),
-            length_pB, p_b.to_vec(),
-            length_Z, Z_as_bytes,
-            length_V, V_as_bytes,
-            length_w0, w0.to_vec(),
-        ].concat()
+        let mut data = vec![];
+        write_with_length(&mut data, context);
+        write_with_length(&mut data, id_p);
+        write_with_length(&mut data, id_v);
+        write_with_length(&mut data, self.M.to_encoded_point(false).as_bytes());
+        write_with_length(&mut data, self.N.to_encoded_point(false).as_bytes());
+        write_with_length(&mut data, p_a);
+        write_with_length(&mut data, p_b);
+        write_with_length(&mut data, &Z_as_bytes);
+        write_with_length(&mut data, &V_as_bytes);
+        write_with_length(&mut data, &w0);
+        data
     }
 
 
@@ -187,13 +177,10 @@ impl SPAKE2P {
         println!("TT Hash {}", hex::encode(K_main));
         let Ka = &K_main[..16];
         let Ke = &K_main[16..];
-        let K_confirm = key_derivation(&Ka, &[], b"ConfirmationKeys", bit_length);
-        let length = K_confirm.len() / 2;
-        let K_confirm_P = &K_confirm[0..length];
-        let K_confirm_V = &K_confirm[length..];
-        println!("Ka {}", hex::encode(Ka));
-        println!("Ke {}", hex::encode(Ke));
-        println!("KConfirm {}", hex::encode(&K_confirm));
+
+        let K_confirm = key_derivation(&Ka, None, b"ConfirmationKeys", bit_length);
+        let K_confirm_P = &K_confirm[0..16];
+        let K_confirm_V = &K_confirm[16..];
         S2PConfirmation {
             cA: hmac(K_confirm_P, p_b),
             cB: hmac(K_confirm_V, p_a),
@@ -230,4 +217,10 @@ pub fn generate_bytes_from_passcode(passcode: u32) -> [u8; 4] {
 pub enum Values {
     Responder(ValuesResponder),
     Initiator(ValuesInitiator),
+}
+
+fn write_with_length(vec: &mut Vec<u8>, data: &[u8]) -> Result<(), MatterError> {
+    vec.write_u64::<LE>(data.len() as u64)?;
+    vec.extend_from_slice(data);
+    Ok(())
 }

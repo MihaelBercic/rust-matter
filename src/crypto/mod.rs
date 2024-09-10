@@ -8,7 +8,7 @@ use p256::PublicKey;
 use rand::{thread_rng, Rng};
 use sha2::{Digest, Sha256};
 
-use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
+use crate::crypto::constants::{CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES};
 
 pub mod constants;
 pub mod kdf;
@@ -39,7 +39,7 @@ pub fn hash_message(message: &[u8]) -> [u8; 32] {
 }
 
 /// Generates a hash of the [message] with the provided [key];
-pub fn hmac(key: &[u8], message: &[u8]) -> [u8; CRYPTO_GROUP_SIZE_BYTES] {
+pub fn hmac(key: &[u8], message: &[u8]) -> [u8; CRYPTO_HASH_LEN_BYTES] {
     let mut mac = HmacSha256::new_from_slice(key).expect("HMAC takes any key size");
     mac.update(message);
     let result = mac.finalize();
