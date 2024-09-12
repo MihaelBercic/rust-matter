@@ -4,12 +4,12 @@ use rand::{thread_rng, Rng};
 use crate::crypto::constants::{CRYPTO_PBKDF_ITERATIONS_MAX, CRYPTO_PBKDF_ITERATIONS_MIN};
 use crate::crypto::kdf::PBKDFParameterSet;
 use crate::crypto::{random_bits, random_bytes};
-use crate::tlv::element_type::ElementType::{OctetString8, Structure};
+use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::structs::pbkdf_param_request::{PBKDFParamRequest, SessionParameter};
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
-use crate::tlv::{create_advanced_tlv, create_tlv, create_unsigned};
+use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string, tlv_unsigned};
 use crate::utils::MatterError;
 
 ///
@@ -39,7 +39,8 @@ impl PBKDFParamResponse {
                 let salt = random_bytes::<32>();
                 let iterations = random.gen_range(CRYPTO_PBKDF_ITERATIONS_MIN..=CRYPTO_PBKDF_ITERATIONS_MAX);
 
-                let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
+                let mut salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
+                salt.reverse();
                 let iterations = 1000;
                 Some(PBKDFParameterSet {
                     iterations,
@@ -59,7 +60,7 @@ impl PBKDFParamResponse {
         )
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut vec = vec![];
         vec.extend_from_slice(&self.initiator_random);
         vec.extend_from_slice(&self.responder_random);
@@ -72,9 +73,9 @@ impl PBKDFParamResponse {
 impl Into<TLV> for PBKDFParamResponse {
     fn into(self) -> TLV {
         let mut children = vec![
-            create_advanced_tlv(OctetString8(self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
-            create_advanced_tlv(OctetString8(self.responder_random), ContextSpecific8, Some(Short(2)), None, None),
-            create_advanced_tlv(create_unsigned(self.responder_session_id), ContextSpecific8, Some(Short(3)), None, None),
+            create_advanced_tlv(tlv_octet_string(&self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
+            create_advanced_tlv(tlv_octet_string(&self.responder_random), ContextSpecific8, Some(Short(2)), None, None),
+            create_advanced_tlv(tlv_unsigned(self.responder_session_id), ContextSpecific8, Some(Short(3)), None, None),
         ];
         if let Some(parameters) = self.pbkdf_parameters {
             let mut tlv: TLV = parameters.into();

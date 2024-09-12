@@ -497,6 +497,7 @@ pub mod test_vectors {
         },
     ];
 
+
     pub fn get_test_vectors() -> Vec<S2TVString<'static>> {
         vec![
             S2TVString {
@@ -587,4 +588,21 @@ K_confirmV                  = 0xccd53c7c1fa37b64a462b40db8be101cedcf838950162902
 HMAC(K_confirmP, shareV)    = 0x926cc713504b9b4d76c9162ded04b5493e89109f6d89462cd33adc46fda27527
 HMAC(K_confirmV, shareP)    = 0x9747bcc4f8fe9f63defee53ac9b07876d907d55047e6ff2def2e7529089d3e68
 K_shared                    = 0x0c5f8ccd1413423a54f6c1fb26ff01534a87f893779c6e68666d772bfd91f3e7
+ */
+
+/*
+ *
+ *    Copyright (c) 2020-2022 Project CHIP Authors
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
  */

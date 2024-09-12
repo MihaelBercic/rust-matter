@@ -3,11 +3,11 @@ use std::iter;
 use hkdf::Hkdf;
 use sha2::Sha256;
 
-use crate::tlv::element_type::ElementType::{OctetString8, Structure};
+use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber;
 use crate::tlv::tlv::TLV;
-use crate::tlv::{create_advanced_tlv, create_tlv, create_unsigned};
+use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string, tlv_unsigned};
 
 ///
 /// Key derivation function based on Chapter 3.8
@@ -39,8 +39,8 @@ pub struct PBKDFParameterSet {
 
 impl Into<TLV> for PBKDFParameterSet {
     fn into(self) -> TLV {
-        let iterations = create_advanced_tlv(create_unsigned(self.iterations), ContextSpecific8, Some(TagNumber::Short(1)), None, None);
-        let salt = create_advanced_tlv(OctetString8(self.salt.to_vec()), ContextSpecific8, Some(TagNumber::Short(2)), None, None);
+        let iterations = create_advanced_tlv(tlv_unsigned(self.iterations), ContextSpecific8, Some(TagNumber::Short(1)), None, None);
+        let salt = create_advanced_tlv(tlv_octet_string(&self.salt), ContextSpecific8, Some(TagNumber::Short(2)), None, None);
         create_tlv(Structure(
             vec![
                 iterations,

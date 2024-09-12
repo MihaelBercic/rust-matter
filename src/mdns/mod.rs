@@ -9,7 +9,6 @@ use crate::mdns::records::record_type::RecordType;
 use crate::mdns::records::record_type::RecordType::{AAAA, PTR, SRV, TXT};
 use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
 use crate::secure::protocol::communication::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
-use crate::utils::padding::PaddingMode::Left;
 use crate::utils::padding::StringExtensions;
 use crate::{MDNSDeviceInformation, NetworkInterface};
 use rand::Rng;
@@ -37,14 +36,14 @@ pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interf
 
     let passcode = 20202021;
 
-    let mut pairing_code = String::new();
-    pairing_code += &(1 << 2 | device.discriminator >> 10).to_string();
-    pairing_code += &(((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF)).to_string().pad(Left, 5, '0');
-    pairing_code += &(passcode >> 14).to_string().pad(Left, 4, '0');
-    pairing_code += &device.vendor_id.to_string().pad(Left, 5, '0');
-    pairing_code += &device.product_id.to_string().pad(Left, 5, '0');
+    let mut pairing_code = format!("{}{:0>5}{:0>4}{:0>5}{:0>5}",
+                                   1 << 2 | device.discriminator >> 10,
+                                   ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
+                                   passcode >> 14,
+                                   device.vendor_id,
+                                   device.product_id
+    );
     pairing_code.push_verhoeff_check_digit();
-
     println!("Pairing code: {}", pairing_code);
 
     let mac = hex::encode_upper(&device.mac);

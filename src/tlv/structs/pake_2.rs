@@ -1,9 +1,9 @@
 use crate::crypto::constants::{CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
-use crate::tlv::element_type::ElementType::{OctetString8, Structure};
+use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
-use crate::tlv::{create_advanced_tlv, create_tlv};
+use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string};
 
 ///
 /// @author Mihael Berčič
@@ -16,10 +16,9 @@ pub struct Pake2 {
 
 impl Into<TLV> for Pake2 {
     fn into(self) -> TLV {
-        let mut children = vec![
-            create_advanced_tlv(OctetString8(self.p_b.to_vec()), ContextSpecific8, Some(Short(1)), None, None),
-            create_advanced_tlv(OctetString8(self.c_b.to_vec()), ContextSpecific8, Some(Short(2)), None, None),
-        ];
-        create_tlv(Structure(children))
+        create_tlv(Structure(vec![
+            create_advanced_tlv(tlv_octet_string(&self.p_b), ContextSpecific8, Some(Short(1)), None, None),
+            create_advanced_tlv(tlv_octet_string(&self.c_b), ContextSpecific8, Some(Short(2)), None, None),
+        ]))
     }
 }

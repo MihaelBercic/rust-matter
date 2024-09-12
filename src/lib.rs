@@ -3,7 +3,7 @@
 
 use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::hash_message;
-use crate::crypto::spake::Values::Initiator;
+use crate::crypto::spake::Values::Verifier;
 use crate::crypto::spake::{generate_bytes_from_passcode, SPAKE2P};
 use crate::mdns::enums::{CommissionState, DeviceType};
 use crate::network::network_message::NetworkMessage;
@@ -13,7 +13,7 @@ use crate::secure::message::MatterMessage;
 use crate::secure::message_builder::MatterMessageBuilder;
 use crate::secure::protocol::communication::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
 use crate::secure::protocol::enums::ProtocolOpcode;
-use crate::secure::protocol::enums::ProtocolOpcode::MRPStandaloneAcknowledgement;
+use crate::secure::protocol::enums::ProtocolOpcode::{MRPStandaloneAcknowledgement, StatusReport};
 use crate::secure::protocol::message::ProtocolMessage;
 use crate::secure::protocol::message_builder::ProtocolMessageBuilder;
 use crate::secure::session::Exchange;
@@ -97,6 +97,11 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                     let message = ProtocolMessage::try_from(&matter_message.payload[..]);
                     if !perform_validity_checks(&matter_message) { continue; }
                     if let Ok(message) = message {
+                        if message.opcode == StatusReport {
+                            let status_report = tlv::structs::status_report::StatusReport::try_from(message);
+                            eprintln!("{:?}", status_report);
+                            continue;
+                        }
                         let tlv = TLV::try_from_cursor(&mut Cursor::new(&message.payload));
                         if let Ok(tlv) = tlv {
                             let mut e = exchange_map.entry(message.exchange_id).or_insert(Exchange::new(message.exchange_id));
@@ -136,11 +141,15 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                 ProtocolOpcode::PASEPake1 => {
                                     let test_salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
                                     let iterations = 1000;
-                                    let test_passcode = generate_bytes_from_passcode(20202021);
+                                    let mut test_passcode = generate_bytes_from_passcode(20202021);
                                     let pake = Pake1::try_from(tlv).unwrap();
-                                    println!("pA = {}", hex::encode(&pake.p_a));
                                     let spake = SPAKE2P::new();
                                     let responder = spake.compute_values_responder(&test_passcode, &test_salt, iterations);
+
+                                    println!("w0 = {}", hex::encode(&responder.w0));
+                                    println!("L = {}", hex::encode(&responder.L));
+
+
                                     let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = spake.compute_pB(&responder).to_encoded_point(false).as_bytes().try_into().unwrap();
                                     let request_tlv: TLV = e.clone().pbkdf_request.unwrap().into();
                                     let response_tlv: TLV = e.clone().pbkdf_response.unwrap().into();
@@ -149,9 +158,9 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                     context.extend_from_slice(&request_tlv.to_bytes());
                                     context.extend_from_slice(&response_tlv.to_bytes());
                                     let context = hash_message(&context);
-                                    let initiator = spake.compute_values_initiator(&test_passcode, &test_salt, iterations);
-                                    let transcript = spake.compute_transcript(&context, &[], &[], Initiator(initiator), &pake.p_a, &p_b);
+                                    let transcript = spake.compute_transcript(&context, &[], &[], Verifier(responder), &pake.p_a, &p_b);
                                     let confirmation = spake.compute_confirmation(&transcript, &pake.p_a, &p_b, 256);
+
                                     let pake2 = Pake2 { p_b, c_b: confirmation.cB };
                                     let pake_tlv: TLV = pake2.into();
 

@@ -4,17 +4,14 @@ use std::net::Ipv6Addr;
 use std::str::FromStr;
 
 fn main() {
-    // let udp = UdpSocket::bind("[::]:0").unwrap();
-    // println!("Listening on {:?}", udp.local_addr().unwrap().port());
-    // let mut buffer = [0u8; 1000];
-    // loop {
-    //     let (size, sender) = udp.recv_from(&mut buffer).unwrap();
-    //     println!("Data of size {} from {:?} => {}", size, sender, String::from_utf8_lossy(&buffer[..size]))
-    // }
-    //
-    // return;
-    let interface = NetworkInterface { index: 0x1D, do_custom: true };
-    let ip = Ipv6Addr::from_str("fe80::8a5:5eff:ed1c:c07b").unwrap();
+    let is_eth = true;
+    let mut interface = NetworkInterface { index: 0xf, do_custom: true };         // WiFi
+    let mut ip = Ipv6Addr::from_str("fe80::1008:fc1d:3b7c:eda9").unwrap();
+    if is_eth {
+        interface = NetworkInterface { index: 0x1D, do_custom: true };         // Eth
+        ip = Ipv6Addr::from_str("fe80::8a5:5eff:ed1c:c07b").unwrap();
+    }
+
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
 
     let device = MDNSDeviceInformation {

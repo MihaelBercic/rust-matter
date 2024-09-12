@@ -1,5 +1,5 @@
 use crate::crypto::spake::values_initiator::ValuesInitiator;
-use crate::crypto::spake::values_responder::ValuesResponder;
+use crate::crypto::spake::values_responder::VerifierValues;
 use crate::tlv::structs::pake_1::Pake1;
 use crate::tlv::structs::pbkdf_param_request::PBKDFParamRequest;
 use crate::tlv::structs::pbkdf_param_response::PBKDFParamResponse;
@@ -20,7 +20,7 @@ pub struct Exchange {
     pub pbkdf_response: Option<PBKDFParamResponse>,
     pub pake1: Option<Pake1>,
     pub values_initiator: Option<ValuesInitiator>,
-    pub values_responder: Option<ValuesResponder>,
+    pub values_responder: Option<VerifierValues>,
     pub session: Option<Session>,
 }
 

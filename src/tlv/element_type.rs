@@ -100,7 +100,6 @@ impl ElementType {
         }
     }
 
-
     fn read_children(cursor: &mut Cursor<&[u8]>) -> Vec<TLV> {
         let mut children: Vec<TLV> = vec![];
         while cursor.read_u8().unwrap() != EndOfContainer.into() {

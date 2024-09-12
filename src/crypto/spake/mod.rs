@@ -1,7 +1,7 @@
-use crate::crypto::constants::{BYTES_M, BYTES_N, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES, NIST_P_256_N, NIST_P_256_ORDER};
+use crate::crypto::constants::{BYTES_M, BYTES_N, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES, NIST_P_256_N, NIST_P_256_ORDER};
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values_initiator::ValuesInitiator;
-use crate::crypto::spake::values_responder::ValuesResponder;
+use crate::crypto::spake::values_responder::VerifierValues;
 use crate::crypto::{hash_message, hmac, kdf, random_bytes};
 use crate::utils::padding::Extensions;
 use crate::utils::MatterError;
@@ -36,9 +36,11 @@ pub struct SPAKE2P {
 
 impl SPAKE2P {
     pub fn new() -> Self {
+        let random = generate_random();
+        let random = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
         SPAKE2P {
-            y: generate_random(),
-            x: generate_random(),
+            y: random.clone(),
+            x: random,
             N: AffinePoint::from_encoded_point(&EncodedPoint::from_bytes(&BYTES_N).unwrap()).unwrap(),
             M: AffinePoint::from_encoded_point(&EncodedPoint::from_bytes(&BYTES_M).unwrap()).unwrap(),
         }
@@ -65,7 +67,6 @@ impl SPAKE2P {
         let order = NIST_P_256_N.resize::<REQUIRED_LIMBS>();
         let order = NonZero::new(order).unwrap();
         let pbkdf = kdf::password_key_derivation(passcode, salt, iterations, CRYPTO_W_SIZE_BITS * 2);
-        println!("PBKDF length {}", pbkdf.len());
         const REQUIRED_OUTPUT: usize = { nlimbs!(CRYPTO_GROUP_SIZE_BITS) };
         let w0 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[0..CRYPTO_W_SIZE_BYTES]).rem(&order).resize::<REQUIRED_OUTPUT>().to_be_bytes();
         let w1 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[CRYPTO_W_SIZE_BYTES..]).rem(&order).resize::<REQUIRED_OUTPUT>().to_be_bytes();
@@ -77,18 +78,18 @@ impl SPAKE2P {
         }
     }
 
-    pub fn compute_values_responder(&self, passcode: &[u8], salt: &[u8], iterations: u32) -> ValuesResponder {
+    pub fn compute_values_responder(&self, passcode: &[u8], salt: &[u8], iterations: u32) -> VerifierValues {
         let values_initiator = self.compute_values_initiator(passcode, salt, iterations);
         let w1_scalar = Scalar::from_repr(*GenericArray::from_slice(&values_initiator.w1)).unwrap();
         let length = (AffinePoint::GENERATOR * w1_scalar).to_encoded_point(false).to_bytes();
-        ValuesResponder {
+        VerifierValues {
             w0: values_initiator.w0,
             L: (&length[..]).try_into().unwrap(),
         }
     }
 
     #[allow(non_snake_case)]
-    pub fn compute_pB(&self, values_responder: &ValuesResponder) -> ProjectivePoint {
+    pub fn compute_pB(&self, values_responder: &VerifierValues) -> ProjectivePoint {
         // y <- [0, p-1]
         // Y = y*P + w0*N
         let w_s = Scalar::from_repr(*GenericArray::from_slice(&values_responder.w0)).unwrap();
@@ -122,13 +123,16 @@ impl SPAKE2P {
                     lengthInBytes(w0)       || w0
         */
         let mut w0 = match &values {
-            Values::Responder(r) => r.w0,
-            Values::Initiator(i) => i.w0
+            Values::Verifier(r) => r.w0,
+            Values::Prover(i) => i.w0
         };
 
         let (Z, V) = self.compute_shared(values, p_b, p_a);
         let Z_as_bytes = Z.to_encoded_point(false).as_bytes().to_vec();
         let V_as_bytes = V.to_encoded_point(false).as_bytes().to_vec();
+
+        println!("Z = {}", hex::encode(&Z_as_bytes));
+        println!("V = {}", hex::encode(&V_as_bytes));
 
         let mut data = vec![];
         write_with_length(&mut data, context);
@@ -151,7 +155,7 @@ impl SPAKE2P {
         let p_a = ProjectivePoint::from_encoded_point(&EncodedPoint::from_bytes(&p_a).unwrap()).unwrap();
         let p_b = ProjectivePoint::from_encoded_point(&EncodedPoint::from_bytes(&p_b).unwrap()).unwrap();
         match values {
-            Values::Responder(responder) => {
+            Values::Verifier(responder) => {
                 // VERIFIER:   Z = h*y*(X - w0*M)      V = h*y*L
                 let w_t_m = self.M * Scalar::from_repr(responder.w0.into()).unwrap();
                 let L = ProjectivePoint::from_encoded_point(&EncodedPoint::from_bytes(&responder.L).unwrap()).unwrap();
@@ -159,7 +163,7 @@ impl SPAKE2P {
                 let V = L * Scalar::from_repr(self.y.into()).unwrap();
                 (Z, V)
             }
-            Values::Initiator(initiator) => {
+            Values::Prover(initiator) => {
                 // PROVER:     Z = h*x*(Y - w0*N)      V = h*w1*(Y - w0*N)
                 let w_t_n = self.N * Scalar::from_repr(initiator.w0.into()).unwrap();
                 let Z = (p_b - w_t_n) * Scalar::from_repr(self.x.into()).unwrap();
@@ -174,18 +178,25 @@ impl SPAKE2P {
     #[allow(non_snake_case)]
     pub fn compute_confirmation(&self, tt: &Vec<u8>, p_a: &[u8], p_b: &[u8], bit_length: usize) -> S2PConfirmation {
         let K_main = hash_message(tt);
-        println!("TT Hash {}", hex::encode(K_main));
+        println!("p_a = {}", hex::encode(p_a));;
+        println!("p_b = {}", hex::encode(p_b));;
+        println!("Hashed TT = {}", hex::encode(&K_main));
+
         let Ka = &K_main[..16];
         let Ke = &K_main[16..];
 
         let K_confirm = key_derivation(&Ka, None, b"ConfirmationKeys", bit_length);
-        let K_confirm_P = &K_confirm[0..16];
-        let K_confirm_V = &K_confirm[16..];
+
+        println!("Ka = {}", hex::encode(Ka));
+        println!("Ke = {}", hex::encode(Ke));
+        println!("KcAB = {}", hex::encode(&K_confirm));
+
+        let k_c_a = &K_confirm[..16];
+        let k_c_b = &K_confirm[16..];
         S2PConfirmation {
-            cA: hmac(K_confirm_P, p_b),
-            cB: hmac(K_confirm_V, p_a),
-            Ke: Ke.to_vec(),
-            K_Confirm: K_confirm,
+            cA: hmac(k_c_a, p_b),
+            cB: hmac(k_c_b, p_a),
+            Ke: Ke.try_into().unwrap(),
         }
     }
 }
@@ -193,10 +204,9 @@ impl SPAKE2P {
 #[allow(non_snake_case)]
 #[derive(Debug)]
 pub struct S2PConfirmation {
-    pub cA: [u8; 32],
-    pub cB: [u8; 32],
-    pub Ke: Vec<u8>, //[u8; 16],
-    pub K_Confirm: Vec<u8>,
+    pub cA: [u8; CRYPTO_HASH_LEN_BYTES],
+    pub cB: [u8; CRYPTO_HASH_LEN_BYTES],
+    pub Ke: [u8; CRYPTO_HASH_LEN_BYTES / 2],
 }
 
 /// Generate a random value in the range of [0..p] where [p] is [ORDER] or NIST-P256.
@@ -215,8 +225,8 @@ pub fn generate_bytes_from_passcode(passcode: u32) -> [u8; 4] {
 }
 
 pub enum Values {
-    Responder(ValuesResponder),
-    Initiator(ValuesInitiator),
+    Verifier(VerifierValues),
+    Prover(ValuesInitiator),
 }
 
 fn write_with_length(vec: &mut Vec<u8>, data: &[u8]) -> Result<(), MatterError> {
