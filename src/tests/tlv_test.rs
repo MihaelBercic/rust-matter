@@ -189,7 +189,7 @@ pub fn transcript_test() {
     data.extend_from_slice(&hex::decode("0f3ef80560e3a6bc0677a47d6ecd5bde62409d5b6e79cb7faaf0a20c584a4de8").unwrap());
     println!("{:?}", hex::encode(hash_message(&data)));
 
-    let c = SPAKE2P::new().compute_confirmation(&data, &p_a, &p_b, 256);
+    let c = SPAKE2P::new().compute_confirmation_values(&data, &p_a, &p_b, 256);
     println!("cA = {:?}", hex::encode(c.cA));
     println!("cB = {:?}", hex::encode(c.cB));
     println!("Ke = {:?}", hex::encode(c.Ke));

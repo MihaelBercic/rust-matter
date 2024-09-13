@@ -3,8 +3,8 @@
 
 use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::hash_message;
-use crate::crypto::spake::Values::SpakeVerifier;
-use crate::crypto::spake::{generate_bytes_from_passcode, SPAKE2P};
+use crate::crypto::spake::values::Values::SpakeVerifier;
+use crate::crypto::spake::SPAKE2P;
 use crate::mdns::enums::{CommissionState, DeviceType};
 use crate::network::network_message::NetworkMessage;
 use crate::secure::enums::MatterDestinationID::Group;
@@ -147,7 +147,6 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                 ProtocolOpcode::PASEPake1 => {
                                     let test_salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
                                     let iterations = 1000;
-                                    let mut test_passcode = generate_bytes_from_passcode(20202021);
                                     let pake = Pake1::try_from(tlv).unwrap();
                                     let spake = SPAKE2P::new();
                                     let prover = SPAKE2P::compute_prover(20202021, &test_salt, iterations);
@@ -176,7 +175,7 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                     let mut transcript = spake.compute_transcript(&context, &[], &[], SpakeVerifier(verifier), &pake.p_a, &p_b);
                                     // transcript.write_u64::<LE>(prover.w1.len() as u64);
                                     // transcript.extend_from_slice(&prover.w1);
-                                    let confirmation = spake.compute_confirmation(&transcript, &pake.p_a, &p_b, 256);
+                                    let confirmation = spake.compute_confirmation_values(&transcript, &pake.p_a, &p_b, 256);
 
                                     let pake2 = Pake2 { p_b, c_b: confirmation.cB };
                                     let pake_tlv: TLV = pake2.into();

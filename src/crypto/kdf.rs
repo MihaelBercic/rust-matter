@@ -36,15 +36,12 @@ pub struct PBKDFParameterSet {
     pub salt: [u8; 32],
 }
 
+/// Computes TLV of the PBKDF Parameter Set using v1.3 specification.
 impl Into<TLV> for PBKDFParameterSet {
     fn into(self) -> TLV {
-        let iterations = create_advanced_tlv(tlv_unsigned(self.iterations), ContextSpecific8, Some(TagNumber::Short(1)), None, None);
-        let salt = create_advanced_tlv(tlv_octet_string(&self.salt), ContextSpecific8, Some(TagNumber::Short(2)), None, None);
-        create_tlv(Structure(
-            vec![
-                iterations,
-                salt,
-            ]
-        ))
+        create_tlv(Structure(vec![
+            create_advanced_tlv(tlv_unsigned(self.iterations), ContextSpecific8, Some(TagNumber::Short(1)), None, None),
+            create_advanced_tlv(tlv_octet_string(&self.salt), ContextSpecific8, Some(TagNumber::Short(2)), None, None)
+        ]))
     }
 }

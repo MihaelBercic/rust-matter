@@ -101,7 +101,7 @@ pub fn random_bytes<const N: usize>() -> [u8; N] {
     array
 }
 
-
+/// Compute random [len] bits.
 pub fn random_bits(len: usize) -> Vec<u8> {
     let mut rng = thread_rng();
     let mut bytes: Vec<u8> = vec![];
@@ -115,5 +115,5 @@ pub fn random_bits(len: usize) -> Vec<u8> {
             current <<= 1;
         }
     }
-    return bytes;
+    bytes
 }
