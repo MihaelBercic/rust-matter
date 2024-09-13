@@ -1,13 +1,12 @@
-use std::iter;
-
-use hkdf::Hkdf;
-use sha2::Sha256;
-
 use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber;
 use crate::tlv::tlv::TLV;
 use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string, tlv_unsigned};
+use hkdf::Hkdf;
+use hmac::Hmac;
+use sha2::Sha256;
+use std::iter;
 
 ///
 /// Key derivation function based on Chapter 3.8
@@ -27,7 +26,7 @@ pub fn password_key_derivation(
     bit_length: usize,
 ) -> Vec<u8> {
     let mut vec: Vec<u8> = iter::repeat(0).take(bit_length / 8).collect();
-    pbkdf2::pbkdf2_hmac::<Sha256>(input, salt, iterations, &mut vec);
+    pbkdf2::pbkdf2::<Hmac<Sha256>>(input, salt, iterations, &mut vec);
     vec
 }
 

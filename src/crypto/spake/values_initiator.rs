@@ -6,7 +6,7 @@ use crate::crypto::constants::CRYPTO_GROUP_SIZE_BYTES;
 
 /// Also referred to as Commissioner PAKE input!
 #[derive(Debug, Clone)]
-pub struct ValuesInitiator {
+pub struct ProverValues {
     pub w0: [u8; CRYPTO_GROUP_SIZE_BYTES],
     pub w1: [u8; CRYPTO_GROUP_SIZE_BYTES],
 }

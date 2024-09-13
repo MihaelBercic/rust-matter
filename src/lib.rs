@@ -3,7 +3,7 @@
 
 use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::hash_message;
-use crate::crypto::spake::Values::Verifier;
+use crate::crypto::spake::Values::SpakeVerifier;
 use crate::crypto::spake::{generate_bytes_from_passcode, SPAKE2P};
 use crate::mdns::enums::{CommissionState, DeviceType};
 use crate::network::network_message::NetworkMessage;
@@ -22,6 +22,7 @@ use crate::tlv::structs::pake_2::Pake2;
 use crate::tlv::structs::pbkdf_param_request::PBKDFParamRequest;
 use crate::tlv::structs::pbkdf_param_response::PBKDFParamResponse;
 use crate::tlv::tlv::TLV;
+use byteorder::WriteBytesExt;
 use p256::elliptic_curve::group::GroupEncoding;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
 use std::collections::HashMap;
@@ -102,8 +103,12 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                             eprintln!("{:?}", status_report);
                             continue;
                         }
+                        let incoming_data = hex::encode(&message.payload);
+                        println!("Incoming PARAM RQUEST: {}", incoming_data);
                         let tlv = TLV::try_from_cursor(&mut Cursor::new(&message.payload));
                         if let Ok(tlv) = tlv {
+                            let our_data = hex::encode(tlv.clone().to_bytes());
+                            if incoming_data != our_data { panic!("No bro ") }
                             let mut e = exchange_map.entry(message.exchange_id).or_insert(Exchange::new(message.exchange_id));
                             println!("Message received @ {:?}", message.opcode);
                             match message.opcode {
@@ -113,6 +118,7 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                         let response = PBKDFParamResponse::build_for(&request);
                                         if let Ok(response) = response {
                                             e.pbkdf_request = Some(request);                 // TODO: optimize
+                                            e.request_bytes = message.payload.to_vec();
                                             e.pbkdf_response = Some(response.clone());       // TODO: optimize
                                             let tlv: TLV = response.into();
                                             let bytes = tlv.to_bytes();
@@ -144,21 +150,32 @@ fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: 
                                     let mut test_passcode = generate_bytes_from_passcode(20202021);
                                     let pake = Pake1::try_from(tlv).unwrap();
                                     let spake = SPAKE2P::new();
-                                    let responder = spake.compute_values_responder(&test_passcode, &test_salt, iterations);
+                                    let prover = SPAKE2P::compute_prover(20202021, &test_salt, iterations);
+                                    let verifier = SPAKE2P::compute_verifier(20202021, &test_salt, iterations);
+                                    let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = spake.compute_public_verifier(&verifier.w0).to_encoded_point(false).as_bytes().try_into().unwrap();
 
-                                    println!("w0 = {}", hex::encode(&responder.w0));
-                                    println!("L = {}", hex::encode(&responder.L));
+                                    println!("w0 = {}", hex::encode(&verifier.w0));
+                                    println!("w1 = {}", hex::encode(&prover.w1));
+                                    println!("L = {}", hex::encode(&verifier.L));
+                                    println!("pB = {}", hex::encode(&p_b));
 
 
-                                    let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = spake.compute_pB(&responder).to_encoded_point(false).as_bytes().try_into().unwrap();
                                     let request_tlv: TLV = e.clone().pbkdf_request.unwrap().into();
                                     let response_tlv: TLV = e.clone().pbkdf_response.unwrap().into();
                                     let mut context = vec![];
+                                    println!("Adding to context: {}", hex::encode(&CONTEXT_PREFIX_VALUE));
+                                    println!("Adding to context: {}", hex::encode(&request_tlv.clone().to_bytes()));
+                                    println!("Adding to context: {}", hex::encode(&response_tlv.clone().to_bytes()));
                                     context.extend_from_slice(&CONTEXT_PREFIX_VALUE);
-                                    context.extend_from_slice(&request_tlv.to_bytes());
+                                    context.extend_from_slice(&e.request_bytes);
                                     context.extend_from_slice(&response_tlv.to_bytes());
+                                    println!("Context = {}", hex::encode(&context));
                                     let context = hash_message(&context);
-                                    let transcript = spake.compute_transcript(&context, &[], &[], Verifier(responder), &pake.p_a, &p_b);
+                                    println!("Context hashed = {}", hex::encode(&context));
+
+                                    let mut transcript = spake.compute_transcript(&context, &[], &[], SpakeVerifier(verifier), &pake.p_a, &p_b);
+                                    // transcript.write_u64::<LE>(prover.w1.len() as u64);
+                                    // transcript.extend_from_slice(&prover.w1);
                                     let confirmation = spake.compute_confirmation(&transcript, &pake.p_a, &p_b, 256);
 
                                     let pake2 = Pake2 { p_b, c_b: confirmation.cB };

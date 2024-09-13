@@ -1,11 +1,11 @@
 #![allow(unused)]
 
 use crate::tlv::element_type::ElementType;
-use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, OctetString8, Structure, Unsigned16, Unsigned32};
+use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, Structure, Unsigned16, Unsigned32};
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
-use crate::tlv::{create_advanced_tlv, create_tlv, tlv_unsigned};
+use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string, tlv_unsigned};
 use crate::utils::MatterError;
 use crate::utils::MatterLayer::Application;
 use byteorder::{LittleEndian, WriteBytesExt, LE};
@@ -77,7 +77,7 @@ impl TryFrom<TLV> for PBKDFParamRequest {
 impl Into<TLV> for PBKDFParamRequest {
     fn into(self) -> TLV {
         let mut children = vec![
-            create_advanced_tlv(OctetString8(self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
+            create_advanced_tlv(tlv_octet_string(&self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
             create_advanced_tlv(tlv_unsigned(self.initiator_session_id), ContextSpecific8, Some(Short(2)), None, None),
             create_advanced_tlv(tlv_unsigned(self.passcode_id), ContextSpecific8, Some(Short(3)), None, None),
             create_advanced_tlv(if self.has_params { BooleanTrue } else { BooleanFalse }, ContextSpecific8, Some(Short(4)), None, None),

@@ -1,11 +1,13 @@
-use std::io::Cursor;
-
-use crate::tlv::{as_hex_string, create_advanced_tlv, create_tlv, parse_tlv, tlv_as_hex};
+use crate::crypto::hash_message;
+use crate::crypto::spake::SPAKE2P;
 use crate::tlv::element_type::ElementType::*;
 use crate::tlv::encodable_value::EncodableValue;
+use crate::tlv::structs::pbkdf_param_request::PBKDFParamRequest;
 use crate::tlv::tag_control::TagControl::{Anonymous0, CommonProfile16, CommonProfile32, ContextSpecific8, FullyQualified48, FullyQualified64};
 use crate::tlv::tag_number::TagNumber::{Long, Medium, Short};
 use crate::tlv::tlv::TLV;
+use crate::tlv::{as_hex_string, create_advanced_tlv, create_tlv, parse_tlv, tlv_as_hex};
+use std::io::Cursor;
 
 ///
 /// @author Mihael Berčič
@@ -136,4 +138,59 @@ pub fn vendor() {
     assert_eq!(as_hex_string(&parse_tlv(&[0xd5, 0xf1, 0xff, 0xed, 0xde, 0x01, 0x00, 0xc4, 0xf1, 0xff, 0xed, 0xde, 0x55, 0xaa, 0x2a, 0x18]).to_bytes()), "d5 f1 ff ed de 01 00 c4 f1 ff ed de 55 aa 2a 18");
 }
 
+#[test]
+pub fn context_difference() {
+    let a = "1530012040e26f0d08cca5cb58fc48e1c9d696495c08b97b04bfcfe8cc623e779a2c637625025e02240300280435052501f40125022c012503a00f24041124050b2606000003012407011818";
+    let b = "1530012040e26f0d08cca5cb58fc48e1c9d696495c08b97b04bfcfe8cc623e779a2c637625025e02240300280435052601f401000026022c0100002503a00f1818";
+    println!("{}", a);
+    println!("{}", b);
+    let a = hex::decode(a).unwrap();
+    let b = hex::decode(b).unwrap();
+    let tlv_a = TLV::try_from_cursor(&mut Cursor::new(&a)).unwrap();
+    let tlv_b = TLV::try_from_cursor(&mut Cursor::new(&b)).unwrap();
 
+    let p_a = PBKDFParamRequest::try_from(tlv_a).unwrap();
+    let p_b = PBKDFParamRequest::try_from(tlv_b).unwrap();
+
+    println!("{:?}", p_a);
+    println!("{:?}", p_b);
+
+    let tlv_a: TLV = p_a.into();
+    let tlv_b: TLV = p_b.into();
+    println!("{:?}", hex::encode(tlv_a.to_bytes()));
+    println!("{:?}", hex::encode(tlv_b.to_bytes()));
+}
+
+#[test]
+pub fn transcript_test() {
+    let mut data = vec![];
+    let p_a = hex::decode("04886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f5ff355163e43ce224e0b0e65ff02ac8e5c7be09419c785e0ca547d55a12e2d20").unwrap();
+    let p_b = hex::decode("04d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b4907d60aa6bfade45008a636337f5168c64d9bd36034808cd564490b1e656edbe7").unwrap();
+    data.extend_from_slice(&hex::decode("2000000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("d2405fa7622df1ac6d0a73ebdfc5c0563bea794175e5c95a4fb3c1f709be3151").unwrap());
+    data.extend_from_slice(&hex::decode("0000000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("0000000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("4100000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("04886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f5ff355163e43ce224e0b0e65ff02ac8e5c7be09419c785e0ca547d55a12e2d20").unwrap());
+    data.extend_from_slice(&hex::decode("4100000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("04d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b4907d60aa6bfade45008a636337f5168c64d9bd36034808cd564490b1e656edbe7").unwrap());
+    data.extend_from_slice(&hex::decode("4100000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("0452126c0f56655ab7e0ade97a7c6fa2e3b091d0b1de50a5acfc6d888474e23b5a4af1e682a7c724e512d16b126d3bd155e87fded12987c36a8b2bcf022ff7a8c2").unwrap());
+    data.extend_from_slice(&hex::decode("4100000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("047ef4872ada50b2779e3f956076a21e65c0843e116573ada208f6c5ca6d4a3b71f773168f9ec6b064d17985707a350725aae74da123989787ce4ba850db01090c").unwrap());
+    data.extend_from_slice(&hex::decode("4100000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("04f5d1152952589ac3d4192bf8f719273c65f8a83a869a4637cc932469ad7eeb60a54cc47a203928bd0111c1285cc6f2a3daef3ad956f4a21a3323a5ee98f1dbb6").unwrap());
+    data.extend_from_slice(&hex::decode("4100000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("0445eefcb926be981694dc7b29842313a049aa5907d154bdda684f0cc8d93a84d58633dfd34410a9aad6e43f9ebf60a872fa8a4c34f570a8eb7f151760dfb7e470").unwrap());
+    data.extend_from_slice(&hex::decode("2000000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("93b315a1b86c6f0fb627feadde76c93cae8b6dc5e578951db04da543e1021aef").unwrap());
+    println!("{:?}", hex::encode(hash_message(&data)));
+    data.extend_from_slice(&hex::decode("2000000000000000").unwrap());
+    data.extend_from_slice(&hex::decode("0f3ef80560e3a6bc0677a47d6ecd5bde62409d5b6e79cb7faaf0a20c584a4de8").unwrap());
+    println!("{:?}", hex::encode(hash_message(&data)));
+
+    let c = SPAKE2P::new().compute_confirmation(&data, &p_a, &p_b, 256);
+    println!("cA = {:?}", hex::encode(c.cA));
+    println!("cB = {:?}", hex::encode(c.cB));
+    println!("Ke = {:?}", hex::encode(c.Ke));
+}
