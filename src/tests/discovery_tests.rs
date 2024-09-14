@@ -2,16 +2,16 @@
 pub mod discovery_tests {
     use crate::constants::PROTOCOL;
     use crate::crypto::random_bits;
+    use crate::log_info;
     use crate::mdns::packet::MDNSPacket;
     use crate::tests::constants::ADD_ACCESSORY_PACKET;
     use crate::utils::bit_subset::BitSubset;
 
     #[test]
     fn mdns_packet_decode() {
-        // println!("{}", String::from_utf8_lossy(&SAMPLE_PACKET));
         let mdns_packet = MDNSPacket::try_from(&ADD_ACCESSORY_PACKET[..]).expect("Should parse");
         let is_our_protocol = mdns_packet.query_records.iter().any(|q| q.label == PROTOCOL);
-        println!("Is our protocol: {}", is_our_protocol);
+        log_info!("Is our protocol: {}", is_our_protocol);
     }
 
     #[test]
@@ -28,6 +28,5 @@ pub mod discovery_tests {
         array.copy_from_slice(&bits);
         let number_be = u32::from_be_bytes(array);
         let number_le = u32::from_le_bytes(array);
-        println!("BE: {} LE: {} => {}", number_be, number_le, bits.iter().map(|x| format!("{:08b}", x)).collect::<Vec<String>>().join(" "));
     }
 }

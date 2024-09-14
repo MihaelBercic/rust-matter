@@ -1,5 +1,5 @@
-use crate::secure::enums::{MatterDestinationID, MatterDestinationType, MatterSessionType};
 use crate::secure::enums::MatterDestinationType::{GroupID, NodeID};
+use crate::secure::enums::{MatterDestinationID, MatterDestinationType, MatterSessionType};
 use crate::secure::message::MatterMessage;
 use crate::secure::message_extension::MatterMessageExtension;
 use crate::secure::message_flags::MatterMessageFlags;
@@ -114,16 +114,14 @@ impl MatterMessageBuilder {
 
     /// ----------------- Message Flags --------------- \\\
 
-
-
     pub fn set_payload(mut self, payload: &[u8]) -> Self {
         self.message.payload.clear();
         self.message.payload.extend_from_slice(payload);
         // TODO: set integrity checks and stuff
-        return self;
+        self
     }
 
     pub fn build(self) -> MatterMessage {
-        return self.message;
+        self.message
     }
 }

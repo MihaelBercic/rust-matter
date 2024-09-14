@@ -5,13 +5,16 @@ use crate::crypto::spake::values::Values;
 use crate::crypto::spake::values_initiator::ProverValues;
 use crate::crypto::spake::values_responder::VerifierValues;
 use crate::crypto::{hash_message, hmac, kdf};
+use crate::utils::byte_encodable::ByteEncodable;
 use crate::utils::padding::Extensions;
 use crate::utils::MatterError;
+use crate::utils::MatterLayer::Cryptography;
 use byteorder::{WriteBytesExt, LE};
+use ccm::aead::generic_array::GenericArray;
 use crypto_bigint::{nlimbs, Encoding, NonZero, Random, Uint};
-use p256::elliptic_curve::generic_array::GenericArray;
 use p256::elliptic_curve::group::GroupEncoding;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
+use p256::elliptic_curve::subtle::ConstantTimeEq;
 use p256::elliptic_curve::{Field, PrimeField};
 use p256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar};
 use std::error::Error;
@@ -27,14 +30,17 @@ pub mod spake_confirmation;
 pub mod values;
 
 #[allow(non_snake_case)]
-pub struct SPAKE2P {
+pub struct Spake2P {
     pub(crate) y: Scalar,
     pub(crate) x: Scalar,
     N: ProjectivePoint,
     M: ProjectivePoint,
 }
 
-impl SPAKE2P {
+/// Implementation of the Spake2+ exchange protocol.
+///
+/// RFC: [link](https://datatracker.ietf.org/doc/html/draft-bar-cfrg-spake2plus-02)
+impl Spake2P {
     /// Initialise Spake2+ instance with random values and storing N and M.
     pub fn new() -> Self {
         let mut rng = crypto_bigint::rand_core::OsRng;
@@ -43,7 +49,7 @@ impl SPAKE2P {
         let m_encoded = EncodedPoint::from_bytes(CRYPTO_M_BYTES).unwrap();
         let n_projective = ProjectivePoint::from_encoded_point(&n_encoded).unwrap();
         let m_projective = ProjectivePoint::from_encoded_point(&m_encoded).unwrap();
-        SPAKE2P {
+        Spake2P {
             y: random.clone(),
             x: random,
             N: n_projective,
@@ -74,7 +80,7 @@ impl SPAKE2P {
     pub fn compute_verifier(passcode: u32, salt: &[u8], iterations: u32) -> VerifierValues {
         // L = w1 * P
         let prover = Self::compute_prover(passcode, salt, iterations);
-        let w1_scalar = Scalar::from_repr(*GenericArray::from_slice(&prover.w1)).unwrap();
+        let w1_scalar = Scalar::from_repr(prover.w1.into()).unwrap();
         let length = (AffinePoint::GENERATOR * w1_scalar).to_encoded_point(false).to_bytes();
         VerifierValues {
             w0: prover.w0,
@@ -83,19 +89,19 @@ impl SPAKE2P {
     }
 
     /// Computes the prover public key (X).
-    pub fn compute_public_prover(&self, w0: &[u8]) -> ProjectivePoint {
+    pub fn compute_public_prover(&self, w0: &[u8]) -> Result<ProjectivePoint, MatterError> {
         // x <- [0, p-1]
         // X = x*P + w0*M
-        let w0_scalar = Scalar::from_repr(*GenericArray::from_slice(&w0)).unwrap();
-        ProjectivePoint::GENERATOR.mul(self.x).add(self.M.mul(&w0_scalar))
+        let w0_scalar = Scalar::try_from_bytes(w0)?;
+        Ok(ProjectivePoint::GENERATOR.mul(self.x).add(self.M.mul(&w0_scalar)))
     }
 
     /// Computes the verifier public key (Y).
-    pub fn compute_public_verifier(&self, w0: &[u8]) -> ProjectivePoint {
+    pub fn compute_public_verifier(&self, w0: &[u8]) -> Result<ProjectivePoint, MatterError> {
         // y <- [0, p-1]
         // Y = y*P + w0*N
-        let w0_scalar = Scalar::from_repr(*GenericArray::from_slice(&w0)).unwrap();
-        ProjectivePoint::GENERATOR.mul(self.y).add(self.N.mul(&w0_scalar))
+        let w0_scalar = Scalar::try_from_bytes(w0)?;
+        Ok(ProjectivePoint::GENERATOR.mul(self.y).add(self.N.mul(&w0_scalar)))
     }
 
     /// Computes TT from (X,Y,Z,V, w0 and context).
@@ -120,7 +126,7 @@ impl SPAKE2P {
         data
     }
 
-    // Computes (Z, V) pair.
+    /// Computes (Z, V) pair.
     pub fn compute_shared_values(&self, values: &Values, p_a: &[u8], p_b: &[u8]) -> (ProjectivePoint, ProjectivePoint) {
         // Apparently h === 1 in P256.
         let public_prover = ProjectivePoint::from_encoded_point(&EncodedPoint::from_bytes(&p_a).unwrap()).unwrap();
@@ -159,9 +165,18 @@ impl SPAKE2P {
     }
 }
 
-
+/// Write Little Endian u64 length then write the data.
 fn write_with_length(vec: &mut Vec<u8>, data: &[u8]) -> Result<(), MatterError> {
     vec.write_u64::<LE>(data.len() as u64)?;
     vec.extend_from_slice(data);
     Ok(())
+}
+
+impl ByteEncodable for Scalar {
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, MatterError> {
+        let result = Scalar::from_repr(*GenericArray::from_slice(&bytes));
+        let choice = result.is_none().unwrap_u8();
+        if choice == 1 { return Err(MatterError::new(Cryptography, "Unable to compute scalar from byte array.")); }
+        Ok(result.unwrap())
+    }
 }

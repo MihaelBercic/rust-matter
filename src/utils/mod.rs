@@ -7,6 +7,8 @@ pub mod padding;
 
 #[derive(Debug)]
 pub enum MatterLayer {
+    Cryptography,
+    SecureSession,
     Transport,
     Application,
     Data,
@@ -28,8 +30,8 @@ impl MatterError {
 impl fmt::Display for MatterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            MatterError::Custom(_layer, msg) => write!(f, "{}", msg),
-            MatterError::Io(err) => write!(f, "IO Error: {}", err),
+            MatterError::Custom(_layer, msg) => write!(f, "{:?}", msg),
+            MatterError::Io(err) => write!(f, "IO Error: {:?}", err),
         }
     }
 }

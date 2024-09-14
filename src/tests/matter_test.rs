@@ -10,6 +10,7 @@ use crate::secure::protocol::message::ProtocolMessage;
 use crate::secure::protocol::message_builder::ProtocolMessageBuilder;
 use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::bit_subset::BitSubset;
+use std::net::UdpSocket;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -27,10 +28,6 @@ fn protocol_message_builder() {
 
     let bytes: Vec<u8> = message.to_bytes();
     let decoded_message = ProtocolMessage::try_from(&bytes[..]).unwrap();
-
-    println!("{:?}", message);
-    println!("{:?}", decoded_message);
-
     assert_eq!(message.opcode, PASEPake1);
     assert_eq!(message.exchange_flags.sent_by_initiator(), true);
     assert_eq!(message.exchange_flags.needs_acknowledgement(), false);
@@ -56,9 +53,6 @@ fn matter_message_builder() {
         .build();
     let bytes = message.as_bytes();
     let decoded_message = MatterMessage::try_from(&bytes[..]).unwrap();
-
-    println!("{:?}", message);
-    println!("{:?}", decoded_message);
 
     assert_eq!(decoded_message, message);
     assert_eq!(message.header.flags.version(), 1);
@@ -120,4 +114,12 @@ fn queue_test() {
         }
         assert_eq!(total_received, 5);
     }).join().expect("Unable to join the thread...");
+}
+
+
+#[test]
+pub fn udp_sample() {
+    let udp = UdpSocket::bind("[::]:0").unwrap();
+    let data = hex::decode("01000000b952220d482791e3cee6d33506235779000002f77a0815300120b2a23f80877b3b3dd3aa1b32464da363718637c0aa295ad6543718355a95a582300220b06fc28a6f644e2dd790129f293e546c61b6905e70c5794afd2d6b5850d1bf002503836535042501e803300220000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f1835052601f401000026022c0100002503a00f1818").unwrap();
+    udp.send_to(&data, udp.local_addr().unwrap()).unwrap();
 }

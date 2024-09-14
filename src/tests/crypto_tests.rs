@@ -1,22 +1,23 @@
 #![allow(dead_code)]
 
 use crate::crypto;
-use crate::crypto::spake::SPAKE2P;
+use crate::crypto::spake::Spake2P;
 use crate::utils::bit_subset::BitSubset;
 
 #[cfg(test)]
 mod cryptography_tests {
     use crate::crypto;
     use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_W_SIZE_BITS};
-    use crate::crypto::kdf::{password_key_derivation, PBKDFParameterSet};
-    use crate::crypto::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
+    use crate::crypto::kdf::password_key_derivation;
+    use crate::crypto::spake::values::Values::SpakeVerifier;
     use crate::crypto::spake::values_initiator::ProverValues;
     use crate::crypto::spake::values_responder::VerifierValues;
-    use crate::crypto::spake::Values::SpakeVerifier;
-    use crate::crypto::spake::SPAKE2P;
+    use crate::crypto::spake::Spake2P;
     use crate::crypto::{hash_message, kdf, random_bytes};
-    use crate::tlv::structs::pbkdf_param_request::PBKDFParamRequest;
-    use crate::tlv::structs::pbkdf_param_response::PBKDFParamResponse;
+    use crate::tests::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
+    use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
+    use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
+    use crate::tlv::structs::pbkdf_parameter_set::PBKDFParameterSet;
     use crate::tlv::tlv::TLV;
     use crate::utils::bit_subset::BitSubset;
     use ccm::aead::generic_array::GenericArray;
@@ -33,13 +34,8 @@ mod cryptography_tests {
     #[test]
     fn random_bytes_generator() {
         let short_bytes = random_bytes::<10>();
-        println!("{}B = {}", 10, hex::encode(short_bytes));
-
         let medium_bytes = random_bytes::<32>();
-        println!("{}B = {}", 32, hex::encode(medium_bytes));
-
         let long_bytes = random_bytes::<256>();
-        println!("{}B = {}", 256, hex::encode(long_bytes));
     }
 
     #[test]
@@ -121,11 +117,6 @@ mod cryptography_tests {
         };
         let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken)
             .expect("Issue decrypting the payload.");
-        println!("Symmetric Encrypted: {}", hex::encode(&encrypted));
-        println!(
-            "Symmetric Decrypted: {}",
-            String::from_utf8_lossy(&decrypted)
-        );
         assert_eq!(message, decrypted.as_slice())
     }
 
@@ -137,12 +128,7 @@ mod cryptography_tests {
         let mut message = b"Hello from Matter!".to_vec();
         taken.copy_from_slice(&nonce[0..13]);
         crypto::symmetric::encrypt_ctr(&key, &mut message, &taken);
-        println!("AES128-CTR Encrypted: {}", hex::encode(&message));
         crypto::symmetric::decrypt_ctr(&key, &mut message, &taken);
-        println!(
-            "AES128-CTR Decrypted: {}",
-            String::from_utf8_lossy(&message)
-        );
     }
 
     #[test]
@@ -156,7 +142,6 @@ mod cryptography_tests {
             &info[..],
             3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
         );
-        println!("HKDF derived: {}", hex::encode(kdf));
     }
 
     #[test]
@@ -165,20 +150,20 @@ mod cryptography_tests {
         let salt = b"salt";
         let n = 600_000u32;
         let expected = hex::decode("669cfe52482116fda1aa2cbe409b2f56c8e45637").unwrap();
-        let key1 = kdf::password_key_derivation(password, salt, n, 160);
+        let key1 = password_key_derivation(password, salt, n, 160);
         assert_eq!(expected, key1);
 
         let salt = hex::decode("03959ebc20b8fcbda262d97f9a7a9e76e32d7a1b9c5166b6a3721e88acad8808").unwrap();
         let n = 1000;
         let expected = hex::decode("c171172da78b28f9588c4f6f5ae1a4f31aebb35d07e46fef1cf3137b49215adde80b3341e46e6c224524ef828a807a4183e0621b9160b52aa235094712b778b4d69c64b0341a65a21a34dfb52e035cce").unwrap();
-        let key = password_key_derivation(&password, &salt, n, CRYPTO_W_SIZE_BITS * 2);
+        let key = password_key_derivation(password, &salt, n, CRYPTO_W_SIZE_BITS * 2);
         assert_eq!(key, expected);
     }
 
     #[test]
     fn rfc_spake2() {
         for rfc in RFC_T {
-            let mut spake = SPAKE2P::new();
+            let mut spake = Spake2P::new();
             // skip compute_values
             let initiator_values = ProverValues { w0: rfc.w0, w1: rfc.w1 };
             let responder_values = VerifierValues { w0: rfc.w0, L: rfc.L };
@@ -186,9 +171,9 @@ mod cryptography_tests {
             spake.y = Scalar::from_repr(*GenericArray::from_slice(&rfc.y)).unwrap();
             let p_a = rfc.X;
             let p_b = rfc.Y;
-            assert_eq!(&spake.compute_public_prover(&rfc.w0).to_encoded_point(false).to_bytes().to_vec()[..], p_a);
-            assert_ne!(&spake.compute_public_verifier(&rfc.w0).to_encoded_point(false).to_bytes().to_vec()[..], p_a);
-            assert_eq!(&spake.compute_public_verifier(&rfc.w0).to_encoded_point(false).to_bytes().to_vec()[..], p_b);
+            assert_eq!(&spake.compute_public_prover(&rfc.w0).unwrap().to_encoded_point(false).to_bytes().to_vec()[..], p_a);
+            assert_ne!(&spake.compute_public_verifier(&rfc.w0).unwrap().to_encoded_point(false).to_bytes().to_vec()[..], p_a);
+            assert_eq!(&spake.compute_public_verifier(&rfc.w0).unwrap().to_encoded_point(false).to_bytes().to_vec()[..], p_b);
 
             let confirmation = spake.compute_confirmation_values(&rfc.TT[..rfc.TT_len].to_vec(), &p_a, &p_b, 256);
             assert_eq!(confirmation.Ke, rfc.Ke);
@@ -196,13 +181,13 @@ mod cryptography_tests {
             assert_eq!(confirmation.cB, rfc.cB);
 
             let verifier = SpakeVerifier(VerifierValues { w0: rfc.w0, L: rfc.L });
-            let (z, v) = spake.compute_shared_values(verifier, &p_a, &p_b);
+            let (z, v) = spake.compute_shared_values(&verifier, &p_a, &p_b);
             assert_eq!(z.to_encoded_point(false).to_bytes().to_vec(), rfc.Z.to_vec());
             assert_eq!(v.to_encoded_point(false).to_bytes().to_vec(), rfc.V.to_vec());
         }
 
         for test in get_test_vectors() {
-            let mut spake = SPAKE2P::new();
+            let mut spake = Spake2P::new();
             spake.x = Scalar::from_repr(*GenericArray::from_slice(&hex::decode(test.x).unwrap())).unwrap();
             spake.y = Scalar::from_repr(*GenericArray::from_slice(&hex::decode(test.y).unwrap())).unwrap();
             let prover_values = ProverValues {
@@ -215,8 +200,8 @@ mod cryptography_tests {
                 L: hex::decode(test.L).unwrap().try_into().unwrap(),
             };
 
-            let p_a = spake.compute_public_prover(&prover_values.w0).to_encoded_point(false).to_bytes().to_vec();
-            let p_b = spake.compute_public_verifier(&verifier_values.w0).to_encoded_point(false).to_bytes().to_vec();
+            let p_a = spake.compute_public_prover(&prover_values.w0).unwrap().to_encoded_point(false).to_bytes().to_vec();
+            let p_b = spake.compute_public_verifier(&verifier_values.w0).unwrap().to_encoded_point(false).to_bytes().to_vec();
             let test_confirm_v = hex::decode(test.K_confirmV).unwrap();
             let test_confirm_p = hex::decode(test.K_confirmP).unwrap();
 
@@ -227,7 +212,7 @@ mod cryptography_tests {
             let id_p = test.idProver.as_bytes();
             let id_v = test.idVerifier.as_bytes();
 
-            let (z, v) = spake.compute_shared_values(SpakeVerifier(verifier_values.clone()), &p_a, &p_b);
+            let (z, v) = spake.compute_shared_values(&SpakeVerifier(verifier_values.clone()), &p_a, &p_b);
             let transcript = spake.compute_transcript(context, id_p, id_v, SpakeVerifier(verifier_values), &p_a, &p_b);
             assert_eq!(z.to_encoded_point(false).as_bytes(), hex::decode(test.Z).unwrap());
             assert_eq!(v.to_encoded_point(false).as_bytes(), hex::decode(test.V).unwrap());
@@ -251,13 +236,13 @@ mod cryptography_tests {
     fn matter_spake2() {
         // // MatterJS PakeTests
         let x = hex::decode("de583b5685529de9544b92c9c8cba696751b14d65092d13458879b3bc9814b53").unwrap();
-        let mut spake = SPAKE2P::new();
+        let mut spake = Spake2P::new();
         spake.x = Scalar::from_repr(*GenericArray::from_slice(&x.clone())).unwrap();
         spake.y = Scalar::from_repr(*GenericArray::from_slice(&x.clone())).unwrap();
         let test_salt = hex::decode("03959ebc20b8fcbda262d97f9a7a9e76e32d7a1b9c5166b6a3721e88acad8808").unwrap();
 
-        let prover = SPAKE2P::compute_prover(20202021, &test_salt, 1000);
-        let verifier = SPAKE2P::compute_verifier(20202021, &test_salt, 1000);
+        let prover = Spake2P::compute_prover(20202021, &test_salt, 1000);
+        let verifier = Spake2P::compute_verifier(20202021, &test_salt, 1000);
         let pbkdf = password_key_derivation(&(20202021u32.to_le_bytes()), &test_salt, 1000, CRYPTO_W_SIZE_BITS * 2);
 
         assert_eq!(hex::encode(pbkdf), "c171172da78b28f9588c4f6f5ae1a4f31aebb35d07e46fef1cf3137b49215adde80b3341e46e6c224524ef828a807a4183e0621b9160b52aa235094712b778b4d69c64b0341a65a21a34dfb52e035cce");
@@ -285,18 +270,15 @@ mod cryptography_tests {
             }),
             responder_session_params: None,
         };
-        println!("{}", hex::encode(response.to_bytes()));
         let response_bytes = Into::<TLV>::into(response).to_bytes();
         let as_tlv = hex::encode(&response_bytes);
         assert_eq!("1530012094eab5c37d101df5ef01b2c8ecada03a7c3b0cf5e26a08feda72617f9cd391a630022022820a42684102fd4a92c0bad66ad1f21f3c5366f5a6d84203035e2c7caf3bae250357de35042501e80330022003959ebc20b8fcbda262d97f9a7a9e76e32d7a1b9c5166b6a3721e88acad88081818", as_tlv);
 
         let p_a = hex::decode("04cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced196").unwrap();
-        let p_b = spake.compute_public_verifier(&verifier.w0).to_encoded_point(false).as_bytes().to_vec();
+        let p_b = spake.compute_public_verifier(&verifier.w0).unwrap().to_encoded_point(false).as_bytes().to_vec();
 
-        println!("X: {}", hex::encode(&p_a));
-        println!("Y: {}", hex::encode(&p_b));
         assert_eq!(p_b, hex::decode("0404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb").unwrap());
-        let (z, v) = spake.compute_shared_values(SpakeVerifier(verifier.clone()), &p_a, &p_b);
+        let (z, v) = spake.compute_shared_values(&SpakeVerifier(verifier.clone()), &p_a, &p_b);
         assert_eq!(z.to_encoded_point(false).as_bytes(), hex::decode("04e3bb24193dd3f33a3769549d1abd19b0bdf1776a7274e35e1ecb98c318fba689bd30432374af3ff6642b9ada4ad26dac56ba6f4e679a4f8dbe0cc7f87b92799d").unwrap());
         assert_eq!(v.to_encoded_point(false).as_bytes(), hex::decode("040b8bcc14906182b7a86b23637ed62257dac82d9edc059ab216bb995023c6b17e94a7f25f16f58b175d7cd885c006be49c1551edf94579e479fb77d711cb67a5b").unwrap());
         let mut context = vec![];
@@ -311,9 +293,9 @@ mod cryptography_tests {
         assert_eq!(confirmation.cA.to_vec(), hex::decode("05030c97e72b884cd0ebf0f2e6f91bfd377a8f37601bb7f633d468e289437cf7").unwrap());
 
         // // MatterJS Test Case 2 (PasePairingTest)
-        let mut spake = SPAKE2P::new();
+        let mut spake = Spake2P::new();
         let param_set: PBKDFParameterSet = PBKDFParameterSet { iterations: 1000, salt: hex::decode("2bb41e9d75f30c2e6b2f059410c56965717cc2bf14ed6c73a169435326a89652").unwrap().try_into().unwrap() };
-        let verifier = SPAKE2P::compute_verifier(20202021, &param_set.salt, param_set.iterations);
+        let verifier = Spake2P::compute_verifier(20202021, &param_set.salt, param_set.iterations);
         assert_eq!(hex::encode(verifier.w0), "501f85a83d1da77983ff6f0c1f742d6d98f6d0ab0ba740a38032200099c8981f");
         assert_eq!(hex::encode(verifier.L), "0463e7f225296bcd9b100e605d636a3d2c84524665cbd9b8b75e737d04bca1241486b37bdba74284de76f2db9df271d2c5bda21b8e26bc0943dcbf0542665c3aa8");
         let request = PBKDFParamRequest {
@@ -338,14 +320,14 @@ mod cryptography_tests {
         context.extend_from_slice(&req_tlv.to_bytes());
         context.extend_from_slice(&res_tlv.to_bytes());
         spake.x = Scalar::from_repr(*GenericArray::from_slice(&hex::decode("fee695b4972a4f620951010c87390d3fe1313efce399fbc2c9c7cdc04d22b4c6").unwrap())).unwrap();
-        let initiator = SPAKE2P::compute_prover(20202021, &param_set.salt, param_set.iterations);
+        let initiator = Spake2P::compute_prover(20202021, &param_set.salt, param_set.iterations);
         assert_eq!(hex::encode(initiator.w0), hex::encode(verifier.w0));
     }
 }
 
 #[test]
 fn spake2p_confirmation() {
-    let spake = SPAKE2P::new();
+    let spake = Spake2P::new();
     let mut tt = hex::decode("200000000000000064e59c36646d7b6cf4103b78228313325c275c5aa9b5f21da9a482661f7b5e8800000000000000000000000000000000410000000000000004886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f5ff355163e43ce224e0b0e65ff02ac8e5c7be09419c785e0ca547d55a12e2d20410000000000000004d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b4907d60aa6bfade45008a636337f5168c64d9bd36034808cd564490b1e656edbe7410000000000000004cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced19641000000000000000404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb410000000000000004e3bb24193dd3f33a3769549d1abd19b0bdf1776a7274e35e1ecb98c318fba689bd30432374af3ff6642b9ada4ad26dac56ba6f4e679a4f8dbe0cc7f87b92799d4100000000000000040b8bcc14906182b7a86b23637ed62257dac82d9edc059ab216bb995023c6b17e94a7f25f16f58b175d7cd885c006be49c1551edf94579e479fb77d711cb67a5b200000000000000000177867f1e564cc4d9f347edfc28263ee5a50f1e21177cfb9a7dc2504437ccb").unwrap();
     let p_a = hex::decode("04cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced196").unwrap();
     let p_b = hex::decode("0404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb").unwrap();
@@ -369,7 +351,6 @@ fn random_bit_generator() {
                     last_bit -= 1;
                 }
             }
-            println!("{} => {}: {}", x, last_bit, int.iter().map(|x| format!("{:08b}", x)).collect::<Vec<String>>().join(" "));
             assert!(last_bit <= x + 1);
         }
     }

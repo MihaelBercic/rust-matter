@@ -18,11 +18,11 @@ impl MatterMessageFlags {
 
     pub fn type_of_destination(&self) -> Option<MatterDestinationType> {
         let destination = self.flags.bit_subset(0, 2);
-        return match destination {
+        match destination {
             1 => Some(NodeID),
             2 => Some(GroupID),
             _ => None
-        };
+        }
     }
 
     pub fn set_version(&mut self, version: u8) -> &mut Self {

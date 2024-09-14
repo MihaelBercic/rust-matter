@@ -1,8 +1,7 @@
-use crate::crypto::hash_message;
-use crate::crypto::spake::SPAKE2P;
+use crate::crypto::spake::Spake2P;
 use crate::tlv::element_type::ElementType::*;
 use crate::tlv::encodable_value::EncodableValue;
-use crate::tlv::structs::pbkdf_param_request::PBKDFParamRequest;
+use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
 use crate::tlv::tag_control::TagControl::{Anonymous0, CommonProfile16, CommonProfile32, ContextSpecific8, FullyQualified48, FullyQualified64};
 use crate::tlv::tag_number::TagNumber::{Long, Medium, Short};
 use crate::tlv::tlv::TLV;
@@ -142,8 +141,6 @@ pub fn vendor() {
 pub fn context_difference() {
     let a = "1530012040e26f0d08cca5cb58fc48e1c9d696495c08b97b04bfcfe8cc623e779a2c637625025e02240300280435052501f40125022c012503a00f24041124050b2606000003012407011818";
     let b = "1530012040e26f0d08cca5cb58fc48e1c9d696495c08b97b04bfcfe8cc623e779a2c637625025e02240300280435052601f401000026022c0100002503a00f1818";
-    println!("{}", a);
-    println!("{}", b);
     let a = hex::decode(a).unwrap();
     let b = hex::decode(b).unwrap();
     let tlv_a = TLV::try_from_cursor(&mut Cursor::new(&a)).unwrap();
@@ -152,13 +149,8 @@ pub fn context_difference() {
     let p_a = PBKDFParamRequest::try_from(tlv_a).unwrap();
     let p_b = PBKDFParamRequest::try_from(tlv_b).unwrap();
 
-    println!("{:?}", p_a);
-    println!("{:?}", p_b);
-
     let tlv_a: TLV = p_a.into();
     let tlv_b: TLV = p_b.into();
-    println!("{:?}", hex::encode(tlv_a.to_bytes()));
-    println!("{:?}", hex::encode(tlv_b.to_bytes()));
 }
 
 #[test]
@@ -184,13 +176,7 @@ pub fn transcript_test() {
     data.extend_from_slice(&hex::decode("0445eefcb926be981694dc7b29842313a049aa5907d154bdda684f0cc8d93a84d58633dfd34410a9aad6e43f9ebf60a872fa8a4c34f570a8eb7f151760dfb7e470").unwrap());
     data.extend_from_slice(&hex::decode("2000000000000000").unwrap());
     data.extend_from_slice(&hex::decode("93b315a1b86c6f0fb627feadde76c93cae8b6dc5e578951db04da543e1021aef").unwrap());
-    println!("{:?}", hex::encode(hash_message(&data)));
     data.extend_from_slice(&hex::decode("2000000000000000").unwrap());
     data.extend_from_slice(&hex::decode("0f3ef80560e3a6bc0677a47d6ecd5bde62409d5b6e79cb7faaf0a20c584a4de8").unwrap());
-    println!("{:?}", hex::encode(hash_message(&data)));
-
-    let c = SPAKE2P::new().compute_confirmation_values(&data, &p_a, &p_b, 256);
-    println!("cA = {:?}", hex::encode(c.cA));
-    println!("cB = {:?}", hex::encode(c.cB));
-    println!("Ke = {:?}", hex::encode(c.Ke));
+    let c = Spake2P::new().compute_confirmation_values(&data, &p_a, &p_b, 256);
 }

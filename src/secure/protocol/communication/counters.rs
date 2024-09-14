@@ -14,11 +14,9 @@ pub fn initialize_counter(counter: &AtomicU32) {
     array.copy_from_slice(&bits);
     let number_be = u32::from_be_bytes(array) + 1;
     counter.store(number_be, Relaxed);
-    println!("Counter initialised to {} as {:?}", number_be, counter);
 }
 
 /// Increases the counter by one (1).
 pub fn increase_counter(counter: &AtomicU32) -> u32 {
-    println!("Increasing counter from {:?}...", counter);
     counter.fetch_add(1, Relaxed)
 }

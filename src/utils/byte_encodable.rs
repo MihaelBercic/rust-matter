@@ -1,9 +1,13 @@
 #![allow(unused)]
+
+use crate::utils::MatterError;
+
 ///
 /// @author Mihael Berčič
 /// @date 28. 7. 24
 ///
 pub trait ByteEncodable {
-    fn from_bytes(bytes: &[u8]) -> Self;
-    fn to_bytes(&self) -> Vec<u8>;
+    /// Returns a representation of [Self] from [bytes];
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, MatterError>
+        where Self: Sized;
 }

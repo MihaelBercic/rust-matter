@@ -7,7 +7,7 @@ use std::os::fd::FromRawFd;
 use std::str::FromStr;
 
 use crate::constants::{IPV6_MULTICAST_ADDRESS, MDNS_PORT};
-use crate::NetworkInterface;
+use crate::{log_error, NetworkInterface};
 use libc::{bind, c_char, in6_addr, perror, setsockopt, sockaddr, sockaddr_in6, socket, socklen_t, AF_INET6, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT};
 
 /// Holds information about the udp_socket constructed via libc and the buffer corresponding for data.
@@ -75,9 +75,8 @@ impl MulticastSocket<2000> {
     }
 
     pub fn send<A: ToSocketAddrs + Debug + Copy>(&self, buf: &[u8], destination: A) {
-        // println!("Sending MDNS data to {:?}!", &destination);
         if let Err(error) = self.udp_socket.send_to(buf, destination) {
-            eprintln!("Unable to send to {:?} due to {:?}", destination, error);
+            log_error!("Unable to send to {:?} due to {:?}", destination, error);
         }
     }
 

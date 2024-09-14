@@ -1,8 +1,8 @@
 use crate::crypto::spake::values_initiator::ProverValues;
 use crate::crypto::spake::values_responder::VerifierValues;
 use crate::tlv::structs::pake_1::Pake1;
-use crate::tlv::structs::pbkdf_param_request::PBKDFParamRequest;
-use crate::tlv::structs::pbkdf_param_response::PBKDFParamResponse;
+use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
+use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
 
 ///
 /// @author Mihael Berčič

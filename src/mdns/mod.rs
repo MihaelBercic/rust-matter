@@ -10,7 +10,7 @@ use crate::mdns::records::record_type::RecordType::{AAAA, PTR, SRV, TXT};
 use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
 use crate::secure::protocol::communication::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
 use crate::utils::padding::StringExtensions;
-use crate::{MDNSDeviceInformation, NetworkInterface};
+use crate::{log_error, log_info, MDNSDeviceInformation, NetworkInterface};
 use rand::Rng;
 use std::io::Write;
 use std::net::UdpSocket;
@@ -44,7 +44,7 @@ pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interf
                                    device.product_id
     );
     pairing_code.push_verhoeff_check_digit();
-    println!("Pairing code: {}", pairing_code);
+    log_info!("Pairing code: {}", pairing_code);
 
     let mac = hex::encode_upper(&device.mac);
     let host_name = format!("{}.{}", mac, LOCAL_DOMAIN);
@@ -52,7 +52,7 @@ pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interf
     let random: u64 = 0x705E698FD7D59D90;
     let instance_name = format!("{}.{}.{}", hex::encode_upper(random.to_le_bytes()), PROTOCOL, LOCAL_DOMAIN);
 
-    println!("Instance name: {}", &instance_name);
+    log_info!("Instance name: {}", &instance_name);
     let mut socket = MulticastSocket::new(&interface, MDNS_PORT);
 
     let domain_bytes: Vec<u8> = PTRRecord { domain: &instance_name }.into();
@@ -141,7 +141,7 @@ pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interf
         data: domain_bytes.clone(),
     };
 
-    println!("IPv6: {}", device.ip.to_string());
+    log_info!("IPv6: {}", device.ip.to_string());
 
     let txt_record = CompleteRecord {
         record_information: RecordInformation {
@@ -168,7 +168,7 @@ pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interf
     let mut _failed = 0usize;
     let mdns_dst = format!("[{}%{}]:{}", IPV6_MULTICAST_ADDRESS, interface.index, MDNS_PORT);
 
-    println!("Spawning a new multicast listening thread...");
+    log_info!("Spawning a new multicast listening thread...");
     let ip = device.ip.clone();
     thread::Builder::new().name("Multicast listening".to_string()).stack_size(50 * 1024).spawn(move || {
         loop {
@@ -216,17 +216,14 @@ pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interf
                             } else {
                                 socket.send(&packet_response, &mdns_dst);
                             }
-                            // println!("Responding to both");
                         }
                         Err(_) => {
                             _failed += 1;
                         }
                     }
-                    // print!("\rTotal: {}\tFailed {}", format!("{:5}", total), format!("{:5}", failed));
-                    // stdout().flush().unwrap();
                 }
                 Err(receive_error) => {
-                    eprintln!("Socket error: {}", receive_error);
+                    log_error!("Socket error: {}", receive_error);
                     sleep(Duration::from_secs(5));
                 }
             };

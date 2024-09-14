@@ -1,7 +1,6 @@
-use std::io::{Cursor, Read};
-
 use crate::secure::message_header::MatterMessageHeader;
 use crate::utils::MatterError;
+use std::io::{Cursor, Read};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct MatterMessage {
@@ -36,6 +35,14 @@ impl MatterMessage {
         data.extend_from_slice(header_as_bytes);
         data.extend(&self.payload);
         data.extend(&self.integrity_check);
+        data
+    }
+
+    // payload: Vec<u8>
+    pub fn to_bytes(self) -> Vec<u8> {
+        let mut data = self.header.to_bytes();
+        data.extend(self.payload); // Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }
+        data.extend(self.integrity_check);
         data
     }
 }

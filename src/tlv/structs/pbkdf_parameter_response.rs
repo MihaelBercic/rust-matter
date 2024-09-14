@@ -2,10 +2,10 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use rand::{thread_rng, Rng};
 
 use crate::crypto::constants::{CRYPTO_PBKDF_ITERATIONS_MAX, CRYPTO_PBKDF_ITERATIONS_MIN};
-use crate::crypto::kdf::PBKDFParameterSet;
 use crate::crypto::{random_bits, random_bytes};
 use crate::tlv::element_type::ElementType::Structure;
-use crate::tlv::structs::pbkdf_param_request::{PBKDFParamRequest, SessionParameter};
+use crate::tlv::structs::pbkdf_parameter_request::{PBKDFParamRequest, SessionParameter};
+use crate::tlv::structs::pbkdf_parameter_set::PBKDFParameterSet;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;

@@ -9,12 +9,9 @@ impl Into<Vec<u8>> for TXTRecord<'static> {
         let total_length = (mapped.join("").len() + mapped.len()) as u16;
         buffer.write_u16::<BE>(total_length).unwrap();
         for value in mapped {
-            // println!("Writing {} to TXT record buffer...", value);
             buffer.push(value.len() as u8);
             buffer.extend(value.as_bytes());
         }
         buffer
     }
 }
-
-//TODO: Remove debugging println!("{}", buffer.iter().map(|x| format!("{:02x}", x)).collect::<Vec<String>>().join(" "));

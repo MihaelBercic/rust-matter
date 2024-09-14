@@ -12,7 +12,6 @@ use crate::crypto::constants::{CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES};
 
 pub mod constants;
 pub mod kdf;
-pub mod s2p_test_vectors;
 pub mod spake;
 pub mod symmetric;
 
