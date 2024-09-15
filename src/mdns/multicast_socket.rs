@@ -6,7 +6,7 @@ use std::net::{Ipv6Addr, SocketAddr, ToSocketAddrs, UdpSocket};
 use std::os::fd::FromRawFd;
 use std::str::FromStr;
 
-use crate::constants::{IPV6_MULTICAST_ADDRESS, MDNS_PORT};
+use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, MDNS_PORT};
 use crate::{log_error, NetworkInterface};
 use libc::{bind, c_char, in6_addr, perror, setsockopt, sockaddr, sockaddr_in6, socket, socklen_t, AF_INET6, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT};
 

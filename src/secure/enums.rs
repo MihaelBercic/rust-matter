@@ -32,3 +32,9 @@ pub enum MessageType {
     Acknowledgment,
     Unknown,
 }
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum SessionState {
+    Unsecure,
+    Secure,
+}

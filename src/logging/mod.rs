@@ -47,11 +47,11 @@ pub const bg_reset: &str = "\x1B[49m";
 macro_rules! log_info {
     ($($arg:tt)*) => {
        println!(
-            "{}{}{:<10}| {}{}{}",
+            "{}{}{:<10}| {:<10} | {}{}",
             $crate::logging::color_bright_green,
             $crate::logging::style_bold,
             "info",
-            $crate::logging::color_reset,
+            $crate::START_TIME.elapsed().unwrap().as_millis(),
             $crate::logging::style_reset,
             format_args!($($arg)*)
         );
@@ -62,11 +62,11 @@ macro_rules! log_info {
 macro_rules! log_debug {
     ($($arg:tt)*) => {
         println!(
-            "{}{}{:<10}| {}{}{}",
+            "{}{}{:<10}| {:<10} | {}{}",
             $crate::logging::color_blue,
             $crate::logging::style_bold,
             "debug",
-            $crate::logging::color_reset,
+            $crate::START_TIME.elapsed().unwrap().as_millis(),
             $crate::logging::style_reset,
             format_args!($($arg)*)
         )
@@ -78,11 +78,11 @@ macro_rules! log_debug {
 macro_rules! log_error {
     ($($arg:tt)*) => {
        println!(
-            "{}{}{:<10}| {}{}{}",
+            "{}{}{:<10}| {:<10} | {}{}",
             $crate::logging::color_bright_red,
             $crate::logging::style_bold,
             "error",
-            $crate::logging::color_reset,
+            $crate::START_TIME.elapsed().unwrap().as_millis(),
             $crate::logging::style_reset,
             format_args!($($arg)*)
         )

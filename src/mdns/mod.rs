@@ -1,5 +1,5 @@
-use crate::constants::{IPV6_MULTICAST_ADDRESS, LOCAL_DOMAIN, MDNS_PORT, PROTOCOL};
 use crate::crypto::random_bits;
+use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, LOCAL_DOMAIN, MDNS_PORT, PROTOCOL};
 use crate::mdns::multicast_socket::MulticastSocket;
 use crate::mdns::packet::MDNSPacket;
 use crate::mdns::packet_header::MDNSPacketHeader;
@@ -20,12 +20,14 @@ use std::thread::sleep;
 use std::time::Duration;
 use verhoeff::VerhoeffMut;
 
-pub mod multicast_socket;
-pub mod records;
-pub mod packet;
+pub(crate) mod multicast_socket;
+pub(crate) mod records;
+pub(crate) mod packet;
 pub mod enums;
 mod packet_header;
+pub(crate) mod constants;
 
+/// Starts the mDNS-SD advertisement for our device.
 pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interface: &NetworkInterface) {
     initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);
     initialize_counter(&GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER);

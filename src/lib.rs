@@ -32,19 +32,21 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::net::{Ipv6Addr, SocketAddr, UdpSocket};
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::thread;
 use std::thread::JoinHandle;
+use std::time::SystemTime;
 
-mod tests;
-pub mod crypto;
+pub(crate) mod tests;
+pub(crate) mod crypto;
 pub mod mdns;
-pub mod utils;
-pub mod secure;
-pub mod constants;
-pub mod network;
-pub mod tlv;
+pub(crate) mod utils;
+pub(crate) mod secure;
+pub(crate) mod network;
+pub(crate) mod tlv;
 pub mod logging;
+
+pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
 pub fn start(device_info: &MDNSDeviceInformation, interface: NetworkInterface) {
@@ -53,11 +55,11 @@ pub fn start(device_info: &MDNSDeviceInformation, interface: NetworkInterface) {
     let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
 
     mdns::start_advertising(&udp_socket, device_info, &interface);
-    log_info!("Starting listening thread...");
+    log_debug!("Starting listening thread...");
     start_listening_thread(processing_sender.clone(), udp_socket.clone());
-    log_info!("Starting outgoing thread...");
+    log_debug!("Starting outgoing thread...");
     start_outgoing_thread(outgoing_receiver, udp_socket);
-    log_info!("Starting processing thread...");
+    log_debug!("Starting processing thread...");
     start_processing_thread(processing_receiver, outgoing_sender).join().expect("Unable to start the thread for processing messages...");
 }
 

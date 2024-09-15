@@ -10,8 +10,7 @@ use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
 ///
 
 #[derive(Clone)]
-pub struct Session {}
-
+pub struct Session;
 
 #[derive(Clone)]
 pub struct Exchange {
