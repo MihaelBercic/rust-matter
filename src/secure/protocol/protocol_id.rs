@@ -14,14 +14,18 @@ pub enum ProtocolID {
     ProtocolForTesting = 0x0004,
 }
 
-impl From<u16> for ProtocolID {
-    fn from(value: u16) -> Self {
-        match value {
+impl<T> From<T> for ProtocolID
+    where T: Into<u32>
+{
+    fn from(value: T) -> Self {
+        let u32 = value.into();
+        match u32 {
             0x0000 => ProtocolSecureChannel,
             0x0001 => ProtocolInteractionModel,
             0x0002 => ProtocolBdx,
             0x0003 => ProtocolUserDirectedCommissioning,
-            _ => ProtocolForTesting
+            0x0004 => ProtocolForTesting,
+            _ => panic!("Invalid value for ProtocolID {}", u32),
         }
     }
 }

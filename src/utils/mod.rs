@@ -1,5 +1,9 @@
+use crate::utils::MatterLayer::Parsing;
+use std::any::Any;
+use std::error::Error;
 use std::fmt;
 use std::io;
+use std::time::SystemTimeError;
 
 pub mod bit_subset;
 pub mod byte_encodable;
@@ -9,10 +13,12 @@ pub mod padding;
 pub enum MatterLayer {
     Cryptography,
     SecureSession,
+    Parsing,
     Transport,
     Application,
     Data,
     Interaction,
+    Generic,
 }
 
 #[derive(Debug)]
@@ -48,5 +54,17 @@ impl std::error::Error for MatterError {
 impl From<io::Error> for MatterError {
     fn from(err: io::Error) -> MatterError {
         MatterError::Io(err)
+    }
+}
+
+impl From<Vec<u8>> for MatterError {
+    fn from(value: Vec<u8>) -> Self {
+        MatterError::new(Parsing, "Unable to perform vector try_into.")
+    }
+}
+
+impl From<SystemTimeError> for MatterError {
+    fn from(value: SystemTimeError) -> Self {
+        MatterError::new(Parsing, "Unable to parse SystemTime.")
     }
 }

@@ -8,7 +8,7 @@ use crate::secure::message::MatterMessage;
 ///
 #[derive(Debug)]
 pub struct NetworkMessage {
-    pub address: SocketAddr,
+    pub address: Option<SocketAddr>,
     pub message: MatterMessage,
     pub retry_counter: u8,
 }

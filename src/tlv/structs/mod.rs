@@ -8,3 +8,4 @@ pub mod pake_1;
 pub mod pake_2;
 pub mod status_report;
 pub mod pbkdf_parameter_set;
+pub mod pake_3;

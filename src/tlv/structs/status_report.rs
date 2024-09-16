@@ -1,6 +1,8 @@
+use crate::secure::protocol::enums::{GeneralCode, ProtocolCode};
 use crate::secure::protocol::message::ProtocolMessage;
+use crate::secure::protocol::protocol_id::ProtocolID;
 use crate::utils::MatterError;
-use byteorder::{ReadBytesExt, LE};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::io::{Cursor, Read};
 
 ///
@@ -9,10 +11,10 @@ use std::io::{Cursor, Read};
 ///
 #[derive(Debug)]
 pub struct StatusReport {
-    general_code: u16,
-    protocol_id: u32,
-    protocol_code: u16,
-    data: Vec<u8>,
+    pub general_code: GeneralCode,
+    pub protocol_id: ProtocolID,
+    pub protocol_code: ProtocolCode,
+    pub data: Vec<u8>,
 }
 
 impl TryFrom<ProtocolMessage> for StatusReport {
@@ -21,9 +23,9 @@ impl TryFrom<ProtocolMessage> for StatusReport {
     fn try_from(value: ProtocolMessage) -> Result<Self, Self::Error> {
         let mut cursor = Cursor::new(value.payload);
         let mut data = vec![];
-        let general_code = cursor.read_u16::<LE>()?;
-        let protocol_id = cursor.read_u32::<LE>()?;
-        let protocol_code = cursor.read_u16::<LE>()?;
+        let general_code = GeneralCode::from(cursor.read_u16::<LE>()?);
+        let protocol_id = ProtocolID::from(cursor.read_u32::<LE>()?);
+        let protocol_code = ProtocolCode::from(cursor.read_u16::<LE>()?);
         cursor.read_to_end(&mut data)?;
         Ok(
             Self {
@@ -33,5 +35,16 @@ impl TryFrom<ProtocolMessage> for StatusReport {
                 data,
             }
         )
+    }
+}
+
+impl StatusReport {
+    pub fn to_bytes(self) -> Vec<u8> {
+        let mut data = vec![];
+        data.write_u16::<LE>(self.general_code as u16);
+        data.write_u32::<LE>(self.protocol_id as u32);
+        data.write_u16::<LE>(self.protocol_code as u16);
+        data.extend_from_slice(&self.data);
+        data
     }
 }

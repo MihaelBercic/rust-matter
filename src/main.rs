@@ -1,5 +1,6 @@
 use matter::mdns::enums::{CommissionState, DeviceType};
-use matter::{MDNSDeviceInformation, NetworkInterface};
+use matter::mdns::mdns_device_information::MDNSDeviceInformation;
+use matter::NetworkInterface;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
 
@@ -24,5 +25,5 @@ fn main() {
         vendor_id: 0xFFF1,
         product_id: 0x8000,
     };
-    matter::start(&device, interface);
+    matter::start(device, interface);
 }

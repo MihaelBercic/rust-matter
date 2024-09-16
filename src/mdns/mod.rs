@@ -1,5 +1,6 @@
 use crate::crypto::random_bits;
 use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, LOCAL_DOMAIN, MDNS_PORT, PROTOCOL};
+use crate::mdns::mdns_device_information::MDNSDeviceInformation;
 use crate::mdns::multicast_socket::MulticastSocket;
 use crate::mdns::packet::MDNSPacket;
 use crate::mdns::packet_header::MDNSPacketHeader;
@@ -10,7 +11,7 @@ use crate::mdns::records::record_type::RecordType::{AAAA, PTR, SRV, TXT};
 use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
 use crate::secure::protocol::communication::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
 use crate::utils::padding::StringExtensions;
-use crate::{log_error, log_info, MDNSDeviceInformation, NetworkInterface};
+use crate::{log_error, log_info, NetworkInterface};
 use rand::Rng;
 use std::io::Write;
 use std::net::UdpSocket;
@@ -26,9 +27,10 @@ pub(crate) mod packet;
 pub mod enums;
 mod packet_header;
 pub(crate) mod constants;
+pub mod mdns_device_information;
 
 /// Starts the mDNS-SD advertisement for our device.
-pub fn start_advertising(udp: &UdpSocket, device: &MDNSDeviceInformation, interface: &NetworkInterface) {
+pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interface: &NetworkInterface) {
     initialize_counter(&GLOBAL_UNENCRYPTED_COUNTER);
     initialize_counter(&GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER);
     initialize_counter(&GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER);

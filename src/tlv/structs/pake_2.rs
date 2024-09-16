@@ -9,6 +9,7 @@ use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string};
 /// @author Mihael Berčič
 /// @date 19. 8. 24
 ///
+#[derive(Debug, Clone)]
 pub struct Pake2 {
     pub(crate) p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
     pub(crate) c_b: [u8; CRYPTO_HASH_LEN_BYTES],
