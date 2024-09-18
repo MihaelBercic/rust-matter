@@ -20,7 +20,7 @@ use crate::utils::MatterError;
 pub struct PBKDFParamResponse {
     pub initiator_random: Vec<u8>, // octet string 32
     pub responder_random: Vec<u8>, // octet string 32
-    pub responder_session_id: u16,
+    pub session_id: u16,
     pub pbkdf_parameters: Option<PBKDFParameterSet>,
     pub responder_session_params: Option<SessionParameter>,
 }
@@ -30,8 +30,8 @@ impl PBKDFParamResponse {
     pub fn build_for(request: &PBKDFParamRequest) -> Result<Self, MatterError> {
         // verify passcode is 0
         let responder_random = random_bits(32 * 8);
-        let responder_session_id = u16::from_le_bytes(random_bytes::<2>()); // set local session identifier
-        let peer_session_identifier = request.initiator_session_id;
+        let session_id = u16::from_le_bytes(random_bytes::<2>()); // set local session identifier
+        let peer_session_id = request.initiator_session_id;
         let mut pbkdf_parameters = match request.has_params {
             true => None,
             _ => {
@@ -52,7 +52,7 @@ impl PBKDFParamResponse {
             Self {
                 initiator_random: request.initiator_random.clone(),
                 responder_random,
-                responder_session_id,
+                session_id,
                 pbkdf_parameters,
                 responder_session_params,
             }
@@ -63,7 +63,7 @@ impl PBKDFParamResponse {
         let mut vec = vec![];
         vec.extend_from_slice(&self.initiator_random);
         vec.extend_from_slice(&self.responder_random);
-        vec.write_u16::<LittleEndian>(self.responder_session_id);
+        vec.write_u16::<LittleEndian>(self.session_id);
         if let Some(session) = &self.responder_session_params { vec.extend_from_slice(&session.as_bytes()) }
         vec
     }
@@ -74,7 +74,7 @@ impl Into<TLV> for PBKDFParamResponse {
         let mut children = vec![
             create_advanced_tlv(tlv_octet_string(&self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
             create_advanced_tlv(tlv_octet_string(&self.responder_random), ContextSpecific8, Some(Short(2)), None, None),
-            create_advanced_tlv(tlv_unsigned(self.responder_session_id), ContextSpecific8, Some(Short(3)), None, None),
+            create_advanced_tlv(tlv_unsigned(self.session_id), ContextSpecific8, Some(Short(3)), None, None),
         ];
         if let Some(parameters) = self.pbkdf_parameters {
             let mut tlv: TLV = parameters.into();

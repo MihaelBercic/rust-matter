@@ -3,8 +3,8 @@ use std::iter;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::secure::enums::{MatterDestinationID, MatterDestinationType};
 use crate::secure::enums::MatterSessionType::{Group, Unicast};
+use crate::secure::enums::{MatterDestinationID, MatterDestinationType};
 use crate::secure::message_extension::MatterMessageExtension;
 use crate::secure::message_flags::MatterMessageFlags;
 use crate::secure::security_flags::MatterSecurityFlags;
@@ -65,7 +65,7 @@ impl MatterMessageHeader {
         self.session_id != 0 && self.security_flags.session_type() == Unicast
     }
 
-    pub fn is_unsecured_unicast_session(&self) -> bool {
+    pub fn is_insecure_unicast_session(&self) -> bool {
         self.session_id == 0 && self.security_flags.session_type() == Unicast
     }
 

@@ -83,8 +83,8 @@ macro_rules! log_error {
             $crate::logging::style_bold,
             "error",
             $crate::START_TIME.elapsed().unwrap().as_millis(),
-            $crate::logging::style_reset,
-            format_args!($($arg)*)
+            format_args!($($arg)*),
+            $crate::logging::style_reset
         )
     };
 }

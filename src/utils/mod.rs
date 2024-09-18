@@ -1,4 +1,4 @@
-use crate::utils::MatterLayer::Parsing;
+use crate::utils::MatterLayer::{Parsing, Transport};
 use std::any::Any;
 use std::error::Error;
 use std::fmt;
@@ -68,3 +68,15 @@ impl From<SystemTimeError> for MatterError {
         MatterError::new(Parsing, "Unable to parse SystemTime.")
     }
 }
+pub fn transport_error(msg: &str) -> MatterError {
+    MatterError::new(Transport, msg)
+}
+
+pub fn generic_error(msg: &str) -> MatterError {
+    MatterError::new(MatterLayer::Generic, msg)
+}
+
+pub fn session_error(msg: &str) -> MatterError {
+    MatterError::new(MatterLayer::SecureSession, msg)
+}
+

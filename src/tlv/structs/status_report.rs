@@ -39,6 +39,20 @@ impl TryFrom<ProtocolMessage> for StatusReport {
 }
 
 impl StatusReport {
+    pub fn new(general_code: GeneralCode, protocol_id: ProtocolID, protocol_code: ProtocolCode) -> Self {
+        Self {
+            general_code,
+            protocol_id,
+            protocol_code,
+            data: vec![],
+        }
+    }
+
+    pub fn append_data(&mut self, data: &[u8]) -> &mut Self {
+        self.data.extend_from_slice(data);
+        self
+    }
+
     pub fn to_bytes(self) -> Vec<u8> {
         let mut data = vec![];
         data.write_u16::<LE>(self.general_code as u16);

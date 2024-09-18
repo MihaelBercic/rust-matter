@@ -14,7 +14,7 @@ impl TryFrom<&[u8]> for MatterMessage {
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let mut reader = Cursor::new(value);
         let header = MatterMessageHeader::try_from(&mut reader)?;
-        let contains_mic = !header.is_unsecured_unicast_session();
+        let contains_mic = !header.is_insecure_unicast_session();
         let left = value.len() - reader.position() as usize;
         let mut payload: Vec<u8> = vec![0u8; left];
         reader.read_exact(&mut payload)?;

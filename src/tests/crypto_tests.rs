@@ -176,8 +176,8 @@ mod cryptography_tests {
             assert_eq!(&spake.compute_public_verifier(&rfc.w0).unwrap().to_encoded_point(false).to_bytes().to_vec()[..], p_b);
 
             let confirmation = spake.compute_confirmation_values(&rfc.TT[..rfc.TT_len].to_vec(), &p_a, &p_b, 256);
-            assert_eq!(confirmation.Ke, rfc.Ke);
-            assert_eq!(confirmation.cA, rfc.cA);
+            assert_eq!(confirmation.k_e, rfc.Ke);
+            assert_eq!(confirmation.c_a, rfc.cA);
             assert_eq!(confirmation.cB, rfc.cB);
 
             let verifier = SpakeVerifier(VerifierValues { w0: rfc.w0, L: rfc.L });
@@ -226,7 +226,7 @@ mod cryptography_tests {
             assert_eq!(hex::decode(test.K_main).unwrap(), hash_message(&transcript));
 
             let confirmation = spake.compute_confirmation_values(&transcript, &p_a, &p_b, 256);
-            assert_eq!(hex::decode(test.HMAC_K_confirmP_shareV).unwrap(), confirmation.cA);
+            assert_eq!(hex::decode(test.HMAC_K_confirmP_shareV).unwrap(), confirmation.c_a);
             assert_ne!(hex::decode(test.HMAC_K_confirmP_shareV).unwrap(), confirmation.cB);
             assert_eq!(hex::decode(test.HMAC_K_confirmV_shareP).unwrap(), confirmation.cB);
         }
@@ -263,7 +263,7 @@ mod cryptography_tests {
         let response = PBKDFParamResponse {
             initiator_random: hex::decode("94eab5c37d101df5ef01b2c8ecada03a7c3b0cf5e26a08feda72617f9cd391a6").unwrap(),
             responder_random: hex::decode("22820a42684102fd4a92c0bad66ad1f21f3c5366f5a6d84203035e2c7caf3bae").unwrap(),
-            responder_session_id: 56919,
+            session_id: 56919,
             pbkdf_parameters: Some(PBKDFParameterSet {
                 iterations: 1000,
                 salt: test_salt.try_into().unwrap(),
@@ -290,7 +290,7 @@ mod cryptography_tests {
         let confirmation = spake.compute_confirmation_values(&transcript, &p_a, &p_b, 256);
         assert_eq!(transcript, hex::decode("200000000000000064e59c36646d7b6cf4103b78228313325c275c5aa9b5f21da9a482661f7b5e8800000000000000000000000000000000410000000000000004886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f5ff355163e43ce224e0b0e65ff02ac8e5c7be09419c785e0ca547d55a12e2d20410000000000000004d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b4907d60aa6bfade45008a636337f5168c64d9bd36034808cd564490b1e656edbe7410000000000000004cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced19641000000000000000404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb410000000000000004e3bb24193dd3f33a3769549d1abd19b0bdf1776a7274e35e1ecb98c318fba689bd30432374af3ff6642b9ada4ad26dac56ba6f4e679a4f8dbe0cc7f87b92799d4100000000000000040b8bcc14906182b7a86b23637ed62257dac82d9edc059ab216bb995023c6b17e94a7f25f16f58b175d7cd885c006be49c1551edf94579e479fb77d711cb67a5b200000000000000000177867f1e564cc4d9f347edfc28263ee5a50f1e21177cfb9a7dc2504437ccb").unwrap());
         assert_eq!(confirmation.cB.to_vec(), hex::decode("d6a13c26b6c5b7c514033a0370b1830dff5116fd53de43eb2374737e9b64e4bb").unwrap());
-        assert_eq!(confirmation.cA.to_vec(), hex::decode("05030c97e72b884cd0ebf0f2e6f91bfd377a8f37601bb7f633d468e289437cf7").unwrap());
+        assert_eq!(confirmation.c_a.to_vec(), hex::decode("05030c97e72b884cd0ebf0f2e6f91bfd377a8f37601bb7f633d468e289437cf7").unwrap());
 
         // // MatterJS Test Case 2 (PasePairingTest)
         let mut spake = Spake2P::new();
@@ -308,7 +308,7 @@ mod cryptography_tests {
         let response = PBKDFParamResponse {
             initiator_random: hex::decode("913cc0622eca85f8d4c132c89663c5d7afa780667be930e5c11bec865479c617").unwrap(),
             responder_random: hex::decode("5682c0732b37c045ebeb416904c187a58b5341088e0172123becfb855f94a72c").unwrap(),
-            responder_session_id: 17028,
+            session_id: 17028,
             pbkdf_parameters: None,
             responder_session_params: None,
         };
@@ -332,7 +332,7 @@ fn spake2p_confirmation() {
     let p_a = hex::decode("04cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced196").unwrap();
     let p_b = hex::decode("0404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb").unwrap();
     let confirmation = spake.compute_confirmation_values(&tt, &p_a, &p_b, 256);
-    assert_eq!(hex::encode(confirmation.cA), "05030c97e72b884cd0ebf0f2e6f91bfd377a8f37601bb7f633d468e289437cf7");
+    assert_eq!(hex::encode(confirmation.c_a), "05030c97e72b884cd0ebf0f2e6f91bfd377a8f37601bb7f633d468e289437cf7");
     assert_eq!(hex::encode(confirmation.cB), "d6a13c26b6c5b7c514033a0370b1830dff5116fd53de43eb2374737e9b64e4bb");
 
     let w0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];

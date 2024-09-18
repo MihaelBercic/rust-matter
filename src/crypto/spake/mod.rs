@@ -1,6 +1,6 @@
 use crate::crypto::constants::{NIST_P_256_n, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_M_BYTES, CRYPTO_N_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES};
 use crate::crypto::kdf::key_derivation;
-use crate::crypto::spake::spake_confirmation::S2PConfirmation;
+use crate::crypto::spake::spake_confirmation::SpakeConfirmation;
 use crate::crypto::spake::values::Values;
 use crate::crypto::spake::values_initiator::ProverValues;
 use crate::crypto::spake::values_responder::VerifierValues;
@@ -152,15 +152,15 @@ impl Spake2P {
     }
 
     /// Computes confirmation values for the provided transcript.
-    pub fn compute_confirmation_values(&self, tt: &Vec<u8>, p_a: &[u8], p_b: &[u8], bit_length: usize) -> S2PConfirmation {
+    pub fn compute_confirmation_values(&self, tt: &Vec<u8>, p_a: &[u8], p_b: &[u8], bit_length: usize) -> SpakeConfirmation {
         let k_main = hash_message(tt);
         let k_a = &k_main[..16];
         let k_e = &k_main[16..];
         let k_confirm = key_derivation(k_a, None, b"ConfirmationKeys", bit_length);
-        S2PConfirmation {
-            cA: hmac(&k_confirm[..16], p_b),
+        SpakeConfirmation {
+            c_a: hmac(&k_confirm[..16], p_b),
             cB: hmac(&k_confirm[16..], p_a),
-            Ke: k_e.try_into().unwrap(),
+            k_e: k_e.try_into().unwrap(),
         }
     }
 }

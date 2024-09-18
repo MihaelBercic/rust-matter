@@ -1,6 +1,5 @@
 use std::io::{Cursor, Read};
 
-use crate::log_info;
 use crate::secure::protocol::enums::ProtocolOpcode;
 use crate::secure::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::secure::protocol::protocol_id::ProtocolID;
@@ -56,7 +55,6 @@ impl TryFrom<&[u8]> for ProtocolMessage {
         let opcode = ProtocolOpcode::from(cursor.read_u8()?);
         let exchange_id = cursor.read_u16::<LittleEndian>()?;
         let protocol_vendor_id = if exchange_flags.is_vendor_present() { Some(cursor.read_u16::<LittleEndian>()?) } else { None };
-        log_info!("Gonna read protocol id now...");
         let protocol_id = ProtocolID::from(cursor.read_u16::<LittleEndian>()?);
         let acknowledged_message_counter = if exchange_flags.is_acknowledgement() { Some(cursor.read_u32::<LittleEndian>()?) } else { None };
         let secured_extensions = if exchange_flags.is_secured_extensions_present() {

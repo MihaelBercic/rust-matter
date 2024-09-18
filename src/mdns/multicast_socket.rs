@@ -25,7 +25,7 @@ impl MulticastSocket<2000> {
         let cc = &option_value as *const _;
 
         let socket = match interface.do_custom {
-            false => UdpSocket::bind(format!("[::]:{}", MDNS_PORT)).expect("Unable to bind to tcp..."),
+            false => UdpSocket::bind(format!("[::%{}]:{}", interface.index, MDNS_PORT)).expect("Unable to bind to tcp..."),
             true => {
                 unsafe {
                     let x = &sockaddr_in6 {
