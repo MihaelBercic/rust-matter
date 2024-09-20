@@ -1,6 +1,5 @@
 use std::io::{Cursor, Read};
 
-use crate::session::protocol::enums::ProtocolOpcode;
 use crate::session::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
@@ -10,7 +9,7 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 #[derive(Debug, Eq, PartialEq)]
 pub struct ProtocolMessage {
     pub exchange_flags: ProtocolExchangeFlags,
-    pub opcode: ProtocolOpcode,
+    pub opcode: u8,
     pub exchange_id: u16,
     pub protocol_vendor_id: Option<u16>,
     pub protocol_id: ProtocolID,
@@ -52,7 +51,7 @@ impl TryFrom<&[u8]> for ProtocolMessage {
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let mut cursor = Cursor::new(value);
         let exchange_flags = ProtocolExchangeFlags { byte: cursor.read_u8()? };
-        let opcode = ProtocolOpcode::from(cursor.read_u8()?);
+        let opcode = cursor.read_u8()?;
         let exchange_id = cursor.read_u16::<LittleEndian>()?;
         let protocol_vendor_id = if exchange_flags.is_vendor_present() { Some(cursor.read_u16::<LittleEndian>()?) } else { None };
         let protocol_id = ProtocolID::from(cursor.read_u16::<LittleEndian>()?);

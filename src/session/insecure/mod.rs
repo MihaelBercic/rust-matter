@@ -7,13 +7,13 @@ use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values::Values::SpakeVerifier;
 use crate::crypto::spake::Spake2P;
 use crate::network::network_message::NetworkMessage;
+use crate::session::counters::GLOBAL_UNENCRYPTED_COUNTER;
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::SessionOrigin::Pase;
 use crate::session::matter_message::MatterMessage;
-use crate::session::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
-use crate::session::protocol::enums::GeneralCode::{Failure, Success};
-use crate::session::protocol::enums::ProtocolCode::{InvalidParameter, SessionEstablishmentSuccess};
-use crate::session::protocol::enums::ProtocolOpcode;
+use crate::session::protocol::enums::SecureChannelGeneralCode::{Failure, Success};
+use crate::session::protocol::enums::SecureChannelProtocolOpcode;
+use crate::session::protocol::enums::SecureStatusProtocolCode::{InvalidParameter, SessionEstablishmentSuccess};
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolSecureChannel;
 use crate::session::protocol_message::ProtocolMessage;
@@ -50,8 +50,9 @@ pub(crate) fn process_insecure(matter_message: MatterMessage, protocol_message: 
 
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     let exchange_id = protocol_message.exchange_id;
-    match protocol_message.opcode {
-        ProtocolOpcode::PBKDFParamRequest => {
+    let opcode = SecureChannelProtocolOpcode::from(protocol_message.opcode);
+    match opcode {
+        SecureChannelProtocolOpcode::PBKDFParamRequest => {
             let request = PBKDFParamRequest::try_from(tlv)?;
             let response = PBKDFParamResponse::build_for(&request)?;
             if let Some(param_set) = &response.pbkdf_parameters {
@@ -65,14 +66,14 @@ pub(crate) fn process_insecure(matter_message: MatterMessage, protocol_message: 
             session.add_to_context(&protocol_message.payload);
             session.add_to_context(&payload);
             let protocol_message = ProtocolMessageBuilder::new()
-                .set_opcode(ProtocolOpcode::PBKDFParamResponse)
+                .set_opcode(SecureChannelProtocolOpcode::PBKDFParamResponse as u8)
                 .set_exchange_id(exchange_id)
                 .set_payload(&payload)
                 .set_acknowledged_message_counter(matter_message.header.message_counter)
                 .build();
             Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination))
         }
-        ProtocolOpcode::PASEPake1 => {
+        SecureChannelProtocolOpcode::PASEPake1 => {
             let salt = &session.salt;
             let iterations = session.iterations;
             let pake_1 = Pake1::try_from(tlv)?;
@@ -92,12 +93,12 @@ pub(crate) fn process_insecure(matter_message: MatterMessage, protocol_message: 
             let protocol_message = ProtocolMessageBuilder::new()
                 .set_acknowledged_message_counter(matter_message.header.message_counter)
                 .set_payload(&payload)
-                .set_opcode(ProtocolOpcode::PASEPake2)
+                .set_opcode(SecureChannelProtocolOpcode::PASEPake2 as u8)
                 .set_exchange_id(exchange_id)
                 .build();
             Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination))
         }
-        ProtocolOpcode::PASEPake3 => {
+        SecureChannelProtocolOpcode::PASEPake3 => {
             let pake_3 = Pake3::try_from(tlv)?;
             let Some(confirmation) = &session.confirmation else {
                 return Err(transport_error("No confirmation present..."));
@@ -132,7 +133,7 @@ pub(crate) fn process_insecure(matter_message: MatterMessage, protocol_message: 
             let protocol_message = ProtocolMessageBuilder::new()
                 .set_exchange_id(exchange_id)
                 .set_acknowledged_message_counter(matter_message.header.message_counter)
-                .set_opcode(ProtocolOpcode::StatusReport)
+                .set_opcode(SecureChannelProtocolOpcode::StatusReport as u8)
                 .set_payload(&status_report.to_bytes())
                 .build();
             Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination))

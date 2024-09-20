@@ -1,5 +1,5 @@
-use crate::session::protocol::enums::ProtocolCode::{Busy, CloseSession, InvalidParameter, NoSharedTrustRoots, SessionEstablishmentSuccess};
-use crate::session::protocol::enums::ProtocolOpcode::*;
+use crate::session::protocol::enums::SecureChannelProtocolOpcode::*;
+use crate::session::protocol::enums::SecureStatusProtocolCode::{Busy, CloseSession, InvalidParameter, NoSharedTrustRoots, SessionEstablishmentSuccess};
 
 ///
 /// @author Mihael Berčič
@@ -7,7 +7,7 @@ use crate::session::protocol::enums::ProtocolOpcode::*;
 ///
 #[repr(u8)]
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum ProtocolOpcode {
+pub enum SecureChannelProtocolOpcode {
     MessageCounterSyncRequest = 0x00,
     MessageCounterSyncResponse = 0x01,
 
@@ -28,7 +28,7 @@ pub enum ProtocolOpcode {
     StatusReport = 0x40,
 }
 
-impl From<u8> for ProtocolOpcode {
+impl From<u8> for SecureChannelProtocolOpcode {
     fn from(value: u8) -> Self {
         match value {
             0x00 => MessageCounterSyncRequest,
@@ -50,7 +50,7 @@ impl From<u8> for ProtocolOpcode {
 
 #[derive(Debug)]
 #[repr(u16)]
-pub enum GeneralCode {
+pub enum SecureChannelGeneralCode {
     Success = 0,
     Failure = 1,
     BadPrecondition = 2,
@@ -70,29 +70,27 @@ pub enum GeneralCode {
     DataLoss = 16,
 }
 
-impl<T> From<T> for GeneralCode
-    where T: Into<u16>
-{
+impl<T: Into<u16>> From<T> for SecureChannelGeneralCode {
     fn from(value: T) -> Self {
         let u16 = value.into();
         match u16 {
-            0 => GeneralCode::Success,
-            1 => GeneralCode::Failure,
-            2 => GeneralCode::BadPrecondition,
-            3 => GeneralCode::OutOfRange,
-            4 => GeneralCode::BadRequest,
-            5 => GeneralCode::Unsupported,
-            6 => GeneralCode::Unexpected,
-            7 => GeneralCode::ResourceExhausted,
-            8 => GeneralCode::Busy,
-            9 => GeneralCode::Timeout,
-            10 => GeneralCode::Continue,
-            11 => GeneralCode::Aborted,
-            12 => GeneralCode::InvalidArgument,
-            13 => GeneralCode::NotFound,
-            14 => GeneralCode::AlreadyExists,
-            15 => GeneralCode::PermissionDenied,
-            _ => GeneralCode::DataLoss,
+            0 => SecureChannelGeneralCode::Success,
+            1 => SecureChannelGeneralCode::Failure,
+            2 => SecureChannelGeneralCode::BadPrecondition,
+            3 => SecureChannelGeneralCode::OutOfRange,
+            4 => SecureChannelGeneralCode::BadRequest,
+            5 => SecureChannelGeneralCode::Unsupported,
+            6 => SecureChannelGeneralCode::Unexpected,
+            7 => SecureChannelGeneralCode::ResourceExhausted,
+            8 => SecureChannelGeneralCode::Busy,
+            9 => SecureChannelGeneralCode::Timeout,
+            10 => SecureChannelGeneralCode::Continue,
+            11 => SecureChannelGeneralCode::Aborted,
+            12 => SecureChannelGeneralCode::InvalidArgument,
+            13 => SecureChannelGeneralCode::NotFound,
+            14 => SecureChannelGeneralCode::AlreadyExists,
+            15 => SecureChannelGeneralCode::PermissionDenied,
+            _ => SecureChannelGeneralCode::DataLoss,
         }
     }
 }
@@ -100,7 +98,7 @@ impl<T> From<T> for GeneralCode
 
 #[derive(Debug)]
 #[repr(u16)]
-pub enum ProtocolCode {
+pub enum SecureStatusProtocolCode {
     SessionEstablishmentSuccess = 0x0000,
     NoSharedTrustRoots = 0x0001,
     InvalidParameter = 0x0002,
@@ -108,7 +106,7 @@ pub enum ProtocolCode {
     Busy = 0x0004,
 }
 
-impl From<u16> for ProtocolCode {
+impl From<u16> for SecureStatusProtocolCode {
     fn from(value: u16) -> Self {
         match value {
             0x0000 => SessionEstablishmentSuccess,

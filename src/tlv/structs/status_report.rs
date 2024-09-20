@@ -1,4 +1,4 @@
-use crate::session::protocol::enums::{GeneralCode, ProtocolCode};
+use crate::session::protocol::enums::{SecureChannelGeneralCode, SecureStatusProtocolCode};
 use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::utils::MatterError;
@@ -11,9 +11,9 @@ use std::io::{Cursor, Read};
 ///
 #[derive(Debug)]
 pub struct StatusReport {
-    pub general_code: GeneralCode,
+    pub general_code: SecureChannelGeneralCode,
     pub protocol_id: ProtocolID,
-    pub protocol_code: ProtocolCode,
+    pub protocol_code: SecureStatusProtocolCode,
     pub data: Vec<u8>,
 }
 
@@ -23,9 +23,9 @@ impl TryFrom<ProtocolMessage> for StatusReport {
     fn try_from(value: ProtocolMessage) -> Result<Self, Self::Error> {
         let mut cursor = Cursor::new(value.payload);
         let mut data = vec![];
-        let general_code = GeneralCode::from(cursor.read_u16::<LE>()?);
+        let general_code = SecureChannelGeneralCode::from(cursor.read_u16::<LE>()?);
         let protocol_id = ProtocolID::from(cursor.read_u32::<LE>()?);
-        let protocol_code = ProtocolCode::from(cursor.read_u16::<LE>()?);
+        let protocol_code = SecureStatusProtocolCode::from(cursor.read_u16::<LE>()?);
         cursor.read_to_end(&mut data)?;
         Ok(
             Self {
@@ -39,7 +39,7 @@ impl TryFrom<ProtocolMessage> for StatusReport {
 }
 
 impl StatusReport {
-    pub fn new(general_code: GeneralCode, protocol_id: ProtocolID, protocol_code: ProtocolCode) -> Self {
+    pub fn new(general_code: SecureChannelGeneralCode, protocol_id: ProtocolID, protocol_code: SecureStatusProtocolCode) -> Self {
         Self {
             general_code,
             protocol_id,

@@ -1,7 +1,8 @@
 use crate::logging::*;
 use crate::network::network_message::NetworkMessage;
 use crate::session::insecure::process_insecure;
-use crate::session::protocol::enums::ProtocolOpcode;
+use crate::session::protocol::enums::SecureChannelProtocolOpcode;
+use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::tlv::structs::status_report;
 use crate::utils::MatterLayer::Transport;
@@ -22,6 +23,7 @@ pub(crate) mod protocol;
 pub(crate) mod matter;
 pub(crate) mod matter_message;
 pub(crate) mod protocol_message;
+pub(crate) mod counters;
 
 const UNSPECIFIED_NODE_ID: u64 = 0x0000_0000_0000_0000;
 /// Message processing thread
@@ -55,21 +57,30 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..])?;
         log_info!("🔓\t{color_red}|{:?}|{color_blue}{:?}|{color_reset} message received.", &protocol_message.protocol_id, &protocol_message.opcode);
 
-        match protocol_message.opcode {
-            ProtocolOpcode::StatusReport => {
-                let status_report = status_report::StatusReport::try_from(protocol_message);
-                let representation = format!("{:?}", status_report);
-                return Err(MatterError::Custom(Transport, representation));
+        match protocol_message.protocol_id {
+            ProtocolID::ProtocolSecureChannel => {
+                let opcode = SecureChannelProtocolOpcode::from(protocol_message.opcode);
+                match opcode {
+                    SecureChannelProtocolOpcode::StatusReport => {
+                        let status_report = status_report::StatusReport::try_from(protocol_message);
+                        let representation = format!("{:?}", status_report);
+                        return Err(MatterError::Custom(Transport, representation));
+                    }
+                    SecureChannelProtocolOpcode::MRPStandaloneAcknowledgement => {
+                        // TODO: Remove from retransmission...
+                        return Ok(());
+                    }
+                    _ => {}
+                }
+                let mut response = process_insecure(matter_message, protocol_message)?;
+                response.address = network_message.address;
+                outgoing_sender.send(response);
             }
-            ProtocolOpcode::MRPStandaloneAcknowledgement => {
-                // TODO: Remove from retransmission...
-                return Ok(());
-            }
-            _ => {}
+            ProtocolID::ProtocolInteractionModel => {}
+            ProtocolID::ProtocolBdx => {}
+            ProtocolID::ProtocolUserDirectedCommissioning => {}
+            ProtocolID::ProtocolForTesting => {}
         }
-        let mut response = process_insecure(matter_message, protocol_message)?;
-        response.address = network_message.address;
-        outgoing_sender.send(response);
     } else {
         let Ok(session_map) = &mut ENCRYPTED_SESSIONS.lock() else {
             return Err(generic_error("Unable to lock ENCRYPTED_SESSIONS"));

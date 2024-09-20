@@ -4,11 +4,6 @@ use matter::NetworkInterface;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
 
-#[derive(Debug)]
-struct Test {
-    id: u8,
-}
-
 fn main() {
     let is_eth = false;
     let mut interface = NetworkInterface { index: 0xe, do_custom: true };         // WiFi

@@ -1,4 +1,3 @@
-use crate::session::protocol::enums::ProtocolOpcode;
 use crate::session::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
@@ -15,7 +14,7 @@ impl ProtocolMessageBuilder {
         Self {
             message: ProtocolMessage {
                 exchange_flags: ProtocolExchangeFlags { byte: 0 },
-                opcode: ProtocolOpcode::StatusReport,
+                opcode: 0,
                 exchange_id: 0,
                 protocol_vendor_id: None,
                 protocol_id: ProtocolID::ProtocolSecureChannel,
@@ -28,7 +27,7 @@ impl ProtocolMessageBuilder {
 
 
     /// Sets the opcode of the message.
-    pub fn set_opcode(mut self, opcode: ProtocolOpcode) -> Self {
+    pub fn set_opcode(mut self, opcode: u8) -> Self {
         self.message.opcode = opcode;
         self
     }

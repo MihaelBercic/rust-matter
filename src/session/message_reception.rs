@@ -25,7 +25,7 @@ impl MessageReceptionState {
             if is_duplicate { return true; }
             self.bitmap |= 2u32.pow(bit_index)
         }
-        return false;
+        false
     }
 
     /// ◦ The Peer Node ID SHALL reference the given Peer Node ID.

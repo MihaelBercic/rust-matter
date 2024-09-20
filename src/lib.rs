@@ -4,12 +4,12 @@
 use crate::mdns::mdns_device_information::MDNSDeviceInformation;
 use crate::network::network_message::NetworkMessage;
 use crate::network::{start_listening_thread, start_outgoing_thread};
+use crate::session::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
 use crate::session::insecure::session::UnencryptedSession;
 use crate::session::matter::builder::MatterMessageBuilder;
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::MatterDestinationID::Group;
 use crate::session::matter_message::MatterMessage;
-use crate::session::protocol::communication::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::secure::session::Session;
 use crate::session::start_processing_thread;
