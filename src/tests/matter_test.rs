@@ -1,8 +1,8 @@
+use crate::secure::builder::MatterMessageBuilder;
 use crate::secure::enums::MatterDestinationID::Node;
 use crate::secure::enums::MatterDestinationType::NodeID;
 use crate::secure::enums::MatterSessionType::{Group, Unicast};
 use crate::secure::message::MatterMessage;
-use crate::secure::message_builder::MatterMessageBuilder;
 use crate::secure::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
 use crate::secure::protocol::enums::ProtocolOpcode;
 use crate::secure::protocol::enums::ProtocolOpcode::PASEPake1;

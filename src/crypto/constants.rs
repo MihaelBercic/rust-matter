@@ -47,3 +47,6 @@ pub static NIST_P_256_n_BYTES: [u8; 32] = [0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0
 pub static NIST_P_256_n: U256 = U256::from_be_slice(&NIST_P_256_n_BYTES);
 pub static NIST_P_256_p: U256 = U256::from_be_slice(&NIST_P_256_p_BYTES);
 
+pub static CRYPTO_SESSION_KEYS_INFO: [u8; 11] = [0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4b, 0x65, 0x79, 0x73];
+
+

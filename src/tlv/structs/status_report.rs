@@ -1,6 +1,6 @@
-use crate::secure::protocol::enums::{GeneralCode, ProtocolCode};
-use crate::secure::protocol::message::ProtocolMessage;
-use crate::secure::protocol::protocol_id::ProtocolID;
+use crate::session::protocol::enums::{GeneralCode, ProtocolCode};
+use crate::session::protocol::protocol_id::ProtocolID;
+use crate::session::protocol_message::ProtocolMessage;
 use crate::utils::MatterError;
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::io::{Cursor, Read};

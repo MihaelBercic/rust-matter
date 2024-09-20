@@ -1,6 +1,5 @@
+use crate::session::matter_message::MatterMessage;
 use std::net::SocketAddr;
-
-use crate::secure::message::MatterMessage;
 
 ///
 /// @author Mihael Berčič

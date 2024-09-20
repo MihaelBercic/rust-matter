@@ -1,9 +1,9 @@
 use std::io::{Cursor, Read};
 
-use crate::secure::protocol::enums::ProtocolOpcode;
-use crate::secure::protocol::exchange_flags::ProtocolExchangeFlags;
-use crate::secure::protocol::protocol_id::ProtocolID;
-use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::session::protocol::enums::ProtocolOpcode;
+use crate::session::protocol::exchange_flags::ProtocolExchangeFlags;
+use crate::session::protocol::protocol_id::ProtocolID;
+use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::MatterError;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 

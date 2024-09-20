@@ -3,11 +3,11 @@ use std::iter;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::secure::enums::MatterSessionType::{Group, Unicast};
-use crate::secure::enums::{MatterDestinationID, MatterDestinationType};
-use crate::secure::message_extension::MatterMessageExtension;
-use crate::secure::message_flags::MatterMessageFlags;
-use crate::secure::security_flags::MatterSecurityFlags;
+use crate::session::matter::enums::MatterSessionType::{Group, Unicast};
+use crate::session::matter::enums::{MatterDestinationID, MatterDestinationType};
+use crate::session::matter::extension::MatterMessageExtension;
+use crate::session::matter::flags::MatterMessageFlags;
+use crate::session::matter::security_flags::MatterSecurityFlags;
 use crate::utils::MatterError;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -96,7 +96,7 @@ impl MatterMessageHeader {
             }
             _ => ()
         }
-        return data;
+        data
     }
 }
 

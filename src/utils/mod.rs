@@ -76,6 +76,10 @@ pub fn generic_error(msg: &str) -> MatterError {
     MatterError::new(MatterLayer::Generic, msg)
 }
 
+pub fn crypto_error(msg: &str) -> MatterError {
+    MatterError::new(MatterLayer::Cryptography, msg)
+}
+
 pub fn session_error(msg: &str) -> MatterError {
     MatterError::new(MatterLayer::SecureSession, msg)
 }

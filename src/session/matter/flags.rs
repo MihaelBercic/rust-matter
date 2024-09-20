@@ -1,5 +1,5 @@
-use crate::secure::enums::MatterDestinationType;
-use crate::secure::enums::MatterDestinationType::{GroupID, NodeID};
+use crate::session::matter::enums::MatterDestinationType;
+use crate::session::matter::enums::MatterDestinationType::{GroupID, NodeID};
 use crate::utils::bit_subset::BitSubset;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -27,12 +27,12 @@ impl MatterMessageFlags {
 
     pub fn set_version(&mut self, version: u8) -> &mut Self {
         self.flags.set_bits(4..=7, version);
-        return self;
+        self
     }
 
     pub fn set_is_source_present(&mut self, is_present: bool) -> &mut Self {
         self.flags.set_bits(2..=2, is_present as u8);
-        return self;
+        self
     }
 
     pub fn set_type_of_destination(&mut self, destination: MatterDestinationType) -> &mut Self {

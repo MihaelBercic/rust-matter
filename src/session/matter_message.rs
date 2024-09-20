@@ -1,4 +1,4 @@
-use crate::secure::message_header::MatterMessageHeader;
+use crate::session::matter::header::MatterMessageHeader;
 use crate::utils::MatterError;
 use std::io::{Cursor, Read};
 

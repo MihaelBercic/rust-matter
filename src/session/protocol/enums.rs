@@ -1,5 +1,5 @@
-use crate::secure::protocol::enums::ProtocolCode::{Busy, CloseSession, InvalidParameter, NoSharedTrustRoots, SessionEstablishmentSuccess};
-use crate::secure::protocol::enums::ProtocolOpcode::*;
+use crate::session::protocol::enums::ProtocolCode::{Busy, CloseSession, InvalidParameter, NoSharedTrustRoots, SessionEstablishmentSuccess};
+use crate::session::protocol::enums::ProtocolOpcode::*;
 
 ///
 /// @author Mihael Berčič

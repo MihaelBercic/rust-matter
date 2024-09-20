@@ -1,5 +1,5 @@
 use crate::network::network_message::NetworkMessage;
-use crate::secure::message::MatterMessage;
+use crate::session::matter_message::MatterMessage;
 use crate::{log_error, log_info};
 use std::net::UdpSocket;
 use std::sync::mpsc::{Receiver, Sender};

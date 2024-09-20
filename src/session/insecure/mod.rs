@@ -1,18 +1,24 @@
-use crate::crypto::constants::{CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES};
+pub(crate) mod session;
+
+
+use crate::crypto::constants::{CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES};
 use crate::crypto::hash_message;
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values::Values::SpakeVerifier;
 use crate::crypto::spake::Spake2P;
 use crate::network::network_message::NetworkMessage;
-use crate::secure::constants::SESSION_KEYS_INFO;
-use crate::secure::enums::MatterDestinationID;
-use crate::secure::message::MatterMessage;
-use crate::secure::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
-use crate::secure::protocol::enums::{GeneralCode, ProtocolCode, ProtocolOpcode};
-use crate::secure::protocol::message::ProtocolMessage;
-use crate::secure::protocol::message_builder::ProtocolMessageBuilder;
-use crate::secure::protocol::protocol_id::ProtocolID;
-use crate::secure::session::Session;
+use crate::session::matter::enums::MatterDestinationID;
+use crate::session::matter::enums::SessionOrigin::Pase;
+use crate::session::matter_message::MatterMessage;
+use crate::session::protocol::communication::counters::GLOBAL_UNENCRYPTED_COUNTER;
+use crate::session::protocol::enums::GeneralCode::{Failure, Success};
+use crate::session::protocol::enums::ProtocolCode::{InvalidParameter, SessionEstablishmentSuccess};
+use crate::session::protocol::enums::ProtocolOpcode;
+use crate::session::protocol::message_builder::ProtocolMessageBuilder;
+use crate::session::protocol::protocol_id::ProtocolID::ProtocolSecureChannel;
+use crate::session::protocol_message::ProtocolMessage;
+use crate::session::secure::session::Session;
+use crate::session::SessionRole;
 use crate::tlv::structs::pake_1::Pake1;
 use crate::tlv::structs::pake_2::Pake2;
 use crate::tlv::structs::pake_3::Pake3;
@@ -21,54 +27,16 @@ use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
 use crate::tlv::structs::status_report::StatusReport;
 use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, transport_error, MatterError, MatterLayer};
-use crate::{build_network_message, log_error, perform_validity_checks, process_message, ENCRYPTED_SESSIONS, START_TIME, UNENCRYPTED_SESSIONS};
+use crate::{build_network_message, ENCRYPTED_SESSIONS, START_TIME, UNENCRYPTED_SESSIONS};
 use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::io::Cursor;
-use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
-use std::thread::JoinHandle;
-use GeneralCode::{Failure, Success};
-use ProtocolCode::{InvalidParameter, SessionEstablishmentSuccess};
-use ProtocolID::ProtocolSecureChannel;
 
-pub mod enums;
-pub mod protocol;
-pub mod message;
-pub mod message_header;
-pub mod message_flags;
-pub mod security_flags;
-pub mod message_extension;
-pub mod message_builder;
-pub mod session;
-mod constants;
+///
+/// @author Mihael Berčič
+/// @date 18. 9. 24
+///
 
-/// Message processing thread
-pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
-    thread::Builder::new().name("Processing thread".to_string()).stack_size(50_000 * 1024).spawn(move || {
-        // let _reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-        // let _group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-        // let _group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-
-        loop {
-            let message_to_process = receiver.recv();
-            match message_to_process {
-                Ok(network_message) => {
-                    if !perform_validity_checks(&network_message.message) {
-                        log_error!("Failed validity checks...");
-                        continue;
-                    }
-                    if let Err(error) = process_message(network_message, &outgoing_sender) {
-                        log_error!("Unable to process message: {:?}", error);
-                    }
-                }
-                Err(error) => log_error!("Unable to receive the message {:?}", error)
-            }
-        }
-    }).expect("Unable to start processing thread...")
-}
-
-
-pub(crate) fn process_unencrypted(matter_message: MatterMessage, protocol_message: ProtocolMessage) -> Result<NetworkMessage, MatterError> {
+pub(crate) fn process_insecure(matter_message: MatterMessage, protocol_message: ProtocolMessage) -> Result<NetworkMessage, MatterError> {
     let Ok(session_map) = &mut UNENCRYPTED_SESSIONS.lock() else {
         return Err(transport_error("Failed to obtain lock over UNENCRYPTED_SESSIONS"));
     };
@@ -102,7 +70,7 @@ pub(crate) fn process_unencrypted(matter_message: MatterMessage, protocol_messag
                 .set_payload(&payload)
                 .set_acknowledged_message_counter(matter_message.header.message_counter)
                 .build();
-            return Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination));
+            Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination))
         }
         ProtocolOpcode::PASEPake1 => {
             let salt = &session.salt;
@@ -127,7 +95,7 @@ pub(crate) fn process_unencrypted(matter_message: MatterMessage, protocol_messag
                 .set_opcode(ProtocolOpcode::PASEPake2)
                 .set_exchange_id(exchange_id)
                 .build();
-            return Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination));
+            Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination))
         }
         ProtocolOpcode::PASEPake3 => {
             let pake_3 = Pake3::try_from(tlv)?;
@@ -142,13 +110,15 @@ pub(crate) fn process_unencrypted(matter_message: MatterMessage, protocol_messag
                     return Err(generic_error("Unable to obtain lock over ENCRYPTED_SESSIONS"));
                 };
 
-                let kdf = key_derivation(&confirmation.k_e, None, &SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS * 3);
+                let kdf = key_derivation(&confirmation.k_e, None, &CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS * 3);
                 let length = CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
                 let prover_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES] = kdf[..length].try_into().unwrap();
                 let verifier_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES] = kdf[length..2 * length].try_into().unwrap();
                 let attestation_challenge: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES] = kdf[2 * length..].try_into().unwrap();
                 let session_id = session.session_id;
                 let session = Session {
+                    session_origin: Pase,
+                    session_role: SessionRole::Verifier,
                     peer_session_id: session.peer_session_id,
                     session_id,
                     prover_key,
@@ -165,11 +135,10 @@ pub(crate) fn process_unencrypted(matter_message: MatterMessage, protocol_messag
                 .set_opcode(ProtocolOpcode::StatusReport)
                 .set_payload(&status_report.to_bytes())
                 .build();
-            return Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination));
+            Ok(build_network_message(protocol_message, &GLOBAL_UNENCRYPTED_COUNTER, destination))
         }
         _ => {
             todo!("Received OPCODE: {:?}", protocol_message.opcode);
         }
     }
-    Err(MatterError::new(MatterLayer::Generic, "Unable to process unencrypted session..."))
 }

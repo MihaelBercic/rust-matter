@@ -1,4 +1,4 @@
-use crate::secure::protocol::protocol_id::ProtocolID::*;
+use crate::session::protocol::protocol_id::ProtocolID::*;
 
 ///
 /// @author Mihael Berčič

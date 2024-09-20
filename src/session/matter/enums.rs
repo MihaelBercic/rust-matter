@@ -35,6 +35,12 @@ pub enum MessageType {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum SessionState {
-    Unsecure,
+    Insecure,
     Secure,
+}
+
+#[derive(Clone, Debug)]
+pub enum SessionOrigin {
+    Case,
+    Pase,
 }

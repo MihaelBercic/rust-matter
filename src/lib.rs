@@ -1,100 +1,44 @@
 #![allow(unused)]
 #![allow(dead_code)]
 
-use crate::logging::{color_blue, color_red, color_reset};
 use crate::mdns::mdns_device_information::MDNSDeviceInformation;
 use crate::network::network_message::NetworkMessage;
 use crate::network::{start_listening_thread, start_outgoing_thread};
-use crate::secure::enums::MatterDestinationID;
-use crate::secure::enums::MatterDestinationID::Group;
-use crate::secure::message::MatterMessage;
-use crate::secure::message_builder::MatterMessageBuilder;
-use crate::secure::protocol::communication::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
-use crate::secure::protocol::enums::ProtocolOpcode::{MRPStandaloneAcknowledgement, StatusReport};
-use crate::secure::protocol::message::ProtocolMessage;
-use crate::secure::session::{Session, UnencryptedSession};
-use crate::secure::{process_unencrypted, start_processing_thread};
-use crate::utils::MatterLayer::{Generic, Transport};
-use crate::utils::{generic_error, MatterError};
+use crate::session::insecure::session::UnencryptedSession;
+use crate::session::matter::builder::MatterMessageBuilder;
+use crate::session::matter::enums::MatterDestinationID;
+use crate::session::matter::enums::MatterDestinationID::Group;
+use crate::session::matter_message::MatterMessage;
+use crate::session::protocol::communication::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
+use crate::session::protocol_message::ProtocolMessage;
+use crate::session::secure::session::Session;
+use crate::session::start_processing_thread;
 use byteorder::WriteBytesExt;
 use p256::elliptic_curve::group::GroupEncoding;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
 use std::collections::HashMap;
 use std::net::UdpSocket;
 use std::sync::atomic::AtomicU32;
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::channel;
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::SystemTime;
-use tlv::structs::status_report;
+
+pub mod logging;
+pub mod mdns;
 
 pub(crate) mod tests;
 pub(crate) mod crypto;
-pub mod mdns;
 pub(crate) mod utils;
-pub(crate) mod secure;
 pub(crate) mod network;
 pub(crate) mod tlv;
-pub mod logging;
+pub(crate) mod session;
+
 
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 
 
 pub static UNENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, UnencryptedSession>>> = LazyLock::new(Mutex::default);
 pub static ENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
-
-fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>) -> Result<(), MatterError> {
-    let matter_message = network_message.message;
-    if matter_message.header.is_insecure_unicast_session() {
-        let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..])?;
-        log_info!("[Insecure]{color_red}[{:?}]{color_blue}[{:?}]{color_reset} message received.", protocol_message.protocol_id, protocol_message.opcode);
-
-        match protocol_message.opcode {
-            StatusReport => {
-                let status_report = status_report::StatusReport::try_from(protocol_message);
-                let representation = format!("{:?}", status_report);
-                return Err(MatterError::Custom(Transport, representation));
-            }
-            MRPStandaloneAcknowledgement => {
-                // TODO: Remove from retransmission...
-                return Ok(());
-            }
-            _ => {}
-        }
-        let mut response = process_unencrypted(matter_message, protocol_message)?;
-        response.address = network_message.address;
-        outgoing_sender.send(response);
-    } else {
-        let Ok(session_map) = &mut ENCRYPTED_SESSIONS.lock() else {
-            return Err(MatterError::Custom(Generic, "PeePoo".to_string()))
-        };
-        println!("{:?}", session_map);
-        let Some(session) = session_map.get_mut(&matter_message.header.session_id) else {
-            return Err(generic_error("No session found"));
-        };
-
-        log_info!("Working with a session {:?}", session);
-        log_error!("We do not know how to process a secured session yet!");
-    }
-
-    /*
-    ✅ validity_checks(...);
-    obtain_keys(...)
-    if keys {
-       process_privacy(...)
-       process_security(...)
-    }
-    process_counter(...);
-    process_reliability(...);
-    if unicast {
-       set_session_timestamp
-       set_active_timestamp
-    }
-
-    // Move to Exchange Message Processing
-    */
-    Ok(())
-}
-
 
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
 pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface) {

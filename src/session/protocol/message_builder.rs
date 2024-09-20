@@ -1,8 +1,8 @@
-use crate::secure::protocol::enums::ProtocolOpcode;
-use crate::secure::protocol::exchange_flags::ProtocolExchangeFlags;
-use crate::secure::protocol::message::ProtocolMessage;
-use crate::secure::protocol::protocol_id::ProtocolID;
-use crate::secure::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::session::protocol::enums::ProtocolOpcode;
+use crate::session::protocol::exchange_flags::ProtocolExchangeFlags;
+use crate::session::protocol::protocol_id::ProtocolID;
+use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
+use crate::session::protocol_message::ProtocolMessage;
 use crate::utils::bit_subset::BitSubset;
 
 pub struct ProtocolMessageBuilder {

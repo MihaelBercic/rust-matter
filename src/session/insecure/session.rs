@@ -1,6 +1,10 @@
-use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_PBKDF_ITERATIONS_MIN, CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES};
+use crate::crypto::constants::{CONTEXT_PREFIX_VALUE, CRYPTO_PBKDF_ITERATIONS_MIN, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::spake::spake_confirmation::SpakeConfirmation;
 
+///
+/// @author Mihael Berčič
+/// @date 18. 9. 24
+///
 ///
 /// @author Mihael Berčič
 /// @date 17. 8. 24
@@ -36,14 +40,4 @@ impl Default for UnencryptedSession {
             confirmation: None,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct Session {
-    pub session_id: u16,
-    pub peer_session_id: u16,
-    pub prover_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES],
-    pub verifier_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES],
-    pub attestation_challenge: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES],
-    pub timestamp: u64,
 }

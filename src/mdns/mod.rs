@@ -9,7 +9,7 @@ use crate::mdns::records::record_information::RecordInformation;
 use crate::mdns::records::record_type::RecordType;
 use crate::mdns::records::record_type::RecordType::{AAAA, PTR, SRV, TXT};
 use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
-use crate::secure::protocol::communication::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
+use crate::session::protocol::communication::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
 use crate::utils::padding::StringExtensions;
 use crate::{log_debug, log_error, log_info, NetworkInterface};
 use rand::Rng;
