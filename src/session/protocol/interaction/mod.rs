@@ -1,3 +1,11 @@
+use crate::log_debug;
+use crate::network::network_message::NetworkMessage;
+use crate::session::matter_message::MatterMessage;
+use crate::session::protocol_message::ProtocolMessage;
+use crate::tlv::tlv::TLV;
+use crate::utils::MatterError;
+use std::io::Cursor;
+
 ///
 /// @author Mihael Berčič
 /// @date 21. 9. 24
@@ -34,4 +42,12 @@ impl From<u8> for InteractionProtocolOpcode {
             _ => panic!("Unknown Interaction Opcode"),
         }
     }
+}
+
+pub fn process_interaction_model(matter_message: MatterMessage, protocol_message: ProtocolMessage) -> Result<NetworkMessage, MatterError> {
+    let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
+    let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
+    dbg!(tlv);
+    log_debug!("Interaction occurred on {:?}", opcode);
+    todo!("Not yet implemented...")
 }

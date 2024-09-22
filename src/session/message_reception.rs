@@ -1,5 +1,5 @@
-use crate::session::protocol::communication::enums::MessageType;
-
+use crate::session::matter::enums::MessageType;
+#[derive(Clone, Debug)]
 pub struct MessageReceptionState {
     pub source_node_id: u64,
     pub message_type: MessageType,

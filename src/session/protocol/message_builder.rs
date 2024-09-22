@@ -68,7 +68,7 @@ impl ProtocolMessageBuilder {
         self
     }
 
-    /// Sets the secure extensions as well as the flag indicating the extensions are present.
+    /// Sets the secure_channel extensions as well as the flag indicating the extensions are present.
     pub fn set_secure_extensions(mut self, extensions: ProtocolSecuredExtensions) -> Self {
         self.message.secured_extensions = Some(extensions);
         self.set_is_secured_extensions_present(true)

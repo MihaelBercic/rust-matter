@@ -8,16 +8,17 @@ use crate::crypto::spake::values::Values::SpakeVerifier;
 use crate::crypto::spake::Spake2P;
 use crate::network::network_message::NetworkMessage;
 use crate::session::counters::GLOBAL_UNENCRYPTED_COUNTER;
-use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::SessionOrigin::Pase;
+use crate::session::matter::enums::{MatterDestinationID, MessageType};
 use crate::session::matter_message::MatterMessage;
+use crate::session::message_reception::MessageReceptionState;
 use crate::session::protocol::enums::SecureChannelGeneralCode::{Failure, Success};
 use crate::session::protocol::enums::SecureChannelProtocolOpcode;
 use crate::session::protocol::enums::SecureStatusProtocolCode::{InvalidParameter, SessionEstablishmentSuccess};
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolSecureChannel;
 use crate::session::protocol_message::ProtocolMessage;
-use crate::session::secure::session::Session;
+use crate::session::secure_channel::session::Session;
 use crate::session::SessionRole;
 use crate::tlv::structs::pake_1::Pake1;
 use crate::tlv::structs::pake_2::Pake2;
@@ -126,6 +127,21 @@ pub(crate) fn process_insecure(matter_message: MatterMessage, protocol_message: 
                     verifier_key,
                     attestation_challenge,
                     timestamp: START_TIME.elapsed()?.as_secs(),
+                    message_counter: 0, // TODO: maybe change?
+                    message_reception_state: MessageReceptionState {
+                        source_node_id: matter_message.header.source_node_id.unwrap(),
+                        message_type: MessageType::Command,
+                        max_counter: 0,
+                        bitmap: 0,
+                    },
+                    fabric_index: 0,
+                    peer_node_id: MatterDestinationID::Node(matter_message.header.source_node_id.unwrap()),
+                    resumption_id: 0,
+                    active_timestamp: 0,
+                    session_idle_interval: 500,
+                    session_active_interval: 600,
+                    session_active_threshold: 4000,
+                    peer_active_mode: false,
                 };
                 session_map.remove_entry(&session_id);
                 encrypted_sessions_map.insert(session_id, session);

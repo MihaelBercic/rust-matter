@@ -1,7 +1,8 @@
 use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
 use crate::crypto::symmetric::decrypt;
-use crate::session::matter::enums::SessionOrigin;
+use crate::session::matter::enums::{MatterDestinationID, SessionOrigin};
 use crate::session::matter_message::MatterMessage;
+use crate::session::message_reception::MessageReceptionState;
 use crate::session::{SessionRole, UNSPECIFIED_NODE_ID};
 use crate::utils::{crypto_error, MatterError};
 use byteorder::{WriteBytesExt, LE};
@@ -21,6 +22,16 @@ pub struct Session {
     pub verifier_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES],
     pub attestation_challenge: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES],
     pub timestamp: u64,
+    pub message_counter: u32,
+    pub message_reception_state: MessageReceptionState,
+    pub fabric_index: u64,
+    pub peer_node_id: MatterDestinationID,
+    pub resumption_id: u32,
+    pub active_timestamp: u128,
+    pub session_idle_interval: u16,
+    pub session_active_interval: u16,
+    pub session_active_threshold: u16,
+    pub peer_active_mode: bool, // < => (now() - activetimestamp) < session_active_threshold,
 }
 
 impl Session {

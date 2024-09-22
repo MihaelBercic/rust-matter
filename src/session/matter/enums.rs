@@ -24,7 +24,7 @@ pub enum MatterDeviceState {
     Operational,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MessageType {
     Command,
     Response,
