@@ -4,8 +4,30 @@
 
 Documentation is a work in progress...
 
-### Chapter 4: Secure channel (currently working on)
-- [ ] Discovery
+### Session initialisation
+
+- [x] Insecure session computation (PASE)
+- [x] Secure session encryption
+
+### TLV
+
+- [x] Encoding
+- [x] Decoding
+- [x] Compression
+
+### Message Protocol
+
+- [x] Matter message builder
+- [x] Protocol message builder
+
+### Discovery
+
+- [x] MulticastSocket
+- [x] mDNS Packet Header
+- [x] mDNS Packet Label compression
+- [x] mDNS Packet Records
+- [x] mDNS Packet building
+- [x] mDNS Service advertising
 
 ### Chapter 3: Cryptographic Primitives
 

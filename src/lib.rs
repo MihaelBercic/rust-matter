@@ -1,178 +1,86 @@
+#![allow(unused)]
 #![allow(dead_code)]
 
-mod crypto;
+use crate::mdns::mdns_device_information::MDNSDeviceInformation;
+use crate::network::network_message::NetworkMessage;
+use crate::network::{start_listening_thread, start_outgoing_thread};
+use crate::session::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
+use crate::session::insecure::session::UnencryptedSession;
+use crate::session::matter::builder::MatterMessageBuilder;
+use crate::session::matter::enums::MatterDestinationID;
+use crate::session::matter::enums::MatterDestinationID::Group;
+use crate::session::matter_message::MatterMessage;
+use crate::session::protocol_message::ProtocolMessage;
+use crate::session::secure_channel::session::Session;
+use crate::session::start_processing_thread;
+use byteorder::WriteBytesExt;
+use p256::elliptic_curve::group::GroupEncoding;
+use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
+use std::collections::HashMap;
+use std::net::UdpSocket;
+use std::sync::atomic::AtomicU32;
+use std::sync::mpsc::channel;
+use std::sync::{Arc, LazyLock, Mutex};
+use std::time::SystemTime;
 
-#[cfg(test)]
-mod cryptography_tests {
-    use ccm::aead::Payload;
-    use p256::ecdsa::Signature;
-    use p256::ecdsa::signature::Verifier;
-    use p256::ecdsa::VerifyingKey;
-    use p256::elliptic_curve::sec1::ToEncodedPoint;
-    use p256::EncodedPoint;
+pub mod logging;
+pub mod mdns;
 
-    use crate::crypto;
-    use crate::crypto::{kdf, random_bytes};
-    use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BITS;
-    use crate::crypto::s2p_test_vectors::test_vectors::RFC_T;
-    use crate::crypto::spake::Spake2P;
+pub(crate) mod tests;
+pub(crate) mod crypto;
+pub(crate) mod utils;
+pub(crate) mod network;
+pub(crate) mod tlv;
+pub(crate) mod session;
 
-    #[test]
-    fn random_bytes_test() {
-        let short_bytes = random_bytes::<10>();
-        println!("{}B = {}", 10, hex::encode(short_bytes));
 
-        let medium_bytes = random_bytes::<32>();
-        println!("{}B = {}", 32, hex::encode(medium_bytes));
+pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 
-        let long_bytes = random_bytes::<256>();
-        println!("{}B = {}", 256, hex::encode(long_bytes));
+
+pub static UNENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, UnencryptedSession>>> = LazyLock::new(Mutex::default);
+pub static ENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
+
+/// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
+pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface) {
+    let udp_socket = Arc::new(UdpSocket::bind(format!("[::%{}]:0", interface.index)).expect("Unable to bind to tcp..."));
+    let (processing_sender, processing_receiver) = channel::<NetworkMessage>();
+    let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
+
+    mdns::start_advertising(&udp_socket, device_info, &interface);
+    start_listening_thread(processing_sender.clone(), udp_socket.clone(), outgoing_sender.clone());
+    start_outgoing_thread(outgoing_receiver, udp_socket);
+    start_processing_thread(processing_receiver, outgoing_sender).join().expect("Unable to start the thread for processing messages...");
+}
+
+fn perform_validity_checks(message: &MatterMessage) -> bool {
+    let header = &message.header;
+    let unicast_check = header.is_secure_unicast_session() && matches!(header.destination_node_id, Some(Group(_)));
+    let path_check = header.destination_node_id.is_none() || header.source_node_id.is_none();
+    let group_check = header.is_group_session() && path_check;
+
+    if header.flags.version() != 0
+        || unicast_check
+        || group_check {
+        return false;
     }
+    true
+}
 
-    #[test]
-    fn crypto_hash_test_sha_256() {
-        let sample = b"mihael";
-        let hash = crypto::hash_message(sample);
-        let hex = hex::encode(hash);
-        assert_eq!(
-            hex,
-            "a1ec7aff7a3ce85b3784176861b4995fe092eea0f417443d4ba77ae96a9f812e"
-        );
+/// Builds a [NetworkMessage] and [MatterMessage] based on [ProtocolMessage] provided.
+fn build_network_message(protocol_message: ProtocolMessage, counter: &AtomicU32, destination: MatterDestinationID) -> NetworkMessage {
+    let matter = MatterMessageBuilder::new()
+        .set_destination(destination)
+        .set_counter(increase_counter(&GLOBAL_UNENCRYPTED_COUNTER))
+        .set_payload(&protocol_message.to_bytes())
+        .build();
+    NetworkMessage {
+        address: None,
+        message: matter,
+        retry_counter: 0,
     }
+}
 
-    #[test]
-    fn crypto_hmac_test() {
-        let sample_key = b"my secret and secure key";
-        let sample_input_message = b"input message";
-        let hmac = crypto::hmac(sample_key, sample_input_message);
-        let hex = hex::encode(hmac);
-        assert_eq!(
-            hex,
-            "97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9"
-        )
-    }
-
-    #[test]
-    fn crypto_hmac_verify() {
-        let sample_key = b"my secret and secure key";
-        let sample_input_message = b"input message";
-        let x = hex::decode("97d2a569059bbcd8ead4444ff99071f4c01d005bcefe0d3567e1be628e5fdcd9")
-            .unwrap();
-        let hmac = crypto::verify_hmac(sample_key, sample_input_message, &x);
-        hmac.expect("Verification was not successful.")
-    }
-
-    #[test]
-    fn generate_key_pair() {
-        let _key_pair = crypto::generate_key_pair();
-    }
-
-    #[test]
-    fn sign_message() {
-        let signing_key = crypto::generate_key_pair();
-        let message = b"Test";
-        let _signed = crypto::sign_message(&signing_key.private_key, message);
-    }
-
-    #[test]
-    fn verify_signed_message() {
-        let public_key_encoded = hex::decode("044f85bb78121be98ce0644cb9ae2e97d86d24bf962acabecdfa26e15f425fa0dbcafb3b8c65f5bc1f14af6e176b46bf20a58058f69d2f6d05ce91f4c44e16c5f8").unwrap();
-        let message = b"Test";
-        let public_key = EncodedPoint::from_bytes(&public_key_encoded).unwrap();
-        let verifying_key = VerifyingKey::from_encoded_point(&public_key).unwrap();
-        let signature = hex::decode("7d639959c1a701326cb6827f10b59dca871d4f5f7d80f1c898eb6d85ac37999376afc3b4e22bd7724730cf1648f8dc974d1c5df8f94380f43fbe6414b3677a77").unwrap();
-        let decoded_signature = Signature::from_slice(&signature).unwrap();
-        let _ = verifying_key.verify(message, &decoded_signature).is_ok();
-    }
-
-    #[test]
-    fn ecdh_shared_secret() {
-        let bob = crypto::ecc_generate_key_pair();
-        let alice = crypto::ecc_generate_key_pair();
-
-        let bob_public_encoded = EncodedPoint::from(bob.public_key);
-        let alice_public_encoded = EncodedPoint::from(alice.public_key);
-
-        let shared_bob = crypto::ecdh(bob.private_key, alice_public_encoded.as_ref());
-        let shared_alice = crypto::ecdh(alice.private_key, bob_public_encoded.as_ref());
-        assert_eq!(shared_bob, shared_alice);
-    }
-
-    #[test]
-    fn aes_128() {
-        let key = hex::decode("D7828D13B2B0BDC325A76236DF93CC6B").expect("Issue decoding HEX!");
-        let nonce = hex::decode("2F1DBD38CE3EDA7C23F04DD650").expect("Issue decoding HEX!");
-        let mut taken = [0u8; 13];
-        let message = b"Hello from Matter!";
-        let data: [u8; 0] = [];
-        taken.copy_from_slice(&nonce[0..13]);
-        let encrypted = crypto::symmetric::encrypt(&key, Payload { msg: message, aad: &data }, &taken).expect("Issue encrypting the payload.");
-        let encrypted_payload = Payload { msg: &encrypted[..], aad: &[] };
-        let decrypted = crypto::symmetric::decrypt(&key, encrypted_payload, &taken).expect("Issue decrypting the payload.");
-        println!("Symmetric Encrypted: {}", hex::encode(&encrypted));
-        println!("Symmetric Decrypted: {}", String::from_utf8_lossy(&decrypted));
-        assert_eq!(message, decrypted.as_slice())
-    }
-
-    #[test]
-    fn ctr() {
-        let key = hex::decode("D7828D13B2B0BDC325A76236DF93CC6B").expect("Issue decoding HEX");
-        let nonce = hex::decode("2F1DBD38CE3EDA7C23F04DD650").expect("Issue decoding HEX!");
-        let mut taken = [0u8; 13];
-        let mut message = b"Hello from Matter!".to_vec();
-        taken.copy_from_slice(&nonce[0..13]);
-        crypto::symmetric::encrypt_ctr(&key, &mut message, &taken);
-        println!("AES128-CTR Encrypted: {}", hex::encode(&message));
-        crypto::symmetric::decrypt_ctr(&key, &mut message, &taken);
-        println!("AES128-CTR Decrypted: {}", String::from_utf8_lossy(&message));
-    }
-
-    #[test]
-    fn kdf() {
-        let ikm = hex::decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b").unwrap();
-        let salt = hex::decode("000102030405060708090a0b0c").unwrap();
-        let info = hex::decode("f0f1f2f3f4f5f6f7f8f9").unwrap();
-        let kdf = kdf::key_derivation(&ikm[..], &salt[..], &info[..], 3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
-        println!("HKDF derived: {}", hex::encode(kdf));
-    }
-
-    #[test]
-    fn pb_kdf() {
-        let password = b"password";
-        let salt = b"salt";
-        let n = 600_000u32;
-        let expected = hex::decode("669cfe52482116fda1aa2cbe409b2f56c8e45637").unwrap();
-        let key1 = kdf::password_key_derivation(password, salt, n, 160);
-        assert_eq!(expected, key1);
-    }
-
-    #[test]
-    fn spake2() {
-        for rfc in RFC_T {
-            let mut spake = Spake2P::new();
-            // skip compute_values
-            spake.w0 = rfc.w0;
-            spake.w1 = rfc.w1;
-            spake.x = rfc.x;
-            spake.y = rfc.y;
-            spake.compute_values_verifier();
-            spake.compute_pA();
-            spake.compute_pB();
-            spake.compute_shared(false);
-
-            assert_eq!(rfc.L, spake.L);
-            assert_eq!(rfc.x, spake.x);
-            assert_eq!(rfc.y, spake.y);
-            assert_eq!(rfc.X, spake.X.to_encoded_point(false).as_bytes());
-            assert_eq!(rfc.Y, spake.Y.to_encoded_point(false).as_bytes());
-            assert_eq!(rfc.Z, spake.Z.to_encoded_point(false).as_bytes());
-            assert_eq!(rfc.V, spake.V.to_encoded_point(false).as_bytes());
-            /*
-            TODO: Unknown IDs so unable to test...
-            let tt = spake.compute_transcript();
-            assert_eq!(rfc.TT, tt[..]);
-            let confirmation = spake.compute_confirmation(&tt);
-             */
-        }
-    }
+pub struct NetworkInterface {
+    pub index: u32,
+    pub do_custom: bool,
 }
