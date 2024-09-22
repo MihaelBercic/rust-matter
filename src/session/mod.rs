@@ -27,7 +27,7 @@ pub(crate) mod message_reception;
 const UNSPECIFIED_NODE_ID: u64 = 0x0000_0000_0000_0000;
 /// Message processing thread
 pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
-    thread::Builder::new().name("Processing thread".to_string()).stack_size(50_000 * 1024).spawn(move || {
+    thread::Builder::new().name("Processing thread".to_string()).stack_size(50 * 1024).spawn(move || {
         // let _reception_states: HashMap<u64, MessageReceptionState> = Default::default();
         // let _group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
         // let _group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
@@ -67,8 +67,9 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         let protocol_message = ProtocolMessage::try_from(&decoded[..])?;
         protocol_message
     };
-
     log_info!("{} {color_red}|{:?}|{color_blue}{:?}|{color_reset} message received.", emoji, &protocol_message.protocol_id, &protocol_message.opcode);
+
+
     let mut response = match protocol_message.protocol_id {
         ProtocolID::ProtocolSecureChannel => process_secure_channel(matter_message, protocol_message),
         ProtocolID::ProtocolInteractionModel => process_interaction_model(matter_message, protocol_message),

@@ -47,7 +47,7 @@ pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface) {
     let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
 
     mdns::start_advertising(&udp_socket, device_info, &interface);
-    start_listening_thread(processing_sender.clone(), udp_socket.clone());
+    start_listening_thread(processing_sender.clone(), udp_socket.clone(), outgoing_sender.clone());
     start_outgoing_thread(outgoing_receiver, udp_socket);
     start_processing_thread(processing_receiver, outgoing_sender).join().expect("Unable to start the thread for processing messages...");
 }
