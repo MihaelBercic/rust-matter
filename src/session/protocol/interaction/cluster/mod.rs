@@ -8,7 +8,7 @@ use crate::utils::{generic_error, MatterError};
 /// @author Mihael Berčič
 /// @date 23. 9. 24
 ///
-struct BasicInformationCluster {
+pub struct BasicInformationCluster {
     data_model_revision: u16,
     vendor_name: String,
     vendor_id: u16,

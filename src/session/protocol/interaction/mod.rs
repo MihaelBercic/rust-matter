@@ -1,6 +1,12 @@
-mod device;
-mod information_blocks;
-mod cluster;
+///
+/// @author Mihael Berčič
+/// @date 21. 9. 24
+///
+
+pub mod device;
+pub mod information_blocks;
+pub mod cluster;
+pub mod endpoint;
 
 use crate::log_info;
 use crate::network::network_message::NetworkMessage;
@@ -12,11 +18,6 @@ use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, MatterError};
 use std::io::Cursor;
-
-///
-/// @author Mihael Berčič
-/// @date 21. 9. 24
-///
 
 #[repr(u8)]
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -65,7 +66,7 @@ pub fn process_interaction_model(matter_message: MatterMessage, protocol_message
                     return Err(generic_error("Incorrect tag number..."));
                 };
                 match tag_number {
-                    0 => {
+                    0 => {                                                      // 0 = Attribute Read
                         log_info!("Reading attribute requests!");
                         let Array(children) = child.control.element_type else {
                             return Err(generic_error("Incorrect Array of Attribute..."));

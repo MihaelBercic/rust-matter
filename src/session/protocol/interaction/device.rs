@@ -1,10 +1,46 @@
+use crate::session::protocol::interaction::endpoint::Endpoint;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::tlv::tlv::TLV;
+use std::collections::HashMap;
 
 ///
 /// @author Mihael Berčič
 /// @date 22. 9. 24
 ///
+pub struct Device {
+    endpoints: HashMap<usize, Endpoint>,
+}
+
+impl Device {
+    pub fn read_attribute(&self, attribute_path: AttributePath) {
+        // if wildcard, get from all
+        // if not, get from needed
+    }
+}
+
+pub struct DeviceBuilder {
+    device: Device,
+}
+
+impl DeviceBuilder {
+    pub fn new() -> DeviceBuilder {
+        Self {
+            device: Device { endpoints: Default::default() },
+        }
+    }
+
+    pub fn add_endpoint(mut self, endpoint: Endpoint) -> Self {
+        let index = self.device.endpoints.len();
+        self.device.endpoints.insert(index, endpoint);
+        self
+    }
+
+    pub fn build(self) -> Device {
+        self.device
+    }
+}
+
+
 #[derive(Clone, Debug)]
 pub enum QueryParameter<T> {
     Wildcard,
@@ -19,17 +55,11 @@ pub trait ClusterImplementation {
 
 
 pub struct OnOffCluster {
-    on_off: bool,
+    pub on_off: bool,
 }
 
-
-fn f(mut x: OnOffCluster) {
-    x.on_off = true;
-}
-
-fn t() {
-    let x = OnOffCluster { on_off: true };
-
-
-    f(x);
+impl ClusterImplementation for OnOffCluster {
+    fn read_attribute(&self, attribute_path: AttributePath) -> TLV {
+        todo!()
+    }
 }

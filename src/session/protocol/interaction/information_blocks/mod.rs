@@ -93,22 +93,22 @@ impl TryFrom<TLV> for CommandPath {
 }
 
 pub struct AttributeReport {
-    status: AttributeStatus,
-    data: AttributeData,
+    pub status: AttributeStatus,
+    pub data: AttributeData,
 }
 
 pub struct AttributeData {
-    data_version: u32,
-    path: AttributePath,
-    data: TLV,
+    pub data_version: u32,
+    pub path: AttributePath,
+    pub data: TLV,
 }
 
 pub struct AttributeStatus {
-    path: AttributePath,
-    status: Status,
+    pub path: AttributePath,
+    pub status: Status,
 }
 
 pub struct Status {
-    status: u8,
-    cluster_status: u8,
+    pub status: u8,
+    pub cluster_status: u8,
 }
