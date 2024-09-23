@@ -1,6 +1,6 @@
 # Abstract Matter protocol implementation in Rust
 
-![example workflow](https://github.com/MihaelBercic/rust-matter/actions/workflows/rust.yml/badge.svg)
+![rust tests](https://github.com/MihaelBercic/rust-matter/actions/workflows/workflow.yml/badge.svg)
 
 Documentation is a work in progress...
 
