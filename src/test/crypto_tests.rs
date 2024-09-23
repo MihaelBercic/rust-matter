@@ -14,7 +14,7 @@ mod cryptography_tests {
     use crate::crypto::spake::values_responder::VerifierValues;
     use crate::crypto::spake::Spake2P;
     use crate::crypto::{hash_message, kdf, random_bytes};
-    use crate::tests::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
+    use crate::test::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
     use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
     use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
     use crate::tlv::structs::pbkdf_parameter_set::PBKDFParameterSet;

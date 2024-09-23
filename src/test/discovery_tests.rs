@@ -4,7 +4,7 @@ pub mod discovery_tests {
     use crate::log_info;
     use crate::mdns::constants::PROTOCOL;
     use crate::mdns::packet::MDNSPacket;
-    use crate::tests::constants::ADD_ACCESSORY_PACKET;
+    use crate::test::constants::ADD_ACCESSORY_PACKET;
     use crate::utils::bit_subset::BitSubset;
 
     #[test]

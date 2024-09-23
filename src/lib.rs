@@ -26,7 +26,7 @@ use std::time::SystemTime;
 pub mod logging;
 pub mod mdns;
 
-pub(crate) mod tests;
+pub(crate) mod test;
 pub(crate) mod crypto;
 pub(crate) mod utils;
 pub(crate) mod network;

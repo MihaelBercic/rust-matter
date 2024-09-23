@@ -17,7 +17,7 @@
 
 #[cfg(test)]
 pub mod test_vectors {
-    use crate::tests::s2p_test_vectors::S2TVString;
+    use crate::test::s2p_test_vectors::S2TVString;
 
     // Based on vectors used in the RFC
     #[allow(non_snake_case)]
