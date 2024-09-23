@@ -28,7 +28,7 @@ pub trait TLVEncodable {
 
 pub fn create_tlv(element_type: ElementType) -> TLV {
     TLV {
-        control: Control { tag_control: Anonymous0, element_type: element_type.clone() },
+        control: Control { tag_control: Anonymous0, element_type },
         tag: Tag {
             vendor: None,
             profile: None,
@@ -39,7 +39,7 @@ pub fn create_tlv(element_type: ElementType) -> TLV {
 
 pub fn create_advanced_tlv(element_type: ElementType, tag_control: TagControl, tag_number: Option<TagNumber>, vendor: Option<u16>, profile: Option<u16>) -> TLV {
     TLV {
-        control: Control { tag_control, element_type: element_type.clone() },
+        control: Control { tag_control, element_type },
         tag: Tag {
             vendor,
             profile,

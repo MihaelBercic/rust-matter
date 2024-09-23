@@ -1,10 +1,10 @@
 #[cfg(test)]
 pub mod discovery_tests {
-    use crate::constants::PROTOCOL;
     use crate::crypto::random_bits;
     use crate::log_info;
+    use crate::mdns::constants::PROTOCOL;
     use crate::mdns::packet::MDNSPacket;
-    use crate::tests::constants::ADD_ACCESSORY_PACKET;
+    use crate::test::constants::ADD_ACCESSORY_PACKET;
     use crate::utils::bit_subset::BitSubset;
 
     #[test]

@@ -1,0 +1,25 @@
+name: test
+
+on:
+  push:
+    branches: [ interaction_model ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_and_test:
+    name: Rust project
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: setup toolchain
+        uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: nightly
+
+      - name: cargo test
+        run: cargo test --all-features

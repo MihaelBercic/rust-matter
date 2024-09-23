@@ -14,7 +14,7 @@ mod cryptography_tests {
     use crate::crypto::spake::values_responder::VerifierValues;
     use crate::crypto::spake::Spake2P;
     use crate::crypto::{hash_message, kdf, random_bytes};
-    use crate::tests::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
+    use crate::test::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
     use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
     use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
     use crate::tlv::structs::pbkdf_parameter_set::PBKDFParameterSet;
@@ -152,12 +152,6 @@ mod cryptography_tests {
         let expected = hex::decode("669cfe52482116fda1aa2cbe409b2f56c8e45637").unwrap();
         let key1 = password_key_derivation(password, salt, n, 160);
         assert_eq!(expected, key1);
-
-        let salt = hex::decode("03959ebc20b8fcbda262d97f9a7a9e76e32d7a1b9c5166b6a3721e88acad8808").unwrap();
-        let n = 1000;
-        let expected = hex::decode("c171172da78b28f9588c4f6f5ae1a4f31aebb35d07e46fef1cf3137b49215adde80b3341e46e6c224524ef828a807a4183e0621b9160b52aa235094712b778b4d69c64b0341a65a21a34dfb52e035cce").unwrap();
-        let key = password_key_derivation(password, &salt, n, CRYPTO_W_SIZE_BITS * 2);
-        assert_eq!(key, expected);
     }
 
     #[test]

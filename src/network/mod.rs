@@ -35,14 +35,18 @@ pub(crate) fn start_listening_thread(processing_sender: Sender<NetworkMessage>, 
                         Ok(matter_message) => {
                             let message_id = matter_message.header.message_counter;
                             if history.contains(&message_id) {
+                                let Some(destination) = matter_message.header.source_node_id else {
+                                    continue;
+                                };
+
                                 log_error!("Already seen message...");
                                 let proto = ProtocolMessageBuilder::new()
                                     .set_acknowledged_message_counter(matter_message.header.message_counter)
                                     .set_opcode(SecureChannelProtocolOpcode::MRPStandaloneAcknowledgement as u8)
                                     .set_protocol(ProtocolID::ProtocolSecureChannel)
                                     .build();
-                                let nm = build_network_message(proto, &GLOBAL_UNENCRYPTED_COUNTER, MatterDestinationID::Node(matter_message.header.source_node_id.unwrap()));
-
+                                let nm = build_network_message(proto, &GLOBAL_UNENCRYPTED_COUNTER, MatterDestinationID::Node(destination));
+                                outgoing_sender.send(nm);
                                 continue;
                             }
                             history.push(message_id);
