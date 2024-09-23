@@ -19,6 +19,7 @@ pub enum MatterLayer {
     Data,
     Interaction,
     Generic,
+    TLV,
 }
 
 #[derive(Debug)]
@@ -72,9 +73,8 @@ pub fn transport_error(msg: &str) -> MatterError {
     MatterError::new(Transport, msg)
 }
 
-pub fn generic_error(msg: &str) -> MatterError {
-    MatterError::new(MatterLayer::Generic, msg)
-}
+pub fn generic_error(msg: &str) -> MatterError { MatterError::new(MatterLayer::Generic, msg) }
+pub fn tlv_error(msg: &str) -> MatterError { MatterError::new(MatterLayer::TLV, msg) }
 
 pub fn crypto_error(msg: &str) -> MatterError {
     MatterError::new(MatterLayer::Cryptography, msg)
