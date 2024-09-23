@@ -21,3 +21,15 @@ pub trait ClusterImplementation {
 pub struct OnOffCluster {
     on_off: bool,
 }
+
+
+fn f(mut x: OnOffCluster) {
+    x.on_off = true;
+}
+
+fn t() {
+    let x = OnOffCluster { on_off: true };
+
+
+    f(x);
+}
