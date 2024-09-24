@@ -21,8 +21,8 @@ pub mod tag;
 pub mod structs;
 
 pub trait TLVEncodable {
-    fn to_tlv(&self) -> Vec<u8>;
-    fn from_tlv(bytes: &[u8]) -> Self;
+    fn to_tlv(&self) -> TLV;
+    fn from_tlv(tlv: TLV) -> Self;
 }
 
 

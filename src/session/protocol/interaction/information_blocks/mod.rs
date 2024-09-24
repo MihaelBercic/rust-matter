@@ -1,5 +1,7 @@
-use crate::session::protocol::interaction::device::QueryParameter;
-use crate::session::protocol::interaction::device::QueryParameter::{Specific, Wildcard};
+pub mod attribute;
+
+use crate::session::protocol::interaction::enums::QueryParameter;
+use crate::session::protocol::interaction::enums::QueryParameter::{Specific, Wildcard};
 use crate::tlv::element_type::ElementType::List;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
@@ -17,6 +19,28 @@ pub struct AttributePath {
     pub(crate) cluster_id: QueryParameter<u32>,
     pub(crate) attribute_id: QueryParameter<u32>,
     pub(crate) list_index: Option<u16>,
+}
+
+impl AttributePath {
+    pub fn new(attribute_id: u32) -> Self {
+        Self {
+            attribute_id: Specific(attribute_id),
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for AttributePath {
+    fn default() -> Self {
+        Self {
+            enable_tag_compression: false,
+            node_id: Wildcard,
+            endpoint_id: Wildcard,
+            cluster_id: Wildcard,
+            attribute_id: Wildcard,
+            list_index: None,
+        }
+    }
 }
 
 impl TryFrom<TLV> for AttributePath {
@@ -92,23 +116,3 @@ impl TryFrom<TLV> for CommandPath {
     }
 }
 
-pub struct AttributeReport {
-    pub status: AttributeStatus,
-    pub data: AttributeData,
-}
-
-pub struct AttributeData {
-    pub data_version: u32,
-    pub path: AttributePath,
-    pub data: TLV,
-}
-
-pub struct AttributeStatus {
-    pub path: AttributePath,
-    pub status: Status,
-}
-
-pub struct Status {
-    pub status: u8,
-    pub cluster_status: u8,
-}

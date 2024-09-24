@@ -28,26 +28,6 @@ pub enum SecureChannelProtocolOpcode {
     StatusReport = 0x40,
 }
 
-impl From<u8> for SecureChannelProtocolOpcode {
-    fn from(value: u8) -> Self {
-        match value {
-            0x00 => MessageCounterSyncRequest,
-            0x01 => MessageCounterSyncResponse,
-            0x10 => MRPStandaloneAcknowledgement,
-            0x20 => PBKDFParamRequest,
-            0x21 => PBKDFParamResponse,
-            0x22 => PASEPake1,
-            0x23 => PASEPake2,
-            0x24 => PASEPake3,
-            0x30 => CASESigma1,
-            0x31 => CASESigma2,
-            0x32 => CASESigma3,
-            0x33 => CASESigma2Resume,
-            _ => StatusReport,
-        }
-    }
-}
-
 #[derive(Debug)]
 #[repr(u16)]
 pub enum SecureChannelGeneralCode {
@@ -68,6 +48,37 @@ pub enum SecureChannelGeneralCode {
     AlreadyExists = 14,
     PermissionDenied = 15,
     DataLoss = 16,
+}
+
+#[derive(Debug)]
+#[repr(u16)]
+pub enum SecureStatusProtocolCode {
+    SessionEstablishmentSuccess = 0x0000,
+    NoSharedTrustRoots = 0x0001,
+    InvalidParameter = 0x0002,
+    CloseSession = 0x0003,
+    Busy = 0x0004,
+}
+
+
+impl From<u8> for SecureChannelProtocolOpcode {
+    fn from(value: u8) -> Self {
+        match value {
+            0x00 => MessageCounterSyncRequest,
+            0x01 => MessageCounterSyncResponse,
+            0x10 => MRPStandaloneAcknowledgement,
+            0x20 => PBKDFParamRequest,
+            0x21 => PBKDFParamResponse,
+            0x22 => PASEPake1,
+            0x23 => PASEPake2,
+            0x24 => PASEPake3,
+            0x30 => CASESigma1,
+            0x31 => CASESigma2,
+            0x32 => CASESigma3,
+            0x33 => CASESigma2Resume,
+            _ => StatusReport,
+        }
+    }
 }
 
 impl<T: Into<u16>> From<T> for SecureChannelGeneralCode {
@@ -93,17 +104,6 @@ impl<T: Into<u16>> From<T> for SecureChannelGeneralCode {
             _ => SecureChannelGeneralCode::DataLoss,
         }
     }
-}
-
-
-#[derive(Debug)]
-#[repr(u16)]
-pub enum SecureStatusProtocolCode {
-    SessionEstablishmentSuccess = 0x0000,
-    NoSharedTrustRoots = 0x0001,
-    InvalidParameter = 0x0002,
-    CloseSession = 0x0003,
-    Busy = 0x0004,
 }
 
 impl From<u16> for SecureStatusProtocolCode {

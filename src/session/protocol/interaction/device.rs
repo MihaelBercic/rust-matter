@@ -1,6 +1,8 @@
+use crate::session::protocol::interaction::device::QueryParameter::Specific;
 use crate::session::protocol::interaction::endpoint::Endpoint;
+use crate::session::protocol::interaction::enums::QueryParameter;
+use crate::session::protocol::interaction::information_blocks::attribute::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
-use crate::tlv::tlv::TLV;
 use std::collections::HashMap;
 
 ///
@@ -8,58 +10,30 @@ use std::collections::HashMap;
 /// @date 22. 9. 24
 ///
 pub struct Device {
-    endpoints: HashMap<usize, Endpoint>,
+    pub(crate) endpoints: HashMap<u16, Endpoint>,
 }
 
 impl Device {
-    pub fn read_attribute(&self, attribute_path: AttributePath) {
-        // if wildcard, get from all
-        // if not, get from needed
-    }
-}
-
-pub struct DeviceBuilder {
-    device: Device,
-}
-
-impl DeviceBuilder {
-    pub fn new() -> DeviceBuilder {
-        Self {
-            device: Device { endpoints: Default::default() },
+    pub fn read_attributes(&self, path: AttributePath) -> Vec<AttributeReport> {
+        let mut attribute_reports = vec![];
+        let x = &path.endpoint_id;
+        match &path.endpoint_id {
+            QueryParameter::Wildcard => {
+                for (id, endpoint) in &self.endpoints {
+                    let read = endpoint.read_attributes(path.clone());
+                    for mut x in read {
+                        x.data.path.endpoint_id = Specific(*id);
+                        attribute_reports.push(x);
+                    }
+                }
+            }
+            QueryParameter::Specific(id) => {}
         }
+        attribute_reports
     }
-
-    pub fn add_endpoint(mut self, endpoint: Endpoint) -> Self {
-        let index = self.device.endpoints.len();
-        self.device.endpoints.insert(index, endpoint);
-        self
-    }
-
-    pub fn build(self) -> Device {
-        self.device
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub enum QueryParameter<T> {
-    Wildcard,
-    Specific(T),
-}
-
-pub trait ClusterImplementation {
-    fn read_attribute(&self, attribute_path: AttributePath) -> TLV;
-    // fn write_attribute(attribute_path: AttributePath, value: TLV);
-    // fn invoke_command(command_path: CommandPath);
 }
 
 
 pub struct OnOffCluster {
     pub on_off: bool,
-}
-
-impl ClusterImplementation for OnOffCluster {
-    fn read_attribute(&self, attribute_path: AttributePath) -> TLV {
-        todo!()
-    }
 }
