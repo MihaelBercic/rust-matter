@@ -37,17 +37,9 @@ pub fn process_interaction_model(matter_message: MatterMessage, protocol_message
                     return Err(generic_error("Incorrect tag number..."));
                 };
                 match tag_number {
-                    0 => {                                                      // 0 = Attribute Read
+                    0 => {           // 0 = Attribute Read
+                        let requests = parse_attribute_requests(child)?;
                         log_info!("Reading attribute requests!");
-                        let Array(children) = child.control.element_type else {
-                            return Err(generic_error("Incorrect Array of Attribute..."));
-                        };
-
-                        for child in children {
-                            let attribute_path = AttributePath::try_from(child)?;
-
-                            dbg!(attribute_path);
-                        }
                     }
                     _ => {}
                 }
@@ -58,4 +50,16 @@ pub fn process_interaction_model(matter_message: MatterMessage, protocol_message
         }
         _ => todo!("Not implemented yet {:?}", opcode)
     }
+}
+
+fn parse_attribute_requests(tlv: TLV) -> Result<Vec<AttributePath>, MatterError> {
+    let mut paths = Vec::new();
+    let Array(children) = tlv.control.element_type else {
+        return Err(generic_error("Incorrect Array of Attribute..."));
+    };
+
+    for child in children {
+        paths.push(AttributePath::try_from(child)?);
+    }
+    Ok(paths)
 }

@@ -4,6 +4,38 @@ use crate::utils::MatterError;
 /// @author Mihael Berčič
 /// @date 24. 9. 24
 ///
+pub enum GlobalStatusCode {
+    Success = 0x00,
+    Failure = 0x01,
+    InvalidSubscription = 0x7D,
+    UnsupportedAccess = 0x7E,
+    UnsupportedEndpoint = 0x7F,
+    InvalidAction = 0x80,
+    UnsupportedCommand = 0x81,
+    InvalidCommand = 0x85,
+    UnsupportedAttribute = 0x86,
+    ConstraintError = 0x87,
+    UnsupportedWrite = 0x88,
+    ResourceExhausted = 0x89,
+    NotFound = 0x8B,
+    UnreportableAttribute = 0x8C,
+    InvalidDataType = 0x8D,
+    UnsupportedRead = 0x8F,
+    DataVersionMismatch = 0x92,
+    Timeout = 0x93,
+    UnsupportedNode = 0x9B,
+    Busy = 0x9C,
+    UnsupportedCluster = 0xC3,
+    NoUpstreamSubscription = 0xC5,
+    NeedsTimedInteraction = 0xC6,
+    UnsupportedEvent = 0xC7,
+    PathsExhausted = 0xC8,
+    TimedRequestMismatch = 0xC9,
+    FailsafeRequired = 0xCA,
+    InvalidInState = 0xCB,
+}
+
+
 #[derive(Clone, Debug)]
 pub enum QueryParameter<T> {
     Wildcard,

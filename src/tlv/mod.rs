@@ -3,7 +3,7 @@ use std::io::Cursor;
 use crate::network::enums::Pet;
 use crate::tlv::control::Control;
 use crate::tlv::element_type::ElementType;
-use crate::tlv::element_type::ElementType::{OctetString16, OctetString32, OctetString64, OctetString8, UTFString16, UTFString32, UTFString64, UTFString8, Unsigned16, Unsigned32, Unsigned64, Unsigned8};
+use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, OctetString16, OctetString32, OctetString64, OctetString8, UTFString16, UTFString32, UTFString64, UTFString8, Unsigned16, Unsigned32, Unsigned64, Unsigned8};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_control::TagControl::Anonymous0;
@@ -20,9 +20,9 @@ pub mod control;
 pub mod tag;
 pub mod structs;
 
-pub trait TLVEncodable {
+pub trait TLVRepresentable {
     fn to_tlv(&self) -> TLV;
-    fn from_tlv(tlv: TLV) -> Self;
+    fn into_tlv(self) -> TLV;
 }
 
 
@@ -59,6 +59,48 @@ pub fn tlv_as_hex(element_type: ElementType) -> String {
 pub fn parse_tlv(data: &[u8]) -> TLV {
     TLV::try_from_cursor(&mut Cursor::new(data)).unwrap()
 }
+
+macro_rules! unsigned_tlv {
+    ($($t:ty),*) => {
+        $(
+        impl From<$t> for ElementType {
+            fn from(value: $t) -> Self {
+                let x = value as u64;
+                match x {
+                    0..=0xFF => Unsigned8(x as u8),
+                    0x100..=0xFF_FF => Unsigned16(x as u16),
+                    0x10000..=0xFF_FF_FF_FF => Unsigned32(x as u32),
+                    _ => Unsigned64(x as u64)
+                }
+            }
+        }
+        )*
+    };
+}
+unsigned_tlv!(u8, u16, u32, u64);
+
+impl From<bool> for ElementType {
+    fn from(value: bool) -> Self {
+        if value { BooleanTrue } else { BooleanFalse }
+    }
+}
+
+impl From<String> for ElementType {
+    fn from(value: String) -> ElementType {
+        let data = value.to_string();
+        match data.len() {
+            0..0xFF => UTFString8(data),
+            0xFF..0xFF_FF => UTFString16(data),
+            0xFF_FF..0xFF_FF_FF_FF => UTFString32(data),
+            _ => UTFString64(data)
+        }
+    }
+}
+
+fn test() {
+    let x: ElementType = 22u8.into();
+}
+
 
 pub fn tlv_unsigned<T: Into<u64>>(value: T) -> ElementType {
     let x: u64 = value.into();

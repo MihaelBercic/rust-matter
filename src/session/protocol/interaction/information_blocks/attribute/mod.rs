@@ -1,27 +1,63 @@
+pub(crate) mod report;
+pub(crate) mod status;
+pub(crate) mod data;
+
+use crate::session::protocol::interaction::enums::GlobalStatusCode;
+use crate::session::protocol::interaction::information_blocks::attribute::data::AttributeData;
+use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
+use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
 use crate::session::protocol::interaction::information_blocks::AttributePath;
+use crate::tlv::element_type::ElementType;
 use crate::tlv::tlv::TLV;
 
 ///
 /// @author Mihael Berčič
 /// @date 24. 9. 24
 ///
-pub struct AttributeReport {
-    pub status: AttributeStatus,
-    pub data: AttributeData,
+pub mod flags {
+    pub const READ: u8 = 1;
+    pub const WRITE: u8 = 1;
 }
 
-pub struct AttributeStatus {
-    pub path: AttributePath,
-    pub status: Status,
+#[derive(Clone)]
+pub struct Attribute<T> {
+    pub id: u32,
+    pub value: T,
 }
 
-pub struct AttributeData {
-    pub data_version: u32,
-    pub path: AttributePath,
-    pub data: TLV,
+
+impl<T: Into<ElementType>> Into<AttributeReport> for Attribute<T> {
+    fn into(self) -> AttributeReport {
+        AttributeReport {
+            status: None,
+            data: Some(AttributeData {
+                data_version: 0,
+                path: AttributePath::new(self.id),
+                data: TLV::simple(self.value.into()),
+            }),
+        }
+    }
 }
 
-pub struct Status {
-    pub status: u8,
-    pub cluster_status: u8,
+impl<T> Into<AttributeReport> for Option<Attribute<T>>
+    where Attribute<T>: Into<AttributeReport>
+{
+    fn into(self) -> AttributeReport {
+        match self {
+            None => {
+                AttributeReport {
+                    status: Some(AttributeStatus {
+                        path: Default::default(),
+                        status: Status { status: GlobalStatusCode::UnsupportedAttribute as u8, cluster_status: 0 },
+                    }),
+                    data: None,
+                }
+            }
+            Some(attribute) => attribute.into()
+        }
+    }
 }
+
+
+
+

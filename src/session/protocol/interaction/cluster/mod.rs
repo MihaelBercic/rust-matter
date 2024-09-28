@@ -1,86 +1,48 @@
 use crate::session::protocol::interaction::enums::QueryParameter;
-use crate::session::protocol::interaction::information_blocks::attribute::{AttributeData, AttributeReport, AttributeStatus, Status};
+use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
+use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
+use crate::tlv::create_advanced_tlv;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
-use crate::tlv::{create_advanced_tlv, create_tlv, tlv_string, tlv_unsigned};
 use crate::utils::{generic_error, MatterError};
 
 
 pub struct BasicInformationCluster {
-    pub data_model_revision: u16,
-    pub vendor_name: String,
-    pub vendor_id: u16,
-    pub product_name: String,
-    pub product_id: u16,
-    pub node_label: String,
-    pub location: String,
-    pub hardware_version: u16,
-    pub hardware_version_string: String,
-    pub software_version: u32,
-    pub software_version_string: String,
-    pub manufacturing_date: Option<String>,
-    pub part_number: Option<String>,
-    pub product_url: Option<String>,
-    pub product_label: Option<String>,
-    pub serial_number: Option<String>,
-    pub local_config_disabled: Option<bool>,
-    pub reachable: Option<bool>,
-    pub unique_id: Option<String>,
-    pub product_appearance: Option<ProductAppearance>,
+    pub data_model_revision: Attribute<u16>,
+    pub vendor_name: Attribute<String>,
+    pub vendor_id: Attribute<u16>,
+    pub product_name: Attribute<String>,
+    pub product_id: Attribute<u16>,
+    pub node_label: Attribute<String>,
+    pub location: Attribute<String>,
+    pub hardware_version: Attribute<u16>,
+    pub hardware_version_string: Attribute<String>,
+    pub software_version: Attribute<u32>,
+    pub software_version_string: Attribute<String>,
+    pub manufacturing_date: Option<Attribute<String>>,
+    pub part_number: Option<Attribute<String>>,
+    pub product_url: Option<Attribute<String>>,
+    pub product_label: Option<Attribute<String>>,
+    pub serial_number: Option<Attribute<String>>,
+    pub local_config_disabled: Option<Attribute<bool>>,
+    pub reachable: Option<Attribute<bool>>,
+    pub unique_id: Option<Attribute<String>>,
+    pub product_appearance: Option<Attribute<ProductAppearance>>,
     pub capability_minima: CapabilityMinima,
 }
 
 impl ClusterImplementation for BasicInformationCluster {
     fn read_attributes(&self, attribute_path: AttributePath) -> Vec<AttributeReport> {
-        let mut vec = vec![];
         match attribute_path.attribute_id {
-            QueryParameter::Wildcard => {
-                panic!("No we don't do wildcard in this cluster...")
-            }
-            QueryParameter::Specific(id) => {
-                let attribute = BasicInformationAttributes::try_from(id).unwrap();
-                let attribute_data = AttributeData {
-                    data_version: 1,
-                    path: AttributePath::new(id),
-                    data: self.attribute_data(attribute).unwrap(),
-                };
-                let attribute_report = AttributeReport {
-                    status: AttributeStatus { path: attribute_path, status: Status { status: 0, cluster_status: 0 } },
-                    data: attribute_data,
-                };
-                vec.push(attribute_report)
-            }
+            QueryParameter::Wildcard => todo!(""),
+            QueryParameter::Specific(_) => todo!("")
         }
-        vec
     }
 }
 
-impl BasicInformationCluster {
-    pub fn attribute_data(&self, attribute: BasicInformationAttributes) -> Option<TLV> {
-        let element_type = match attribute {
-            BasicInformationAttributes::DataModelRevision => Some(tlv_unsigned(self.data_model_revision)),
-            BasicInformationAttributes::VendorName => Some(tlv_string(self.vendor_name.clone())),
-            BasicInformationAttributes::VendorID => Some(tlv_unsigned(self.vendor_id)),
-            BasicInformationAttributes::ProductName => Some(tlv_string(self.product_name.clone())),
-            BasicInformationAttributes::ProductID => Some(tlv_unsigned(self.product_id)),
-            BasicInformationAttributes::NodeLabel => Some(tlv_string(self.node_label.clone())),
-            BasicInformationAttributes::Location => Some(tlv_string(self.location.clone())),
-            BasicInformationAttributes::HardwareVersion => Some(tlv_unsigned(self.hardware_version)),
-            BasicInformationAttributes::HardwareVersionString => Some(tlv_string(self.hardware_version_string.clone())),
-            BasicInformationAttributes::SoftwareVersion => Some(tlv_unsigned(self.software_version)),
-            BasicInformationAttributes::SoftwareVersionString => Some(tlv_string(self.software_version_string.clone())),
-            BasicInformationAttributes::CapabilityMinima => Some(self.capability_minima.as_element_type()),
-            // Rest is optionals...
-            _ => None
-        };
-        let tlv = create_tlv(element_type?);
-        Some(tlv)
-    }
-}
 
 pub enum BasicInformationAttributes {
     DataModelRevision = 0x0000,
@@ -196,8 +158,8 @@ impl CapabilityMinima {
     pub fn as_element_type(&self) -> ElementType {
         Structure(
             vec![
-                create_advanced_tlv(tlv_unsigned(self.case_sessions_per_fabric), TagControl::ContextSpecific8, Some(Short(0)), None, None),
-                create_advanced_tlv(tlv_unsigned(self.subscriptions_per_fabric), TagControl::ContextSpecific8, Some(Short(1)), None, None),
+                create_advanced_tlv(self.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Some(Short(0)), None, None),
+                create_advanced_tlv(self.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Some(Short(1)), None, None),
             ]
         )
     }
@@ -206,6 +168,8 @@ impl CapabilityMinima {
 
 pub trait ClusterImplementation {
     fn read_attributes(&self, attribute_path: AttributePath) -> Vec<AttributeReport>;
+
+
     // fn write_attribute(attribute_path: AttributePath, value: TLV);
     // fn invoke_command(command_path: CommandPath);
 }

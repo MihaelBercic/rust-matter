@@ -14,12 +14,12 @@ pub struct EndpointBuilder {
 impl EndpointBuilder {
     pub fn new() -> EndpointBuilder {
         Self {
-            endpoint: Endpoint { cluster_map: HashMap::new() },
+            endpoint: Endpoint { clusters: HashMap::new() },
         }
     }
 
     pub fn add_cluster<T: ClusterImplementation + 'static>(mut self, cluster: ClusterID, implementation: T) -> Self {
-        self.endpoint.cluster_map.insert(cluster, Box::new(implementation));
+        self.endpoint.clusters.insert(cluster, Box::new(implementation));
         self
     }
 

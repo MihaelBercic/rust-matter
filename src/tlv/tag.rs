@@ -14,13 +14,13 @@ pub struct Tag {
     pub tag_number: Option<TagNumber>,
 }
 
-impl Into<Vec<u8>> for Tag {
-    fn into(self) -> Vec<u8> {
+impl From<Tag> for Vec<u8> {
+    fn from(tag: Tag) -> Vec<u8> {
         let mut data = vec![];
-        if let Some(vendor) = self.vendor { data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."); }
-        if let Some(profile) = self.profile { data.write_u16::<LittleEndian>(profile).expect("Unable to write vendor id..."); }
+        if let Some(vendor) = tag.vendor { data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."); }
+        if let Some(profile) = tag.profile { data.write_u16::<LittleEndian>(profile).expect("Unable to write vendor id..."); }
 
-        if let Some(tag) = self.tag_number {
+        if let Some(tag) = tag.tag_number {
             match tag {
                 TagNumber::Short(number) => {
                     data.write_byte(number).expect("Unable to write short tag number...");

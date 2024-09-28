@@ -74,15 +74,15 @@ impl TryFrom<TLV> for PBKDFParamRequest {
     }
 }
 
-impl Into<TLV> for PBKDFParamRequest {
-    fn into(self) -> TLV {
+impl From<PBKDFParamRequest> for TLV {
+    fn from(value: PBKDFParamRequest) -> Self {
         let mut children = vec![
-            create_advanced_tlv(tlv_octet_string(&self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
-            create_advanced_tlv(tlv_unsigned(self.initiator_session_id), ContextSpecific8, Some(Short(2)), None, None),
-            create_advanced_tlv(tlv_unsigned(self.passcode_id), ContextSpecific8, Some(Short(3)), None, None),
-            create_advanced_tlv(if self.has_params { BooleanTrue } else { BooleanFalse }, ContextSpecific8, Some(Short(4)), None, None),
+            create_advanced_tlv(tlv_octet_string(&value.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
+            create_advanced_tlv(tlv_unsigned(value.initiator_session_id), ContextSpecific8, Some(Short(2)), None, None),
+            create_advanced_tlv(tlv_unsigned(value.passcode_id), ContextSpecific8, Some(Short(3)), None, None),
+            create_advanced_tlv(if value.has_params { BooleanTrue } else { BooleanFalse }, ContextSpecific8, Some(Short(4)), None, None),
         ];
-        if let Some(params) = self.initiator_session_parameters {
+        if let Some(params) = value.initiator_session_parameters {
             let mut tlv: TLV = params.into();
             tlv.tag.tag_number = Some(Short(5));
             tlv.control.tag_control = ContextSpecific8;
@@ -143,16 +143,16 @@ impl TryFrom<TLV> for SessionParameter {
     }
 }
 
-impl Into<TLV> for SessionParameter {
-    fn into(self) -> TLV {
+impl From<SessionParameter> for TLV {
+    fn from(value: SessionParameter) -> Self {
         let mut children = vec![];
-        if let Some(idle_interval) = self.session_idle_interval {
+        if let Some(idle_interval) = value.session_idle_interval {
             children.push(create_advanced_tlv(Unsigned32(idle_interval), ContextSpecific8, Some(Short(1)), None, None));
         }
-        if let Some(active_interval) = self.session_active_interval {
+        if let Some(active_interval) = value.session_active_interval {
             children.push(create_advanced_tlv(Unsigned32(active_interval), ContextSpecific8, Some(Short(2)), None, None));
         }
-        if let Some(active_threshold) = self.session_active_threshold {
+        if let Some(active_threshold) = value.session_active_threshold {
             children.push(create_advanced_tlv(Unsigned16(active_threshold), ContextSpecific8, Some(Short(3)), None, None));
         }
         create_tlv(Structure(children))
