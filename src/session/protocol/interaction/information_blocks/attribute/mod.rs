@@ -8,6 +8,9 @@ use crate::session::protocol::interaction::information_blocks::attribute::report
 use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
 use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::tlv::element_type::ElementType;
+use crate::tlv::tag::Tag;
+use crate::tlv::tag_control::TagControl::ContextSpecific8;
+use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
 
 ///
@@ -19,7 +22,7 @@ pub mod flags {
     pub const WRITE: u8 = 1;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Attribute<T> {
     pub id: u32,
     pub value: T,
@@ -33,7 +36,7 @@ impl<T: Into<ElementType>> Into<AttributeReport> for Attribute<T> {
             data: Some(AttributeData {
                 data_version: 0,
                 path: AttributePath::new(self.id),
-                data: TLV::simple(self.value.into()),
+                data: TLV::new(self.value.into(), ContextSpecific8, Tag::simple(Short(2))),
             }),
         }
     }

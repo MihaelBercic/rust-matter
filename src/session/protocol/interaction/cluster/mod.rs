@@ -5,8 +5,10 @@ use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::tlv::create_advanced_tlv;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Structure;
+use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber::Short;
+use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, MatterError};
 
 
@@ -31,14 +33,98 @@ pub struct BasicInformationCluster {
     pub reachable: Option<Attribute<bool>>,
     pub unique_id: Option<Attribute<String>>,
     pub product_appearance: Option<Attribute<ProductAppearance>>,
-    pub capability_minima: CapabilityMinima,
+    pub capability_minima: Attribute<CapabilityMinima>,
+}
+
+impl BasicInformationCluster {
+    pub fn new() -> Self {
+        Self {
+            data_model_revision: Attribute { id: 0x0000, value: 1 },
+            vendor_name: Attribute { id: 0x0001, value: "Mihael Berčič".to_string() },
+            vendor_id: Attribute { id: 0x0002, value: 0xFFF1 },
+            product_name: Attribute { id: 0x0003, value: "New Thermo".to_string() },
+            product_id: Attribute { id: 0x0004, value: 0x8000 },
+            node_label: Attribute { id: 0x0005, value: "New Thermo".to_string() },
+            location: Attribute { id: 0x0006, value: "Living Room".to_string() },
+            hardware_version: Attribute { id: 0x0007, value: 1 },
+            hardware_version_string: Attribute { id: 0x0008, value: "".to_string() },
+            software_version: Attribute { id: 0x0009, value: 1 },
+            software_version_string: Attribute { id: 0x000A, value: "".to_string() },
+            manufacturing_date: None,
+            part_number: None,
+            product_url: None,
+            product_label: None,
+            serial_number: None,
+            local_config_disabled: None,
+            reachable: None,
+            unique_id: None,
+            product_appearance: None,
+            capability_minima: Attribute { id: 0x0013, value: Default::default() },
+        }
+    }
 }
 
 impl ClusterImplementation for BasicInformationCluster {
     fn read_attributes(&self, attribute_path: AttributePath) -> Vec<AttributeReport> {
         match attribute_path.attribute_id {
-            QueryParameter::Wildcard => todo!(""),
-            QueryParameter::Specific(_) => todo!("")
+            QueryParameter::Wildcard => {
+                let mut reports = vec![
+                    self.data_model_revision.clone().into(),
+                    self.vendor_name.clone().into(),
+                    self.vendor_id.clone().into(),
+                    self.product_name.clone().into(),
+                    self.product_id.clone().into(),
+                    self.node_label.clone().into(),
+                    self.location.clone().into(),
+                    self.hardware_version.clone().into(),
+                    self.hardware_version_string.clone().into(),
+                    self.software_version.clone().into(),
+                    self.software_version_string.clone().into(),
+                    self.manufacturing_date.clone().into(),
+                    self.part_number.clone().into(),
+                    self.product_url.clone().into(),
+                    self.product_label.clone().into(),
+                    self.serial_number.clone().into(),
+                    self.local_config_disabled.clone().into(),
+                    self.reachable.clone().into(),
+                    self.unique_id.clone().into(),
+                    // self.product_appearance.clone().into(),
+                    self.capability_minima.clone().into(),
+                ];
+                reports
+            }
+            QueryParameter::Specific(id) => {
+                let attribute = BasicInformationAttributes::try_from(id).unwrap();
+                let mut vec: Vec<AttributeReport> = vec![
+                    match attribute {
+                        BasicInformationAttributes::DataModelRevision => self.data_model_revision.clone().into(),
+                        BasicInformationAttributes::VendorName => self.vendor_name.clone().into(),
+                        BasicInformationAttributes::VendorID => self.vendor_id.clone().into(),
+                        BasicInformationAttributes::ProductName => self.product_name.clone().into(),
+                        BasicInformationAttributes::ProductID => self.product_id.clone().into(),
+                        BasicInformationAttributes::NodeLabel => self.node_label.clone().into(),
+                        BasicInformationAttributes::Location => self.location.clone().into(),
+                        BasicInformationAttributes::HardwareVersion => self.hardware_version.clone().into(),
+                        BasicInformationAttributes::HardwareVersionString => self.hardware_version_string.clone().into(),
+                        BasicInformationAttributes::SoftwareVersion => self.software_version.clone().into(),
+                        BasicInformationAttributes::SoftwareVersionString => self.software_version_string.clone().into(),
+                        BasicInformationAttributes::ManufacturingDate => self.manufacturing_date.clone().into(),
+                        BasicInformationAttributes::PartNumber => self.part_number.clone().into(),
+                        BasicInformationAttributes::ProductURL => self.product_url.clone().into(),
+                        BasicInformationAttributes::ProductLabel => self.product_label.clone().into(),
+                        BasicInformationAttributes::SerialNumber => self.serial_number.clone().into(),
+                        BasicInformationAttributes::LocalConfigDisabled => self.local_config_disabled.clone().into(),
+                        BasicInformationAttributes::Reachable => self.reachable.clone().into(),
+                        BasicInformationAttributes::UniqueID => self.unique_id.clone().into(),
+                        BasicInformationAttributes::CapabilityMinima => self.capability_minima.clone().into(),
+                        BasicInformationAttributes::ProductAppearance => panic!("Product Appearnce not yet implemented")
+                    }
+                ];
+                for x in &mut vec {
+                    x.set_attribute_id(id);
+                }
+                vec
+            }
         }
     }
 }
@@ -101,6 +187,7 @@ impl TryFrom<u32> for BasicInformationAttributes {
 
 
 #[repr(u8)]
+#[derive(Clone)]
 pub enum ProductFinish {
     Other = 0,
     Matter = 1,
@@ -111,6 +198,7 @@ pub enum ProductFinish {
 }
 
 #[repr(u8)]
+#[derive(Clone)]
 pub enum ProductColor {
     Black = 0,
     Navy = 1,
@@ -135,14 +223,27 @@ pub enum ProductColor {
     Gold = 20,
 }
 
+#[derive(Clone)]
 pub struct ProductAppearance {
     finish: ProductFinish,
     primary_color: ProductColor,
 }
 
+#[derive(Clone)]
 pub struct CapabilityMinima {
     case_sessions_per_fabric: u16, // min = 3
     subscriptions_per_fabric: u16, // min = 3
+}
+
+impl From<CapabilityMinima> for ElementType {
+    fn from(value: CapabilityMinima) -> Self {
+        Structure(
+            vec![
+                TLV::new(value.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Tag::simple(Short(0))),
+                TLV::new(value.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Tag::simple(Short(1)))
+            ]
+        )
+    }
 }
 
 impl Default for CapabilityMinima {

@@ -15,14 +15,14 @@ use std::thread::JoinHandle;
 /// @author Mihael Berčič
 /// @date 18. 9. 24
 ///
-pub(crate) mod insecure;
-pub(crate) mod secure_channel;
-pub(crate) mod protocol;
-pub(crate) mod matter;
-pub(crate) mod matter_message;
-pub(crate) mod protocol_message;
-pub(crate) mod counters;
-pub(crate) mod message_reception;
+pub mod insecure;
+pub mod secure_channel;
+pub mod protocol;
+pub mod matter;
+pub mod matter_message;
+pub mod protocol_message;
+pub mod counters;
+pub mod message_reception;
 
 const UNSPECIFIED_NODE_ID: u64 = 0x0000_0000_0000_0000;
 /// Message processing thread
@@ -53,13 +53,16 @@ pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoi
 fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>) -> Result<(), MatterError> {
     let matter_message = network_message.message;
     let mut emoji = "🔓";
-    let protocol_message = if matter_message.header.is_insecure_unicast_session() {
+    let is_insecure = matter_message.header.is_insecure_unicast_session();
+    let session_id = matter_message.header.session_id;
+
+    let protocol_message = if is_insecure {
         ProtocolMessage::try_from(&matter_message.payload[..])?
     } else {
         let Ok(session_map) = &mut ENCRYPTED_SESSIONS.lock() else {
             return Err(generic_error("Unable to lock ENCRYPTED_SESSIONS"));
         };
-        let Some(session) = session_map.get_mut(&matter_message.header.session_id) else {
+        let Some(session) = session_map.get_mut(&session_id) else {
             return Err(generic_error("No session found"));
         };
         emoji = "🔐";
@@ -68,7 +71,6 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         protocol_message
     };
     log_info!("{} {color_red}|{:?}|{color_blue}{:?}|{color_reset} message received.", emoji, &protocol_message.protocol_id, &protocol_message.opcode);
-
 
     let mut response = match protocol_message.protocol_id {
         ProtocolID::ProtocolSecureChannel => process_secure_channel(matter_message, protocol_message),
@@ -80,6 +82,17 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         // ProtocolID::ProtocolForTesting => {}
     }?;
     response.address = network_message.address;
+    if !is_insecure {
+        let Ok(session_map) = &mut ENCRYPTED_SESSIONS.lock() else {
+            return Err(generic_error("Unable to lock ENCRYPTED_SESSIONS"));
+        };
+        let Some(session) = session_map.get_mut(&session_id) else {
+            return Err(generic_error("No session found"));
+        };
+        emoji = "🔐";
+        session.encode(&mut response.message);
+        // encode...
+    }
     outgoing_sender.send(response);
 
     /*

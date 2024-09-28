@@ -88,3 +88,19 @@ impl TLV {
         })
     }
 }
+
+impl From<TLV> for Vec<u8> {
+    fn from(tlv: TLV) -> Self {
+        let mut data = vec![];
+        let control_byte: u8 = tlv.control.clone().into();
+        let tag_data: Vec<u8> = tlv.tag.into();
+
+        data.write_byte(control_byte).expect("Unable to write control byte...");
+        data.extend(tag_data);
+        let value: Option<Vec<u8>> = tlv.control.element_type.into();
+        if let Some(value) = value {
+            data.extend(value);
+        }
+        data
+    }
+}

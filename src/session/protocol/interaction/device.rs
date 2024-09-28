@@ -13,7 +13,7 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn read_attributes(&mut self, path: AttributePath) -> Vec<AttributeReport> {
+    pub fn read_attributes(&self, path: AttributePath) -> Vec<AttributeReport> {
         let mut attribute_reports = vec![];
         match path.endpoint_id {
             QueryParameter::Wildcard => {

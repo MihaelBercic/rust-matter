@@ -14,6 +14,16 @@ pub struct Tag {
     pub tag_number: Option<TagNumber>,
 }
 
+impl Tag {
+    pub fn simple(number: TagNumber) -> Self {
+        Tag {
+            vendor: None,
+            profile: None,
+            tag_number: Some(number),
+        }
+    }
+}
+
 impl From<Tag> for Vec<u8> {
     fn from(tag: Tag) -> Vec<u8> {
         let mut data = vec![];

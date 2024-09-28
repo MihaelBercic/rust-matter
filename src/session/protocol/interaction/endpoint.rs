@@ -1,6 +1,7 @@
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
-use crate::session::protocol::interaction::enums::{ClusterID, QueryParameter};
+use crate::session::protocol::interaction::enums::{GlobalStatusCode, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
+use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
 use crate::session::protocol::interaction::information_blocks::AttributePath;
 use std::collections::HashMap;
 use std::process::id;
@@ -10,7 +11,7 @@ use std::process::id;
 /// @date 23. 9. 24
 ///
 pub struct Endpoint {
-    pub(crate) clusters: HashMap<ClusterID, Box<dyn ClusterImplementation>>,
+    pub(crate) clusters: HashMap<u32, Box<dyn ClusterImplementation + Send>>,
 }
 
 impl Endpoint {
@@ -27,9 +28,17 @@ impl Endpoint {
                 }
             }
             QueryParameter::Specific(cluster_id) => {
-                let cluster = ClusterID::try_from(cluster_id).unwrap();
-                let Some(cluster) = self.clusters.get(&cluster) else {
-                    todo!("Not yet implemented...")
+                let Some(cluster) = self.clusters.get(&cluster_id) else {
+                    return vec![AttributeReport {
+                        status: Some(AttributeStatus {
+                            path: path.clone(),
+                            status: Status {
+                                status: GlobalStatusCode::UnsupportedCluster as u8,
+                                cluster_status: 0,
+                            },
+                        }),
+                        data: None,
+                    }];
                 };
                 let mut reports = cluster.read_attributes(path);
                 for report in &mut reports {

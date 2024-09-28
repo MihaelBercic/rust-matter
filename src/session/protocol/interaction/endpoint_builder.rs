@@ -18,8 +18,8 @@ impl EndpointBuilder {
         }
     }
 
-    pub fn add_cluster<T: ClusterImplementation + 'static>(mut self, cluster: ClusterID, implementation: T) -> Self {
-        self.endpoint.clusters.insert(cluster, Box::new(implementation));
+    pub fn add_cluster<T: ClusterImplementation + 'static + Send>(mut self, cluster: ClusterID, implementation: T) -> Self {
+        self.endpoint.clusters.insert(cluster as u32, Box::new(implementation));
         self
     }
 

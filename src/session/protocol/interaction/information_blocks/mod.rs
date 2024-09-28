@@ -2,7 +2,10 @@ pub mod attribute;
 
 use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::enums::QueryParameter::{Specific, Wildcard};
+use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::List;
+use crate::tlv::tag::Tag;
+use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
 use crate::utils::{tlv_error, MatterError};
@@ -77,6 +80,31 @@ impl TryFrom<TLV> for AttributePath {
         }
 
         Ok(attribute_path)
+    }
+}
+
+impl From<AttributePath> for ElementType {
+    fn from(value: AttributePath) -> Self {
+        let mut vec = vec![TLV::new(value.enable_tag_compression.into(), ContextSpecific8, Tag::simple(Short(0)))];
+        if let Specific(node_id) = value.node_id {
+            vec.push(TLV::new(node_id.into(), ContextSpecific8, Tag::simple(Short(1))));
+        }
+        if let Specific(endpoint_id) = value.endpoint_id {
+            vec.push(TLV::new(endpoint_id.into(), ContextSpecific8, Tag::simple(Short(2))));
+        }
+
+        if let Specific(cluster_id) = value.cluster_id {
+            vec.push(TLV::new(cluster_id.into(), ContextSpecific8, Tag::simple(Short(3))));
+        }
+
+        if let Specific(attribute_id) = value.attribute_id {
+            vec.push(TLV::new(attribute_id.into(), ContextSpecific8, Tag::simple(Short(4))));
+        }
+
+        if let Some(list_index) = value.list_index {
+            vec.push(TLV::new(list_index.into(), ContextSpecific8, Tag::simple(Short(5))));
+        }
+        List(vec)
     }
 }
 

@@ -1,5 +1,9 @@
 use matter::mdns::enums::{CommissionState, DeviceType};
 use matter::mdns::mdns_device_information::MDNSDeviceInformation;
+use matter::session::protocol::interaction::cluster::BasicInformationCluster;
+use matter::session::protocol::interaction::device_builder::DeviceBuilder;
+use matter::session::protocol::interaction::endpoint_builder::EndpointBuilder;
+use matter::session::protocol::interaction::enums::ClusterID::BasicInformation;
 use matter::NetworkInterface;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
@@ -14,7 +18,7 @@ fn main() {
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
-    let device = MDNSDeviceInformation {
+    let device_information = MDNSDeviceInformation {
         ip,
         mac,
         device_name: "thermostat".to_string(),
@@ -24,5 +28,14 @@ fn main() {
         vendor_id: 0xFFF1,
         product_id: 0x8000,
     };
-    matter::start(device, interface);
+
+    let basic = BasicInformationCluster::new();
+    let node_endpoint = EndpointBuilder::new()
+        .add_cluster(BasicInformation, basic)
+        .build();
+    let mut device = DeviceBuilder::new()
+        .add_endpoint(node_endpoint)
+        .build();
+
+    matter::start(device_information, interface, device);
 }

@@ -1,5 +1,11 @@
 use crate::session::protocol::interaction::enums::QueryParameter::Specific;
 use crate::session::protocol::interaction::information_blocks::attribute::{AttributeData, AttributeStatus};
+use crate::tlv::element_type::ElementType;
+use crate::tlv::element_type::ElementType::Structure;
+use crate::tlv::tag::Tag;
+use crate::tlv::tag_control::TagControl::ContextSpecific8;
+use crate::tlv::tag_number::TagNumber::Short;
+use crate::tlv::tlv::TLV;
 
 ///
 /// @author Mihael Berčič
@@ -37,5 +43,27 @@ impl AttributeReport {
         if let Some(data) = &mut self.data {
             data.path.cluster_id = Specific(id);
         }
+    }
+
+    pub fn set_attribute_id(&mut self, id: u32) {
+        if let Some(status) = &mut self.status {
+            status.path.attribute_id = Specific(id);
+        }
+        if let Some(data) = &mut self.data {
+            data.path.attribute_id = Specific(id);
+        }
+    }
+}
+
+impl From<AttributeReport> for ElementType {
+    fn from(value: AttributeReport) -> Self {
+        let mut vec = vec![];
+        if let Some(status) = value.status {
+            vec.push(TLV::new(status.into(), ContextSpecific8, Tag::simple(Short(0))));
+        }
+        if let Some(data) = value.data {
+            vec.push(TLV::new(data.into(), ContextSpecific8, Tag::simple(Short(1))));
+        }
+        Structure(vec)
     }
 }

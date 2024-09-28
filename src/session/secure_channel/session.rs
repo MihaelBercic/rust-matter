@@ -1,5 +1,5 @@
 use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
-use crate::crypto::symmetric::decrypt;
+use crate::crypto::symmetric::{decrypt, encrypt};
 use crate::session::matter::enums::{MatterDestinationID, SessionOrigin};
 use crate::session::matter_message::MatterMessage;
 use crate::session::message_reception::MessageReceptionState;
@@ -51,6 +51,25 @@ impl Session {
             return Err(crypto_error("Unable to decrypt the message."))
         };
         Ok(decrypted)
+    }
+
+    pub fn encode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
+        let encrypted = &matter_message.payload;
+        let header = &matter_message.header;
+        let mut nonce = vec![];
+        let source_node_id = header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
+        nonce.push(header.security_flags.flags);
+        nonce.write_u32::<LE>(header.message_counter)?;
+        nonce.write_u64::<LE>(source_node_id)?;
+
+        let additional = &header.to_bytes();
+        let payload = Payload { msg: encrypted, aad: &header.to_bytes() };
+        let encrypted = encrypt(&self.prover_key, payload, &nonce.try_into()?);
+        let Ok(encrypted) = encrypted else {
+            return Err(crypto_error("Unable to encrypt the message."))
+        };
+        matter_message.payload = encrypted;
+        Ok(())
     }
 
     // TODO: pub fn encode(&self, matter_message: &MatterMessage) -> &MatterMessage {}

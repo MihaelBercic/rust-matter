@@ -36,15 +36,9 @@ pub fn test_interaction_model() {
         product_appearance: None,
         capability_minima: Default::default(),
     };
-    let mut my_cluster: TestCluster = TestCluster {
-        id: 0,
-        is_on: Attribute { id: 0x01, value: false },
-        name: Attribute { id: 0x02, value: "Yeah".to_string() },
-        version: None,
-    };
 
     let endpoint = EndpointBuilder::new()
-        .add_cluster(ClusterID::BasicInformation, my_cluster)
+        .add_cluster(ClusterID::BasicInformation, basic_information)
         .build();
     let mut device = DeviceBuilder::new()
         .add_endpoint(endpoint)
