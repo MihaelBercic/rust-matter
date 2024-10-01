@@ -35,6 +35,12 @@ impl MatterMessageBuilder {
         }
     }
 
+    pub fn reuse(message: MatterMessage) -> Self {
+        Self {
+            message
+        }
+    }
+
     pub fn set_source_node_id(mut self, id: u64) -> Self {
         self.message.header.source_node_id = Some(id);
         self.set_is_source_present(true)
@@ -63,12 +69,6 @@ impl MatterMessageBuilder {
         self.message.header.message_extensions = Some(MatterMessageExtension { data: vec });
         self
     }
-
-    pub fn set_privacy_encoded_flag(mut self, encoded: bool) -> Self {
-        self.message.header.security_flags.set_privacy_encoded(encoded);
-        self
-    }
-
     /// Sets the flags indicating whether the message is encoded with Privacy features or not.
     pub fn set_privacy_encoded(mut self, encoded: bool) -> Self {
         self.message.header.security_flags.set_privacy_encoded(encoded);

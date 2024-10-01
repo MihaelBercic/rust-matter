@@ -1,9 +1,10 @@
+use crate::constants::UNSPECIFIED_NODE_ID;
 use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
 use crate::crypto::symmetric::{decrypt, encrypt};
 use crate::session::matter::enums::{MatterDestinationID, SessionOrigin};
 use crate::session::matter_message::MatterMessage;
 use crate::session::message_reception::MessageReceptionState;
-use crate::session::{SessionRole, UNSPECIFIED_NODE_ID};
+use crate::session::SessionRole;
 use crate::utils::{crypto_error, MatterError};
 use byteorder::{WriteBytesExt, LE};
 use ccm::aead::Payload;
@@ -64,15 +65,13 @@ impl Session {
 
         let additional = &header.to_bytes();
         let payload = Payload { msg: encrypted, aad: &header.to_bytes() };
-        let encrypted = encrypt(&self.prover_key, payload, &nonce.try_into()?);
+        let encrypted = encrypt(&self.verifier_key, payload, &nonce.try_into()?);
         let Ok(encrypted) = encrypted else {
             return Err(crypto_error("Unable to encrypt the message."))
         };
         matter_message.payload = encrypted;
         Ok(())
     }
-
-    // TODO: pub fn encode(&self, matter_message: &MatterMessage) -> &MatterMessage {}
 }
 
 /*

@@ -1,11 +1,8 @@
-use crate::logging::*;
 use crate::network::network_message::NetworkMessage;
-use crate::session::protocol::interaction::process_interaction_model;
-use crate::session::protocol::protocol_id::ProtocolID;
-use crate::session::protocol_message::ProtocolMessage;
-use crate::session::secure_channel::process_secure_channel;
-use crate::utils::{generic_error, MatterError};
-use crate::{log_error, log_info, perform_validity_checks, ENCRYPTED_SESSIONS};
+use crate::session::insecure::process_insecure;
+use crate::session::secure::process_secure;
+use crate::utils::MatterError;
+use crate::{log_error, perform_validity_checks};
 use byteorder::WriteBytesExt;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -16,7 +13,7 @@ use std::thread::JoinHandle;
 /// @date 18. 9. 24
 ///
 pub mod insecure;
-pub mod secure_channel;
+pub mod secure;
 pub mod protocol;
 pub mod matter;
 pub mod matter_message;
@@ -24,14 +21,9 @@ pub mod protocol_message;
 pub mod counters;
 pub mod message_reception;
 
-const UNSPECIFIED_NODE_ID: u64 = 0x0000_0000_0000_0000;
 /// Message processing thread
 pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
     thread::Builder::new().name("Processing thread".to_string()).stack_size(50 * 1024).spawn(move || {
-        // let _reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-        // let _group_data_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-        // let _group_control_reception_states: HashMap<u64, MessageReceptionState> = Default::default();
-
         loop {
             let message_to_process = receiver.recv();
             match message_to_process {
@@ -52,68 +44,15 @@ pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoi
 
 fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>) -> Result<(), MatterError> {
     let matter_message = network_message.message;
-    let mut emoji = "🔓";
-    let is_insecure = matter_message.header.is_insecure_unicast_session();
-    let session_id = matter_message.header.session_id;
-
-    let protocol_message = if is_insecure {
-        ProtocolMessage::try_from(&matter_message.payload[..])?
+    let mut message = if matter_message.header.is_insecure_unicast_session() {
+        process_insecure(matter_message)?
     } else {
-        let Ok(session_map) = &mut ENCRYPTED_SESSIONS.lock() else {
-            return Err(generic_error("Unable to lock ENCRYPTED_SESSIONS"));
-        };
-        let Some(session) = session_map.get_mut(&session_id) else {
-            return Err(generic_error("No session found"));
-        };
-        emoji = "🔐";
-        let decoded = session.decode(&matter_message)?;
-        let protocol_message = ProtocolMessage::try_from(&decoded[..])?;
-        protocol_message
+        process_secure(matter_message)?
     };
-    log_info!("{} {color_red}|{:?}|{color_blue}{:?}|{color_reset} message received.", emoji, &protocol_message.protocol_id, &protocol_message.opcode);
-
-    let mut response = match protocol_message.protocol_id {
-        ProtocolID::ProtocolSecureChannel => process_secure_channel(matter_message, protocol_message),
-        ProtocolID::ProtocolInteractionModel => process_interaction_model(matter_message, protocol_message),
-        _ => todo!("Not yet implemented")
-        // ProtocolID::ProtocolInteractionModel => {}
-        // ProtocolID::ProtocolBdx => {}
-        // ProtocolID::ProtocolUserDirectedCommissioning => {}
-        // ProtocolID::ProtocolForTesting => {}
-    }?;
-    response.address = network_message.address;
-    if !is_insecure {
-        let Ok(session_map) = &mut ENCRYPTED_SESSIONS.lock() else {
-            return Err(generic_error("Unable to lock ENCRYPTED_SESSIONS"));
-        };
-        let Some(session) = session_map.get_mut(&session_id) else {
-            return Err(generic_error("No session found"));
-        };
-        emoji = "🔐";
-        session.encode(&mut response.message);
-        // encode...
-    }
-    outgoing_sender.send(response);
-
-    /*
-    ✅ validity_checks(...);
-    obtain_keys(...)
-    if keys {
-       process_privacy(...)
-       process_security(...)
-    }
-    process_counter(...);
-    process_reliability(...);
-    if unicast {
-       set_session_timestamp
-       set_active_timestamp
-    }
-
-    // Move to Exchange Message Processing
-    */
+    message.address = network_message.address;
+    outgoing_sender.send(message);
     Ok(())
 }
-
 
 pub enum SessionType {
     CASE,

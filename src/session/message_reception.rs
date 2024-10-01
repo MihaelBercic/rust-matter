@@ -1,7 +1,7 @@
 use crate::session::matter::enums::MessageType;
 #[derive(Clone, Debug)]
 pub struct MessageReceptionState {
-    pub source_node_id: u64,
+    pub peer_node_id: u64,
     pub message_type: MessageType,
     pub max_counter: u32,
     pub bitmap: u32,
@@ -41,7 +41,7 @@ impl MessageReceptionState {
     /// ◦ The Message Counter bitmap SHALL be set to all 1, indicating that only new messages with counter greater than max_message_counter SHALL be accepted.
     pub fn new(peer_node: u64, message_type: MessageType, max_counter: u32) -> MessageReceptionState {
         MessageReceptionState {
-            source_node_id: peer_node,
+            peer_node_id: peer_node,
             message_type,
             max_counter,
             bitmap: u32::MAX,

@@ -6,6 +6,7 @@ use crate::session::protocol::interaction::enums::{ClusterID, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
+use std::any::Any;
 
 ///
 /// @author Mihael Berčič
@@ -82,5 +83,9 @@ impl ClusterImplementation for TestCluster {
             report.set_cluster_id(self.id);
         }
         vector
+    }
+
+    fn as_any(&mut self) -> &mut dyn Any {
+        self
     }
 }

@@ -42,8 +42,3 @@ impl Device {
         attribute_reports
     }
 }
-
-
-pub struct OnOffCluster {
-    pub on_off: bool,
-}

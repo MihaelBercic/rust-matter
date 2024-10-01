@@ -13,7 +13,7 @@ use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
 use crate::session::protocol::interaction::device::Device;
 use crate::session::protocol_message::ProtocolMessage;
-use crate::session::secure_channel::session::Session;
+use crate::session::secure::session::Session;
 use crate::session::start_processing_thread;
 use byteorder::WriteBytesExt;
 use p256::elliptic_curve::group::GroupEncoding;
@@ -27,7 +27,7 @@ use std::time::SystemTime;
 
 pub mod logging;
 pub mod mdns;
-
+pub mod constants;
 pub mod test;
 pub mod crypto;
 pub mod utils;
@@ -37,13 +37,9 @@ pub mod session;
 
 
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
-
-
 pub static UNENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, UnencryptedSession>>> = LazyLock::new(Mutex::default);
 pub static ENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
 pub static DEVICE: LazyLock<Mutex<HashMap<u64, Device>>> = LazyLock::new(Mutex::default);
-
-
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
 pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface, device: Device) {
     let udp_socket = Arc::new(UdpSocket::bind(format!("[::%{}]:0", interface.index)).expect("Unable to bind to tcp..."));

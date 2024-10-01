@@ -45,6 +45,33 @@ impl ProtocolMessage {
     }
 }
 
+impl From<ProtocolMessage> for Vec<u8> {
+    fn from(value: ProtocolMessage) -> Self {
+        let mut data: Vec<u8> = vec![];
+        data.write_u8(value.exchange_flags.byte).expect("Unable to write exchange flags...");
+        data.write_u8(value.opcode.clone() as u8).expect("Unable to write opcode...");
+        data.write_u16::<LittleEndian>(value.exchange_id).expect("Unable to write exchange id...");
+        match value.protocol_vendor_id {
+            Some(vendor) => data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."),
+            None => {}
+        }
+        data.write_u16::<LittleEndian>(value.protocol_id.clone() as u16).expect("Unable to write Protocol id...");
+        match value.acknowledged_message_counter {
+            None => {}
+            Some(counter) => data.write_u32::<LittleEndian>(counter).expect("Unable to write ACK message counter...")
+        }
+        match &value.secured_extensions {
+            None => {}
+            Some(extensions) => {
+                data.write_u16::<LittleEndian>(extensions.data_length).expect("Unable to write Extensions Data Length...");
+                data.extend(&extensions.data);
+            }
+        }
+        data.extend(&value.payload);
+        data
+    }
+}
+
 impl TryFrom<&[u8]> for ProtocolMessage {
     type Error = MatterError;
 

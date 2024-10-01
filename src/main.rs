@@ -24,7 +24,7 @@ fn main() {
         device_name: "thermostat".to_string(),
         device_type: DeviceType::Light,
         discriminator: DeviceType::Thermostat as u16,
-        commission_state: CommissionState::InCommissioning,
+        commission_state: CommissionState::NotCommissioned,
         vendor_id: 0xFFF1,
         product_id: 0x8000,
     };

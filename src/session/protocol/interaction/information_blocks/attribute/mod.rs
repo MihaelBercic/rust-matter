@@ -22,7 +22,7 @@ pub mod flags {
     pub const WRITE: u8 = 1;
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Attribute<T> {
     pub id: u32,
     pub value: T,

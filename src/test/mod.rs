@@ -17,3 +17,4 @@ pub mod tlv_test;
 pub mod s2p_test_vectors;
 
 pub mod interaction_model;
+mod structure;
