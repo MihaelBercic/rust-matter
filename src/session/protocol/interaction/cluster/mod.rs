@@ -1,5 +1,4 @@
-use crate::log_info;
-use crate::session::protocol::interaction::enums::QueryParameter;
+use crate::session::protocol::interaction::enums::{ClusterID, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
@@ -11,8 +10,9 @@ use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, MatterError};
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::collections::HashMap;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub struct BasicInformationCluster {
     pub data_model_revision: Attribute<u16>,
@@ -282,82 +282,59 @@ pub trait ClusterImplementation: Any {
     // fn invoke_command(command_path: CommandPath);
 }
 
+enum AvailableCommands {
+    Toggle,
+    On,
+    Off,
+    Fade,
+}
 
-struct TypeMap(HashMap<TypeId, Box<dyn ClusterImplementation>>);
-impl crate::session::protocol::interaction::cluster::TypeMap {
-    fn insert<T: ClusterImplementation>(&mut self, val: T) {
-        self.0.insert(TypeId::of::<T>(), Box::new(val));
-    }
-    fn get<T: ClusterImplementation>(&mut self) -> Option<&mut T> {
-        self.0.get_mut(&TypeId::of::<T>()).map(|any| any.as_any().downcast_mut().expect("A typemap should never pair a typeid with a value of a different type"))
-    }
+enum CommandEvent {
+    On,
+    Off,
+    Toggle { new_value: bool },
+    Fade { to: u8 },
+}
+
+enum AttributeChanges {
+    OnOffChange { new_value: bool }
+}
+
+enum ChangeEvent {
+    Attribute { endpoint_id: u8, change: AttributeChanges },
+    Command { endpoint_id: u8, change: CommandEvent },
+}
+
+pub struct SampleOnOffCluster {
+    on_off: Attribute<bool>,
+    supported_commands: Vec<AvailableCommands>,
 }
 
 
-pub struct OnOffCluster {
-    pub is_on: Attribute<bool>,
-    pub on_command_off: Option<fn(&Self)>,
-    pub on_command_on: Option<fn(&Self)>,
-    pub on_command_toggle: Option<fn(&Self)>,
+pub struct Device {
+    endpoints_map: HashMap<u16, HashMap<u32, Box<dyn ClusterImplementation>>>,
+    event_channel: (Sender<ChangeEvent>, Receiver<ChangeEvent>),
 }
 
-impl OnOffCluster {
-    pub fn off(&mut self) {
-        self.is_on.value = false;
-        if let Some(closure) = self.on_command_on { closure(self) }
-    }
-    pub fn on(&mut self) { self.is_on.value = true }
-    pub fn toggle(&mut self) {
-        self.is_on.value = !self.is_on.value;
-        if let Some(closure) = self.on_command_toggle { closure(self) }
+impl Device {
+    pub fn get<T: ClusterImplementation>(&mut self, endpoint_id: u16, cluster_id: ClusterID) -> Option<&mut T> {
+        self.endpoints_map.get_mut(&endpoint_id)
+            .map(|cluster_map| {
+                cluster_map.get_mut(&(cluster_id as u32)).map(|cluster| cluster.as_any().downcast_mut())?
+            })?
     }
 
-    fn invoke_command(&mut self, id: u8) {
-        match id {
-            0x00 => self.off(),
-            0x01 => self.on(),
-            0x02 => self.toggle(),
-            _ => panic!("Unsupported...")
-        }
+    pub fn read_attributes(&mut self, attribute_path: AttributePath) -> Vec<AttributeReport> {
+        todo!()
     }
 }
 
-#[test]
-fn test() {
-    let mut map: HashMap<u8, OnOffCluster> = HashMap::new();
-    let mut cluster = OnOffCluster {
-        is_on: Attribute { id: 0, value: false },
-        on_command_off: None,
-        on_command_on: None,
-        on_command_toggle: Some(|state| log_info!("Light toggled and is now {}!", state.is_on.value)),
-    };
-    map.insert(0, cluster);
-    let x = map.get_mut(&0);
-    if let Some(cluster) = x {
-        for i in 0..5 {
-            cluster.invoke_command(0x02);
-        }
-    }
-}
-
-
-impl ClusterImplementation for OnOffCluster {
+impl ClusterImplementation for SampleOnOffCluster {
     fn read_attributes(&self, attribute_path: AttributePath) -> Vec<AttributeReport> {
         todo!()
     }
 
     fn as_any(&mut self) -> &mut dyn Any {
-        self
+        todo!()
     }
-}
-
-fn aa_test() {
-    let mut map: TypeMap = TypeMap(HashMap::new());
-    map.insert(OnOffCluster {
-        is_on: Attribute { id: 0, value: false },
-        on_command_off: None,
-        on_command_on: None,
-        on_command_toggle: None,
-    });
-    let x = map.get::<OnOffCluster>();
 }
