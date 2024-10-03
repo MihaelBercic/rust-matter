@@ -11,7 +11,6 @@ use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::MatterDestinationID::Group;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
-use crate::session::protocol::interaction::device::Device;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::secure::session::Session;
 use crate::session::start_processing_thread;
@@ -39,19 +38,11 @@ pub mod session;
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 pub static UNENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, UnencryptedSession>>> = LazyLock::new(Mutex::default);
 pub static ENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
-pub static DEVICE: LazyLock<Mutex<HashMap<u64, Device>>> = LazyLock::new(Mutex::default);
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
-pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface, device: Device) {
+pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface) {
     let udp_socket = Arc::new(UdpSocket::bind(format!("[::%{}]:0", interface.index)).expect("Unable to bind to tcp..."));
     let (processing_sender, processing_receiver) = channel::<NetworkMessage>();
     let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
-
-    let Ok(mut mutex) = DEVICE.try_lock() else {
-        panic!("Unable to add device...");
-    };
-
-    mutex.insert(0, device);
-    drop(mutex);
 
     mdns::start_advertising(&udp_socket, device_info, &interface);
     start_listening_thread(processing_sender.clone(), udp_socket.clone(), outgoing_sender.clone());

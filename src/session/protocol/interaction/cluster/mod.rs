@@ -1,5 +1,7 @@
+use crate::session::protocol::interaction::enums::GlobalStatusCode::{UnsupportedCluster, UnsupportedEndpoint};
 use crate::session::protocol::interaction::enums::{ClusterID, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
+use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::tlv::create_advanced_tlv;
@@ -12,7 +14,7 @@ use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, MatterError};
 use std::any::Any;
 use std::collections::HashMap;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct BasicInformationCluster {
     pub data_model_revision: Attribute<u16>,
@@ -282,41 +284,53 @@ pub trait ClusterImplementation: Any {
     // fn invoke_command(command_path: CommandPath);
 }
 
-enum AvailableCommands {
+pub enum AvailableCommands {
     Toggle,
     On,
     Off,
     Fade,
 }
 
-enum CommandEvent {
+pub enum CommandEvent {
     On,
     Off,
     Toggle { new_value: bool },
     Fade { to: u8 },
 }
 
-enum AttributeChanges {
+pub enum AttributeChanges {
     OnOffChange { new_value: bool }
 }
 
-enum ChangeEvent {
+pub enum ChangeEvent {
     Attribute { endpoint_id: u8, change: AttributeChanges },
     Command { endpoint_id: u8, change: CommandEvent },
 }
 
 pub struct SampleOnOffCluster {
-    on_off: Attribute<bool>,
-    supported_commands: Vec<AvailableCommands>,
+    pub on_off: Attribute<bool>,
+    pub supported_commands: Vec<AvailableCommands>,
 }
 
 
 pub struct Device {
-    endpoints_map: HashMap<u16, HashMap<u32, Box<dyn ClusterImplementation>>>,
-    event_channel: (Sender<ChangeEvent>, Receiver<ChangeEvent>),
+    pub endpoints_map: HashMap<u16, HashMap<u32, Box<dyn ClusterImplementation>>>,
+    pub event_channel: (Sender<ChangeEvent>, Receiver<ChangeEvent>),
 }
 
 impl Device {
+    pub fn new() -> Self {
+        Self {
+            endpoints_map: Default::default(),
+            event_channel: channel(),
+        }
+    }
+
+    pub fn insert(&mut self, endpoint_id: u16, cluster_id: ClusterID, cluster: impl ClusterImplementation) {
+        let mut endpoint_map = self.endpoints_map.entry(endpoint_id).or_insert_with(HashMap::new);
+        endpoint_map.insert(cluster_id as u32, Box::new(cluster));
+    }
+
     pub fn get<T: ClusterImplementation>(&mut self, endpoint_id: u16, cluster_id: ClusterID) -> Option<&mut T> {
         self.endpoints_map.get_mut(&endpoint_id)
             .map(|cluster_map| {
@@ -325,16 +339,82 @@ impl Device {
     }
 
     pub fn read_attributes(&mut self, attribute_path: AttributePath) -> Vec<AttributeReport> {
-        todo!()
+        match attribute_path.endpoint_id {
+            QueryParameter::Wildcard => {
+                let mut vec = vec![];
+                for (endpoint_id, cluster_map) in &mut self.endpoints_map {
+                    vec.extend(Self::read_cluster(cluster_map, *endpoint_id, attribute_path.clone()))
+                }
+                vec
+            }
+            QueryParameter::Specific(endpoint_id) => {
+                let mut cluster_map = self.endpoints_map.get_mut(&endpoint_id);
+                let mut vec = vec![];
+                if let Some(cluster_map) = cluster_map {
+                    vec.extend(Self::read_cluster(cluster_map, endpoint_id, attribute_path))
+                } else {
+                    vec.push(
+                        AttributeReport {
+                            status: Some(AttributeStatus {
+                                path: attribute_path,
+                                status: Status { status: UnsupportedEndpoint as u8, cluster_status: 0 },
+                            }),
+                            data: None,
+                        }
+                    )
+                }
+                vec
+            }
+        }
+    }
+
+    fn read_cluster(cluster_map: &mut HashMap<u32, Box<dyn ClusterImplementation>>, endpoint_id: u16, attribute_path: AttributePath) -> Vec<AttributeReport> {
+        let mut vec = vec![];
+        match attribute_path.cluster_id {
+            QueryParameter::Wildcard => {
+                for (cluster_id, cluster) in cluster_map {
+                    let mut to_add = cluster.read_attributes(attribute_path.clone());
+                    for a_r in &mut to_add {
+                        a_r.set_cluster_id(*cluster_id);
+                        a_r.set_endpoint_id(endpoint_id);
+                    }
+                    vec.extend(to_add);
+                }
+            }
+            QueryParameter::Specific(cluster_id) => {
+                if let Some(cluster) = cluster_map.get_mut(&cluster_id) {
+                    let mut to_add = cluster.read_attributes(attribute_path.clone());
+                    for a_r in &mut to_add {
+                        a_r.set_cluster_id(cluster_id);
+                        a_r.set_endpoint_id(endpoint_id);
+                    }
+                    vec.extend(to_add);
+                } else {
+                    vec.push(
+                        AttributeReport {
+                            status: Some(AttributeStatus {
+                                path: attribute_path,
+                                status: Status { status: UnsupportedCluster as u8, cluster_status: 0 },
+                            }),
+                            data: None,
+                        }
+                    )
+                }
+            }
+        }
+
+        vec
     }
 }
 
 impl ClusterImplementation for SampleOnOffCluster {
     fn read_attributes(&self, attribute_path: AttributePath) -> Vec<AttributeReport> {
-        todo!()
+        vec![
+            self.on_off.clone().into()
+        ]
     }
 
     fn as_any(&mut self) -> &mut dyn Any {
-        todo!()
+        self
     }
 }

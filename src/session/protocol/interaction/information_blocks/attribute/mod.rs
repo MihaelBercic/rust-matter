@@ -28,25 +28,24 @@ pub struct Attribute<T> {
     pub value: T,
 }
 
-
-impl<T: Into<ElementType>> Into<AttributeReport> for Attribute<T> {
-    fn into(self) -> AttributeReport {
+impl<T: Into<ElementType>> From<Attribute<T>> for AttributeReport {
+    fn from(value: Attribute<T>) -> Self {
         AttributeReport {
             status: None,
             data: Some(AttributeData {
                 data_version: 0,
-                path: AttributePath::new(self.id),
-                data: TLV::new(self.value.into(), ContextSpecific8, Tag::simple(Short(2))),
+                path: AttributePath::new(value.id),
+                data: TLV::new(value.value.into(), ContextSpecific8, Tag::simple(Short(2))),
             }),
         }
     }
 }
 
-impl<T> Into<AttributeReport> for Option<Attribute<T>>
+impl<T> From<Option<Attribute<T>>> for AttributeReport
     where Attribute<T>: Into<AttributeReport>
 {
-    fn into(self) -> AttributeReport {
-        match self {
+    fn from(value: Option<Attribute<T>>) -> Self {
+        match value {
             None => {
                 AttributeReport {
                     status: Some(AttributeStatus {
@@ -60,7 +59,3 @@ impl<T> Into<AttributeReport> for Option<Attribute<T>>
         }
     }
 }
-
-
-
-

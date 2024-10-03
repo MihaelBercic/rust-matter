@@ -3,17 +3,13 @@
 /// @date 21. 9. 24
 ///
 
-pub mod device;
 pub mod information_blocks;
 pub mod cluster;
-pub mod endpoint;
-pub mod endpoint_builder;
-pub mod device_builder;
 pub mod enums;
 
 use crate::logging::{color_magenta, color_reset, color_yellow};
 use crate::session::matter_message::MatterMessage;
-use crate::session::protocol::interaction::enums::{InteractionProtocolOpcode, QueryParameter};
+use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
@@ -25,7 +21,7 @@ use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, MatterError};
-use crate::{log_debug, log_info, DEVICE};
+use crate::{log_debug, log_info};
 use std::io::Cursor;
 
 pub fn process_interaction_model(matter_message: MatterMessage, protocol_message: ProtocolMessage) -> Result<ProtocolMessageBuilder, MatterError> {
@@ -54,26 +50,6 @@ pub fn process_interaction_model(matter_message: MatterMessage, protocol_message
             }
             log_info!("We have {} attribute read requests!", attribute_requests.len());
             let mut reports: Vec<AttributeReport> = vec![];
-            for path in attribute_requests {
-                if let Ok(mut mutex) = DEVICE.try_lock() {
-                    match path.node_id {
-                        QueryParameter::Wildcard => {
-                            for x in mutex.values() {
-                                let mut to_add = x.read_attributes(path.clone());
-                                for a in &mut to_add {
-                                    a.set_node_id(0)
-                                }
-                                reports.extend(to_add);
-                            }
-                        }
-                        QueryParameter::Specific(device_id) => {
-                            if let Some(device) = mutex.get_mut(&device_id) {
-                                reports.extend(device.read_attributes(path.clone()));
-                            }
-                        }
-                    }
-                }
-            }
             log_debug!("We have {} reports to send!", reports.len());
 
             let mut to_send = vec![];
