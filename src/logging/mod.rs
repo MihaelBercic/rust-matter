@@ -54,7 +54,7 @@ macro_rules! log_info {
             $crate::START_TIME.elapsed().unwrap().as_millis(),
             $crate::logging::style_reset,
             format_args!($($arg)*)
-        );
+        )
     };
 }
 

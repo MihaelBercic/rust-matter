@@ -51,20 +51,20 @@ impl TryFrom<&[u8]> for MDNSPacket {
     }
 }
 
-impl Into<Vec<u8>> for MDNSPacket {
-    fn into(self) -> Vec<u8> {
+impl From<MDNSPacket> for Vec<u8> {
+    fn from(value: MDNSPacket) -> Self {
         let mut buffer: Vec<u8> = vec![];
-        let header: [u8; 4] = self.header.into();
+        let header: [u8; 4] = value.header.into();
         buffer.extend_from_slice(&header);
-        buffer.write_u16::<BigEndian>(self.query_records.len() as u16).unwrap();
-        buffer.write_u16::<BigEndian>(self.answer_records.len() as u16).unwrap();
-        buffer.write_u16::<BigEndian>(self.authority_records.len() as u16).unwrap();
-        buffer.write_u16::<BigEndian>(self.additional_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(value.query_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(value.answer_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(value.authority_records.len() as u16).unwrap();
+        buffer.write_u16::<BigEndian>(value.additional_records.len() as u16).unwrap();
 
-        for x in self.query_records { buffer.extend::<Vec<u8>>(x.into()) }
-        for x in self.answer_records { buffer.extend::<Vec<u8>>(x.into()) }
-        for x in self.authority_records { buffer.extend::<Vec<u8>>(x.into()) }
-        for x in self.additional_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in value.query_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in value.answer_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in value.authority_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in value.additional_records { buffer.extend::<Vec<u8>>(x.into()) }
 
         buffer
     }

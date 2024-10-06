@@ -11,13 +11,13 @@ pub struct CompleteRecord {
     pub data: Vec<u8>,
 }
 
-impl Into<Vec<u8>> for CompleteRecord {
-    fn into(self) -> Vec<u8> {
+impl From<CompleteRecord> for Vec<u8> {
+    fn from(value: CompleteRecord) -> Self {
         let mut buffer: Vec<u8> = vec![];
-        let record_information: Vec<u8> = self.record_information.into();
+        let record_information: Vec<u8> = value.record_information.into();
         buffer.extend(record_information);
-        buffer.write_u32::<BigEndian>(self.ttl).unwrap();
-        buffer.write_all(&self.data).unwrap();
-        return buffer;
+        buffer.write_u32::<BigEndian>(value.ttl).unwrap();
+        buffer.write_all(&value.data).unwrap();
+        buffer
     }
 }

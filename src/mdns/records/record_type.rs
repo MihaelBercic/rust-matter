@@ -58,9 +58,9 @@ impl From<u16> for RecordType {
     }
 }
 
-impl Into<u16> for RecordType {
-    fn into(self) -> u16 {
-        match self {
+impl From<RecordType> for u16 {
+    fn from(value: RecordType) -> Self {
+        match value {
             A => 1,
             NS => 2,
             CNAME => 5,

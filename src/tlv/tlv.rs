@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use byteorder::{LE, ReadBytesExt};
+use byteorder::{ReadBytesExt, LE};
 use p256::pkcs8::der::Writer;
 
 use TagControl::{CommonProfile16, CommonProfile32, ContextSpecific8, FullyQualified48, FullyQualified64, ImplicitProfile16, ImplicitProfile32};
@@ -24,6 +24,24 @@ pub struct TLV {
 }
 
 impl TLV {
+    pub fn simple(element_type: ElementType) -> Self {
+        TLV {
+            control: Control { tag_control: TagControl::Anonymous0, element_type },
+            tag: Tag {
+                vendor: None,
+                profile: None,
+                tag_number: None,
+            },
+        }
+    }
+
+    pub fn new(element_type: ElementType, tag_control: TagControl, tag: Tag) -> TLV {
+        Self {
+            control: Control { tag_control, element_type },
+            tag,
+        }
+    }
+
     pub fn to_bytes(self) -> Vec<u8> {
         let mut data = vec![];
         let control_byte: u8 = self.control.clone().into();
@@ -68,5 +86,21 @@ impl TLV {
             control,
             tag,
         })
+    }
+}
+
+impl From<TLV> for Vec<u8> {
+    fn from(tlv: TLV) -> Self {
+        let mut data = vec![];
+        let control_byte: u8 = tlv.control.clone().into();
+        let tag_data: Vec<u8> = tlv.tag.into();
+
+        data.write_byte(control_byte).expect("Unable to write control byte...");
+        data.extend(tag_data);
+        let value: Option<Vec<u8>> = tlv.control.element_type.into();
+        if let Some(value) = value {
+            data.extend(value);
+        }
+        data
     }
 }

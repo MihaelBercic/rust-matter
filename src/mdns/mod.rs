@@ -25,7 +25,7 @@ pub(crate) mod multicast_socket;
 pub(crate) mod records;
 pub(crate) mod packet;
 pub mod enums;
-mod packet_header;
+pub mod packet_header;
 pub(crate) mod constants;
 pub mod mdns_device_information;
 

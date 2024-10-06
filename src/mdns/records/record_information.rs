@@ -18,13 +18,14 @@ pub struct RecordInformation {
     pub has_property: bool,
 }
 
-impl Into<Vec<u8>> for RecordInformation {
-    fn into(mut self) -> Vec<u8> {
+impl From<RecordInformation> for Vec<u8> {
+    fn from(value: RecordInformation) -> Self {
         let mut buffer: Vec<u8> = vec![];
-        self.flags |= self.class_code;
-        buffer.write_all(&encode_label(&self.label)).unwrap();
-        buffer.write_u16::<BigEndian>(self.record_type.into()).unwrap();
-        buffer.write_u16::<BigEndian>(self.flags).unwrap();
-        return buffer;
+        let mut flags = value.flags;
+        flags |= value.class_code;
+        buffer.write_all(&encode_label(&value.label)).unwrap();
+        buffer.write_u16::<BigEndian>(value.record_type.into()).unwrap();
+        buffer.write_u16::<BigEndian>(flags).unwrap();
+        buffer
     }
 }

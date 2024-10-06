@@ -15,11 +15,11 @@ pub struct Pake2 {
     pub(crate) c_b: [u8; CRYPTO_HASH_LEN_BYTES],
 }
 
-impl Into<TLV> for Pake2 {
-    fn into(self) -> TLV {
+impl From<Pake2> for TLV {
+    fn from(value: Pake2) -> Self {
         create_tlv(Structure(vec![
-            create_advanced_tlv(tlv_octet_string(&self.p_b), ContextSpecific8, Some(Short(1)), None, None),
-            create_advanced_tlv(tlv_octet_string(&self.c_b), ContextSpecific8, Some(Short(2)), None, None),
+            create_advanced_tlv(tlv_octet_string(&value.p_b), ContextSpecific8, Some(Short(1)), None, None),
+            create_advanced_tlv(tlv_octet_string(&value.c_b), ContextSpecific8, Some(Short(2)), None, None),
         ]))
     }
 }

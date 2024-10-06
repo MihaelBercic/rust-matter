@@ -194,9 +194,9 @@ impl ElementType {
     }
 }
 
-impl Into<u8> for ElementType {
-    fn into(self) -> u8 {
-        match self {
+impl From<ElementType> for u8 {
+    fn from(value: ElementType) -> Self {
+        match value {
             Signed8(_) => 0,
             Signed16(_) => 1,
             Signed32(_) => 2,
@@ -227,9 +227,9 @@ impl Into<u8> for ElementType {
     }
 }
 
-impl Into<Option<Vec<u8>>> for ElementType {
-    fn into(self) -> Option<Vec<u8>> {
-        match self {
+impl From<ElementType> for Option<Vec<u8>> {
+    fn from(value: ElementType) -> Self {
+        match value {
             Signed8(value) => Some(value.to_bytes()),
             Signed16(value) => Some(value.to_bytes()),
             Signed32(value) => Some(value.to_bytes()),

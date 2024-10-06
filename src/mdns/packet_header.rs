@@ -10,21 +10,21 @@ pub struct MDNSPacketHeader {
     pub flags: u16,
 }
 
-impl Into<[u8; 4]> for MDNSPacketHeader {
-    fn into(self) -> [u8; 4] {
+impl From<MDNSPacketHeader> for [u8; 4] {
+    fn from(value: MDNSPacketHeader) -> Self {
         let mut buf = [0u8; 4];
         let mut flags = 0u16;
-        flags |= if self.is_response() { 1 } else { 0 };
+        flags |= if value.is_response() { 1 } else { 0 };
         flags <<= 4;
-        flags |= self.opcode() as u16;
+        flags |= value.opcode() as u16;
         flags <<= 1;
-        flags |= if self.is_authoritative_answer() { 1 } else { 0 };
+        flags |= if value.is_authoritative_answer() { 1 } else { 0 };
         flags <<= 1;
         flags <<= 1;
-        flags |= if self.is_recursion_desired() { 1 } else { 0 };
+        flags |= if value.is_recursion_desired() { 1 } else { 0 };
         flags <<= 8;
 
-        let id_as_bytes: [u8; 2] = self.identification.to_be_bytes(); // identification is u16
+        let id_as_bytes: [u8; 2] = value.identification.to_be_bytes(); // identification is u16
         let flags_as_bytes: [u8; 2] = flags.to_be_bytes(); // flags is u16
         buf[0..2].copy_from_slice(&id_as_bytes);
         buf[2..4].copy_from_slice(&flags_as_bytes);

@@ -69,20 +69,20 @@ impl PBKDFParamResponse {
     }
 }
 
-impl Into<TLV> for PBKDFParamResponse {
-    fn into(self) -> TLV {
+impl From<PBKDFParamResponse> for TLV {
+    fn from(value: PBKDFParamResponse) -> Self {
         let mut children = vec![
-            create_advanced_tlv(tlv_octet_string(&self.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
-            create_advanced_tlv(tlv_octet_string(&self.responder_random), ContextSpecific8, Some(Short(2)), None, None),
-            create_advanced_tlv(tlv_unsigned(self.session_id), ContextSpecific8, Some(Short(3)), None, None),
+            create_advanced_tlv(tlv_octet_string(&value.initiator_random), ContextSpecific8, Some(Short(1)), None, None),
+            create_advanced_tlv(tlv_octet_string(&value.responder_random), ContextSpecific8, Some(Short(2)), None, None),
+            create_advanced_tlv(tlv_unsigned(value.session_id), ContextSpecific8, Some(Short(3)), None, None),
         ];
-        if let Some(parameters) = self.pbkdf_parameters {
+        if let Some(parameters) = value.pbkdf_parameters {
             let mut tlv: TLV = parameters.into();
             tlv.control.tag_control = ContextSpecific8;
             tlv.tag.tag_number = Some(Short(4));
             children.push(tlv);
         }
-        if let Some(parameters) = self.responder_session_params {
+        if let Some(parameters) = value.responder_session_params {
             let mut tlv: TLV = parameters.into();
             tlv.control.tag_control = ContextSpecific8;
             tlv.tag.tag_number = Some(Short(5));

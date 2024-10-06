@@ -1,11 +1,10 @@
 use crate::mdns::records::TXTRecord;
 use byteorder::{WriteBytesExt, BE};
 
-impl Into<Vec<u8>> for TXTRecord<'static> {
-    /// Encodes (key, value) pairs into desired Key=Value strings and encodes them using the [length][data].
-    fn into(self) -> Vec<u8> {
+impl From<TXTRecord<'static>> for Vec<u8> {
+    fn from(value: TXTRecord<'static>) -> Self {
         let mut buffer: Vec<u8> = vec![];
-        let mapped = self.pairs.iter().map(|(key, value)| format!("{}={}", key, value)).collect::<Vec<String>>();
+        let mapped = value.pairs.iter().map(|(key, value)| format!("{}={}", key, value)).collect::<Vec<String>>();
         let total_length = (mapped.join("").len() + mapped.len()) as u16;
         buffer.write_u16::<BE>(total_length).unwrap();
         for value in mapped {

@@ -11,12 +11,12 @@ pub struct Control {
     pub element_type: ElementType,
 }
 
-impl Into<u8> for Control {
-    fn into(self) -> u8 {
+impl From<Control> for u8 {
+    fn from(value: Control) -> Self {
         let mut byte = 0u8;
-        byte |= self.tag_control as u8;
+        byte |= value.tag_control as u8;
         byte <<= 5;
-        byte |= Into::<u8>::into(self.element_type);
+        byte |= Into::<u8>::into(value.element_type);
         byte
     }
 }
