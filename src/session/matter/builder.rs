@@ -10,7 +10,7 @@ use crate::session::matter_message::MatterMessage;
 /// @author Mihael Berčič
 /// @date 24. 7. 24
 ///
-
+/// Simply holds the [MatterMessage] we're building.
 pub struct MatterMessageBuilder {
     message: MatterMessage,
 }
