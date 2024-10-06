@@ -33,7 +33,7 @@ impl<T: Into<ElementType>> From<Attribute<T>> for AttributeReport {
         AttributeReport {
             status: None,
             data: Some(AttributeData {
-                data_version: 0,
+                data_version: 1,
                 path: AttributePath::new(value.id),
                 data: TLV::new(value.value.into(), ContextSpecific8, Tag::simple(Short(2))),
             }),

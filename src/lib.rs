@@ -10,7 +10,7 @@ use crate::session::matter::builder::MatterMessageBuilder;
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::MatterDestinationID::Group;
 use crate::session::matter_message::MatterMessage;
-use crate::session::protocol::interaction::cluster::ClusterImplementation;
+use crate::session::protocol::interaction::cluster::{ClusterImplementation, Device};
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::secure::session::Session;
 use crate::session::start_processing_thread;
@@ -22,6 +22,7 @@ use std::net::UdpSocket;
 use std::sync::atomic::AtomicU32;
 use std::sync::mpsc::channel;
 use std::sync::{Arc, LazyLock, Mutex};
+use std::thread;
 use std::time::SystemTime;
 
 pub mod logging;
@@ -38,11 +39,14 @@ pub mod session;
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 pub static UNENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, UnencryptedSession>>> = LazyLock::new(Mutex::default);
 pub static ENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
+pub(crate) static DEVICE: LazyLock<Arc<Mutex<Device>>> = LazyLock::new(|| Arc::new(Mutex::new(Device::new())));
+
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
-pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface) {
+pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface, device: Device) {
     let udp_socket = Arc::new(UdpSocket::bind(format!("[::%{}]:0", interface.index)).expect("Unable to bind to tcp..."));
     let (processing_sender, processing_receiver) = channel::<NetworkMessage>();
     let (outgoing_sender, outgoing_receiver) = channel::<NetworkMessage>();
+    *DEVICE.lock().unwrap() = device;
 
     mdns::start_advertising(&udp_socket, device_info, &interface);
     start_listening_thread(processing_sender.clone(), udp_socket.clone(), outgoing_sender.clone());
@@ -64,23 +68,16 @@ fn perform_validity_checks(message: &MatterMessage) -> bool {
     true
 }
 
+fn start_modifying_thread(device_arc: Arc<Mutex<Device>>) {
+    thread::Builder::new().name("Device modification thread".to_string()).spawn(|| {
+        loop {}
+    });
+}
+
 /// Builds a [NetworkMessage] and [MatterMessage] based on [ProtocolMessage] provided.
 fn build_network_message(protocol_message: ProtocolMessage, counter: &AtomicU32, destination: MatterDestinationID) -> NetworkMessage {
     let matter = MatterMessageBuilder::new()
         .set_destination(destination)
-        .set_counter(increase_counter(counter))
-        .set_payload(&protocol_message.to_bytes())
-        .build();
-    NetworkMessage {
-        address: None,
-        message: matter,
-        retry_counter: 0,
-    }
-}
-
-
-fn build_network_message_no_destination(protocol_message: ProtocolMessage, counter: &AtomicU32) -> NetworkMessage {
-    let matter = MatterMessageBuilder::new()
         .set_counter(increase_counter(counter))
         .set_payload(&protocol_message.to_bytes())
         .build();

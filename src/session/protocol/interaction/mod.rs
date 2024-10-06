@@ -11,7 +11,7 @@ use crate::logging::{color_magenta, color_reset, color_yellow};
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
-use crate::session::protocol::interaction::information_blocks::AttributePath;
+use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData};
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolInteractionModel;
 use crate::session::protocol_message::ProtocolMessage;
@@ -20,8 +20,8 @@ use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
-use crate::utils::{generic_error, MatterError};
-use crate::{log_debug, log_info};
+use crate::utils::{generic_error, tlv_error, MatterError};
+use crate::{log_debug, log_error, log_info, DEVICE};
 use std::io::Cursor;
 
 pub fn process_interaction_model(matter_message: MatterMessage, protocol_message: ProtocolMessage) -> Result<ProtocolMessageBuilder, MatterError> {
@@ -50,8 +50,13 @@ pub fn process_interaction_model(matter_message: MatterMessage, protocol_message
             }
             log_info!("We have {} attribute read requests!", attribute_requests.len());
             let mut reports: Vec<AttributeReport> = vec![];
-            log_debug!("We have {} reports to send!", reports.len());
+            if let Ok(guard) = &mut DEVICE.lock() {
+                for path in attribute_requests {
+                    reports.extend(guard.read_attributes(path))
+                }
+            }
 
+            log_debug!("We have {} reports to send!", reports.len());
             let mut to_send = vec![];
             for report in reports {
                 to_send.push(TLV::simple(report.into()));
@@ -63,13 +68,62 @@ pub fn process_interaction_model(matter_message: MatterMessage, protocol_message
             let response: Vec<u8> = TLV::simple(response).into();
             let builder = ProtocolMessageBuilder::new()
                 .set_protocol(ProtocolInteractionModel)
+                .set_needs_acknowledgement(false)
+                .set_exchange_id(protocol_message.exchange_id)
                 .set_opcode(InteractionProtocolOpcode::ReportData as u8)
-                .set_is_sent_by_initiator(false)
                 .set_acknowledged_message_counter(matter_message.header.message_counter)
                 .set_payload(&response);
             Ok(builder)
         }
-        _ => todo!("Not implemented yet {:?}", opcode)
+        InteractionProtocolOpcode::InvokeRequest => {
+            let mut responses = vec![];
+            let Structure(children) = tlv.control.element_type else {
+                return Err(tlv_error("Incorrect TLV type..."));
+            };
+
+            for child in children {
+                let Some(Short(tag_number)) = child.tag.tag_number else {
+                    return Err(tlv_error("Incorrect tag number..."));
+                };
+                match tag_number {
+                    2 => {
+                        let Array(children) = child.control.element_type else {
+                            return Err(tlv_error("Incorrect TLV type..."));
+                        };
+                        for child in children {
+                            let command_data = CommandData::try_from(child)?;
+                            let Ok(device) = &mut DEVICE.lock() else {
+                                return Err(generic_error("Unable to lock DEVICE!"))
+                            };
+                            log_info!("Invoking: {:?}", command_data);
+                            responses.extend(device.invoke_command(command_data));
+                        }
+                    }
+                    _ => log_error!("Nothing to do with {}", tag_number)
+                }
+            }
+            let mut tlv_responses = vec![];
+            for response in responses {
+                tlv_responses.push(TLV::simple(response.try_into()?))
+            }
+            let invoke_response = Structure(vec![
+                TLV::new(BooleanTrue, ContextSpecific8, Tag::simple(Short(0))),
+                TLV::new(Array(tlv_responses), ContextSpecific8, Tag::simple(Short(1)))
+            ]);
+
+            let tlv = TLV::simple(invoke_response);
+            let payload = tlv.to_bytes();
+            let builder = ProtocolMessageBuilder::new()
+                .set_exchange_id(protocol_message.exchange_id)
+                .set_acknowledged_message_counter(matter_message.header.message_counter)
+                .set_opcode(InteractionProtocolOpcode::InvokeResponse as u8)
+                .set_payload(&payload)
+                .set_protocol(ProtocolInteractionModel);
+            Ok(builder)
+        }
+        _ => {
+            Err(generic_error(&format!("OPCODE: {:?}", opcode)))
+        }
     }
 }
 
@@ -84,3 +138,9 @@ fn parse_attribute_requests(tlv: TLV) -> Result<Vec<AttributePath>, MatterError>
     }
     Ok(paths)
 }
+
+
+
+
+
+

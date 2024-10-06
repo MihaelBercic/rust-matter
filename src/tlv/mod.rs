@@ -3,7 +3,7 @@ use std::io::Cursor;
 use crate::network::enums::Pet;
 use crate::tlv::control::Control;
 use crate::tlv::element_type::ElementType;
-use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, OctetString16, OctetString32, OctetString64, OctetString8, UTFString16, UTFString32, UTFString64, UTFString8, Unsigned16, Unsigned32, Unsigned64, Unsigned8};
+use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, OctetString16, OctetString32, OctetString64, OctetString8, Signed16, Signed32, Signed64, Signed8, UTFString16, UTFString32, UTFString64, UTFString8, Unsigned16, Unsigned32, Unsigned64, Unsigned8};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_control::TagControl::Anonymous0;
@@ -79,6 +79,25 @@ macro_rules! unsigned_tlv {
 }
 unsigned_tlv!(u8, u16, u32, u64);
 
+macro_rules! signed_tlv {
+    ($($t:ty),*) => {
+        $(
+        impl From<$t> for ElementType {
+            fn from(value: $t) -> Self {
+                let x = value as i64;
+                match x {
+                    -0x80..=0x7F => Signed8(x as i8),
+                    -0x80_00..=0x7F_FF => Signed16(x as i16),
+                    -0x80_00_00_00..=0x7F_FF_FF_FF => Signed32(x as i32),
+                    _ => Signed64(x as i64)
+                }
+            }
+        }
+        )*
+    };
+}
+signed_tlv!(i8, i16, i32, i64);
+
 impl From<bool> for ElementType {
     fn from(value: bool) -> Self {
         if value { BooleanTrue } else { BooleanFalse }
@@ -93,6 +112,18 @@ impl From<String> for ElementType {
             0xFF..0xFF_FF => UTFString16(data),
             0xFF_FF..0xFF_FF_FF_FF => UTFString32(data),
             _ => UTFString64(data)
+        }
+    }
+}
+
+impl From<Vec<u8>> for ElementType {
+    fn from(value: Vec<u8>) -> Self {
+        let len = value.len() as u64;
+        match len {
+            0..=0xFF => OctetString8(value),
+            0x100..=0xFF_FF => OctetString16(value),
+            0x10000..=0xFF_FF_FF_FF => OctetString32(value),
+            _ => OctetString64(value)
         }
     }
 }

@@ -21,7 +21,9 @@ pub fn process_secure(message: MatterMessage) -> Result<NetworkMessage, MatterEr
     let protocol_message = ProtocolMessage::try_from(&decoded[..])?;
     let mut response = match protocol_message.protocol_id {
         ProtocolID::ProtocolInteractionModel => process_interaction_model(message.clone(), protocol_message),
-        _ => todo!("Not yet implemented {:?}", protocol_message.protocol_id)
+        _ => {
+            return Err(generic_error(&format!("Not yet implemented {:?}", protocol_message.protocol_id)))
+        }
         // ProtocolID::ProtocolBdx => {}
         // ProtocolID::ProtocolUserDirectedCommissioning => {}
         // ProtocolID::ProtocolForTesting => {}

@@ -47,6 +47,8 @@ pub enum QueryParameter<T> {
 pub enum ClusterID {
     BasicInformation = 0x0028,
     OnOffCluster = 0x0006,
+    GeneralCommissioning = 0x0030,
+    NetworkCommissioning = 0x0031,
 }
 
 #[repr(u8)]
