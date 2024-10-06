@@ -11,7 +11,7 @@ use crate::session::matter::enums::MatterDestinationID::Group;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::cluster::{ClusterImplementation, Device};
 use crate::session::protocol_message::ProtocolMessage;
-use crate::session::secure::session::Session;
+use crate::session::session::Session;
 use crate::session::start_processing_thread;
 use byteorder::WriteBytesExt;
 use p256::elliptic_curve::group::GroupEncoding;

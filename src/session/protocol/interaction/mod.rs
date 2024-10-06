@@ -7,7 +7,6 @@ pub mod information_blocks;
 pub mod cluster;
 pub mod enums;
 
-use crate::logging::{color_magenta, color_reset, color_yellow};
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
@@ -26,7 +25,6 @@ use std::io::Cursor;
 
 pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
-    log_info!("{color_magenta}|{:?}|{color_yellow}{:?}|{color_reset} message received.", &protocol_message.protocol_id, opcode);
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     match opcode {
         InteractionProtocolOpcode::ReadRequest => {

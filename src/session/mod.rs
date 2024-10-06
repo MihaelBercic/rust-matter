@@ -1,14 +1,19 @@
 use crate::constants::UNSPECIFIED_NODE_ID;
+use crate::logging::color_red;
+use crate::logging::color_reset;
+use crate::logging::color_yellow;
 use crate::network::network_message::NetworkMessage;
 use crate::session::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
-use crate::session::insecure::process_secure_channel;
 use crate::session::matter::builder::MatterMessageBuilder;
 use crate::session::matter::enums::MatterDestinationID;
+use crate::session::protocol::enums::SecureChannelProtocolOpcode;
+use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
 use crate::session::protocol::interaction::process_interaction_model;
+use crate::session::protocol::process_secure_channel;
 use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::utils::{generic_error, MatterError};
-use crate::{log_error, perform_validity_checks, SESSIONS};
+use crate::{log_error, log_info, perform_validity_checks, SESSIONS};
 use byteorder::WriteBytesExt;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -18,14 +23,13 @@ use std::thread::JoinHandle;
 /// @author Mihael Berčič
 /// @date 18. 9. 24
 ///
-pub mod insecure;
-pub mod secure;
 pub mod protocol;
 pub mod matter;
 pub mod matter_message;
 pub mod protocol_message;
 pub mod counters;
 pub mod message_reception;
+pub mod session;
 
 /// Message processing thread
 pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
@@ -64,6 +68,13 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
     session.decode(&mut matter_message)?;
     let source_node_id = matter_message.header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
     let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..])?;
+    let debug_opcode = match protocol_message.protocol_id {
+        ProtocolID::ProtocolSecureChannel => format!("{:?}", SecureChannelProtocolOpcode::from(protocol_message.opcode)),
+        ProtocolID::ProtocolInteractionModel => format!("{:?}", InteractionProtocolOpcode::from(protocol_message.opcode)),
+        _ => todo!("Not implemented protocol yet...")
+    };
+
+    log_info!("{color_red}|{:?}|{color_yellow}{}|{color_reset}", &protocol_message.protocol_id, debug_opcode);
     let mut builder = match protocol_message.protocol_id {
         ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session),
         ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message),
