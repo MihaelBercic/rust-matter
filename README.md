@@ -1,8 +1,10 @@
 # Abstract Matter protocol implementation in Rust
 
 ![rust tests](https://github.com/MihaelBercic/rust-matter/actions/workflows/workflow.yml/badge.svg)
+![Static Badge](https://img.shields.io/badge/in%20active%20development%20-%20lightgreen)
 
-> > > <div style="text-align:center; text-transform:uppercase; font-size: 11px; font-weight: bold"> Documentation is a work in progress...</div>
+
+<div style="text-align:center; text-transform:uppercase; font-size: 11px; font-weight: bold"> Documentation is a work in progress...</div>
 
 ### Interaction Protocol [Currently in development]
 
