@@ -24,7 +24,7 @@ use crate::utils::{generic_error, tlv_error, MatterError};
 use crate::{log_debug, log_error, log_info, DEVICE};
 use std::io::Cursor;
 
-pub fn process_interaction_model(matter_message: MatterMessage, protocol_message: ProtocolMessage) -> Result<ProtocolMessageBuilder, MatterError> {
+pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
     log_info!("{color_magenta}|{:?}|{color_yellow}{:?}|{color_reset} message received.", &protocol_message.protocol_id, opcode);
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;

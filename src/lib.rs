@@ -5,7 +5,6 @@ use crate::mdns::mdns_device_information::MDNSDeviceInformation;
 use crate::network::network_message::NetworkMessage;
 use crate::network::{start_listening_thread, start_outgoing_thread};
 use crate::session::counters::increase_counter;
-use crate::session::insecure::session::UnencryptedSession;
 use crate::session::matter::builder::MatterMessageBuilder;
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::MatterDestinationID::Group;
@@ -37,8 +36,7 @@ pub mod session;
 
 
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
-pub static UNENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, UnencryptedSession>>> = LazyLock::new(Mutex::default);
-pub static ENCRYPTED_SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
+pub static SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
 pub(crate) static DEVICE: LazyLock<Arc<Mutex<Device>>> = LazyLock::new(|| Arc::new(Mutex::new(Device::new())));
 
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.

@@ -1,7 +1,8 @@
 use crate::constants::UNSPECIFIED_NODE_ID;
 use crate::crypto::constants::CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
 use crate::crypto::symmetric::{decrypt, encrypt};
-use crate::session::matter::enums::{MatterDestinationID, SessionOrigin};
+use crate::session::insecure::session::SessionSetup;
+use crate::session::matter::enums::{MatterDestinationID, MessageType, SessionOrigin};
 use crate::session::matter_message::MatterMessage;
 use crate::session::message_reception::MessageReceptionState;
 use crate::session::SessionRole;
@@ -33,10 +34,42 @@ pub struct Session {
     pub session_active_interval: u16,
     pub session_active_threshold: u16,
     pub peer_active_mode: bool, // < => (now() - activetimestamp) < session_active_threshold,
+    pub session_setup: Option<SessionSetup>,
 }
 
+impl Default for Session {
+    fn default() -> Self {
+        Self {
+            session_origin: SessionOrigin::Pase,
+            session_role: SessionRole::Prover,
+            session_id: 0,
+            peer_session_id: 0,
+            prover_key: Default::default(),
+            verifier_key: Default::default(),
+            attestation_challenge: Default::default(),
+            timestamp: 0,
+            message_counter: 0,
+            message_reception_state: MessageReceptionState {
+                peer_node_id: 0,
+                message_type: MessageType::Acknowledgment,
+                max_counter: 0,
+                bitmap: 0,
+            },
+            fabric_index: 0,
+            peer_node_id: MatterDestinationID::Node(0),
+            resumption_id: 0,
+            active_timestamp: 0,
+            session_idle_interval: 500,
+            session_active_interval: 600,
+            session_active_threshold: 4000,
+            peer_active_mode: false,
+            session_setup: Some(Default::default()),
+        }
+    }
+}
 impl Session {
-    pub fn decode(&self, matter_message: &MatterMessage) -> Result<Vec<u8>, MatterError> {
+    pub fn decode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
+        if matter_message.header.is_insecure_unicast_session() { return Ok(()); }
         let encrypted = &matter_message.payload;
         let header = &matter_message.header;
         let mut nonce = vec![];
@@ -51,10 +84,12 @@ impl Session {
         let Ok(decrypted) = decrypted else {
             return Err(crypto_error("Unable to decrypt the message."))
         };
-        Ok(decrypted)
+        matter_message.payload = decrypted;
+        Ok(())
     }
 
     pub fn encode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
+        if matter_message.header.is_insecure_unicast_session() { return Ok(()); }
         let encrypted = &matter_message.payload;
         let header = &matter_message.header;
         let mut nonce = vec![];

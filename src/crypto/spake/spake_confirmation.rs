@@ -6,7 +6,7 @@ use crate::crypto::constants::CRYPTO_HASH_LEN_BYTES;
 ///
 
 #[allow(non_snake_case)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpakeConfirmation {
     pub c_a: [u8; CRYPTO_HASH_LEN_BYTES],
     pub cB: [u8; CRYPTO_HASH_LEN_BYTES],

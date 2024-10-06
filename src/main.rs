@@ -27,7 +27,6 @@ fn main() {
         product_id: 0x8000,
     };
 
-    let basic = BasicInformationCluster::new();
     let mut device = Device::new();
     device.insert(0, BasicInformation, BasicInformationCluster::new());
     device.insert(0, GeneralCommissioning, GeneralCommissioningCluster::new());

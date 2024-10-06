@@ -9,8 +9,8 @@ use crate::crypto::spake::spake_confirmation::SpakeConfirmation;
 /// @author Mihael Berčič
 /// @date 17. 8. 24
 ///
-#[derive(Debug)]
-pub struct UnencryptedSession {
+#[derive(Debug, Clone)]
+pub struct SessionSetup {
     pub peer_session_id: u16,
     pub session_id: u16,
     pub iterations: u32,
@@ -21,13 +21,13 @@ pub struct UnencryptedSession {
     pub context: Vec<u8>,
 }
 
-impl UnencryptedSession {
+impl SessionSetup {
     pub fn add_to_context(&mut self, data: &[u8]) {
         self.context.extend_from_slice(data);
     }
 }
 
-impl Default for UnencryptedSession {
+impl Default for SessionSetup {
     fn default() -> Self {
         Self {
             session_id: 0,
