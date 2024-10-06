@@ -2,7 +2,12 @@
 
 ![rust tests](https://github.com/MihaelBercic/rust-matter/actions/workflows/workflow.yml/badge.svg)
 
-Documentation is a work in progress...
+> > > <div style="text-align:center; text-transform:uppercase; font-size: 11px; font-weight: bold"> Documentation is a work in progress...</div>
+
+### Interaction Protocol [Currently in development]
+
+- [x] Attribute Read & Response
+- [ ] Command Invoke & Response
 
 ### Session initialisation
 
