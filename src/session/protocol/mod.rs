@@ -124,7 +124,6 @@ pub(crate) fn process_secure_channel(message: &MatterMessage, protocol_message: 
                 session.timestamp = crate::START_TIME.elapsed()?.as_secs();
                 session.peer_node_id = MatterDestinationID::Node(peer_node_id);
                 session.session_setup = None;
-                dbg!(session);
             }
             let builder = ProtocolMessageBuilder::new()
                 .set_protocol(ProtocolSecureChannel)
