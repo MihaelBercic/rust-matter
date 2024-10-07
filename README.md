@@ -1,7 +1,7 @@
 ![rust tests](https://github.com/MihaelBercic/rust-matter/actions/workflows/workflow.yml/badge.svg)
 ![Static Badge](https://img.shields.io/badge/in%20active%20development%20-%20green)
 
-<img style="border-radius: 10px" src="https://repository-images.githubusercontent.com/766485479/9abf65f5-d6c0-4723-a298-9f1bc87a4337"/>
+<img style="border-radius: 10px" src="https://repository-images.githubusercontent.com/766485479/44dd04cb-0cda-49af-853c-0fdbcfacea51"/>
 
 # Matter protocol implementation in Rust
 
