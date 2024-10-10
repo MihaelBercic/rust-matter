@@ -128,6 +128,7 @@ impl From<Vec<u8>> for ElementType {
     }
 }
 
+
 fn test() {
     let x: ElementType = 22u8.into();
 }

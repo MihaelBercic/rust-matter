@@ -1,5 +1,3 @@
-use crate::utils::MatterError;
-
 ///
 /// @author Mihael Berčič
 /// @date 24. 9. 24
@@ -42,13 +40,127 @@ pub enum QueryParameter<T> {
     Specific(T),
 }
 
-#[derive(Eq, Hash, PartialEq, Clone, Copy)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum ClusterID {
     BasicInformation = 0x0028,
-    OnOffCluster = 0x0006,
+    OnOff = 0x0006,
     GeneralCommissioning = 0x0030,
     NetworkCommissioning = 0x0031,
+    OperationalCredentials = 0x003E,
+    AdministratorCommissioning = 0x003C,
+    Identify = 0x0003,
+    Groups = 0x0004,
+    Scenes = 0x0005,
+    LevelControl = 0x0008,
+    Alarms = 0x0009,
+    Time = 0x000A,
+    BinaryInputBasic = 0x000F,
+    PowerConfiguration = 0x0001,
+    DeviceTemperatureConfiguration = 0x0002,
+    SoilMoistureMeasurement = 0x0408,
+    TemperatureMeasurement = 0x0402,
+    PressureMeasurement = 0x0403,
+    FlowMeasurement = 0x0404,
+    OccupancySensing = 0x0406,
+    CarbonMonoxideMeasurement = 0x040C,
+    CarbonDioxideMeasurement = 0x040D,
+    PM10Measurement = 0x040E,
+    PM25Measurement = 0x042A,
+    OzoneMeasurement = 0x0415,
+    TargetNavigator = 0x0505,
+    AudioOutput = 0x050B,
+    ContentLauncher = 0x050A,
+    KeypadInput = 0x0509,
+    MediaPlayback = 0x0506,
+    ApplicationBasic = 0x050D,
+    ModeSelect = 0x0050,
+    ProxyConfiguration = 0x0042,
+    ProxyDiscovery = 0x0043,
+    AccessControl = 0x001F,
+    Descriptor = 0x001D,
+    Thermostat = 0x0201,
+    DoorLock = 0x0101,
+    PumpConfigurationAndControl = 0x0200,
+    AirQuality = 0x005B,
+    FixedLabel = 0x0040,
+    UserLabel = 0x0041,
+    GroupKeyManagement = 0x003F,
+    WakeOnLan = 0x0503,
+    PowerSource = 0x004A,
+    BridgedDeviceBasic = 0x0046,
+    FanControl = 0x0202,
+    RefrigeratorAlarm = 0x0057,
+    BooleanState = 0x0045,
+    RelativeHumiditySensor = 0x0405,
+    TargetPosition = 0x0012,
+    DoorLockUser = 0x0011,
+    RelativeAirQuality = 0x0049,
+    GeneralDiagnostics = 0x0033,
+    OperationalState = 0x0060,
+}
+
+impl From<u32> for ClusterID {
+    fn from(value: u32) -> Self {
+        match value {
+            0x0028 => ClusterID::BasicInformation,
+            0x0006 => ClusterID::OnOff,
+            0x0030 => ClusterID::GeneralCommissioning,
+            0x0031 => ClusterID::NetworkCommissioning,
+            0x003E => ClusterID::OperationalCredentials,
+            0x003C => ClusterID::AdministratorCommissioning,
+            0x0003 => ClusterID::Identify,
+            0x0004 => ClusterID::Groups,
+            0x0005 => ClusterID::Scenes,
+            0x0008 => ClusterID::LevelControl,
+            0x0009 => ClusterID::Alarms,
+            0x000A => ClusterID::Time,
+            0x000F => ClusterID::BinaryInputBasic,
+            0x0001 => ClusterID::PowerConfiguration,
+            0x0002 => ClusterID::DeviceTemperatureConfiguration,
+            0x0408 => ClusterID::SoilMoistureMeasurement,
+            0x0402 => ClusterID::TemperatureMeasurement,
+            0x0403 => ClusterID::PressureMeasurement,
+            0x0404 => ClusterID::FlowMeasurement,
+            0x0406 => ClusterID::OccupancySensing,
+            0x040C => ClusterID::CarbonMonoxideMeasurement,
+            0x040D => ClusterID::CarbonDioxideMeasurement,
+            0x040E => ClusterID::PM10Measurement,
+            0x042A => ClusterID::PM25Measurement,
+            0x0415 => ClusterID::OzoneMeasurement,
+            0x0505 => ClusterID::TargetNavigator,
+            0x050B => ClusterID::AudioOutput,
+            0x050A => ClusterID::ContentLauncher,
+            0x0509 => ClusterID::KeypadInput,
+            0x0506 => ClusterID::MediaPlayback,
+            0x050D => ClusterID::ApplicationBasic,
+            0x0050 => ClusterID::ModeSelect,
+            0x0042 => ClusterID::ProxyConfiguration,
+            0x0043 => ClusterID::ProxyDiscovery,
+            0x001F => ClusterID::AccessControl,
+            0x001D => ClusterID::Descriptor,
+            0x0201 => ClusterID::Thermostat,
+            0x0101 => ClusterID::DoorLock,
+            0x0200 => ClusterID::PumpConfigurationAndControl,
+            0x005B => ClusterID::AirQuality,
+            0x0040 => ClusterID::FixedLabel,
+            0x0041 => ClusterID::UserLabel,
+            0x003F => ClusterID::GroupKeyManagement,
+            0x0503 => ClusterID::WakeOnLan,
+            0x004A => ClusterID::PowerSource,
+            0x0046 => ClusterID::BridgedDeviceBasic,
+            0x0202 => ClusterID::FanControl,
+            0x0057 => ClusterID::RefrigeratorAlarm,
+            0x0045 => ClusterID::BooleanState,
+            0x0405 => ClusterID::RelativeHumiditySensor,
+            0x0012 => ClusterID::TargetPosition,
+            0x0011 => ClusterID::DoorLockUser,
+            0x0049 => ClusterID::RelativeAirQuality,
+            0x0033 => ClusterID::GeneralDiagnostics,
+            0x0060 => ClusterID::OperationalState,
+            _ => panic!("Unknown cluster id: 0x{:04x}", value),
+        }
+    }
 }
 
 #[repr(u8)]
@@ -80,17 +192,6 @@ impl From<u8> for InteractionProtocolOpcode {
             0x09 => InteractionProtocolOpcode::InvokeResponse,
             0x0A => InteractionProtocolOpcode::TimedRequest,
             _ => panic!("Unknown Interaction Opcode"),
-        }
-    }
-}
-
-impl TryFrom<u32> for ClusterID {
-    type Error = MatterError;
-
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        match value {
-            0x0006 => Ok(ClusterID::OnOffCluster),
-            _ => Ok(ClusterID::BasicInformation),
         }
     }
 }
