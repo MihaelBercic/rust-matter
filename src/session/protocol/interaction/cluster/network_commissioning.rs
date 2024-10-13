@@ -27,7 +27,10 @@ impl NetworkCommissioningCluster {
     pub fn new() -> Self {
         Self {
             max_networks: Attribute { id: 0x0000, value: 1 },
-            networks: Attribute { id: 0x0001, value: vec![] },
+            networks: Attribute {
+                id: 0x0001,
+                value: vec![NetworkInfo { network_id: vec![0, 2, 3, 1, 1, 3, 5, 53, 3, 201, 3, 3, 2, 19], connected: true }],
+            },
             scan_max_seconds: Attribute { id: 0x0002, value: 60 },
             connect_max_seconds: Attribute { id: 0x0003, value: 60 },
             interface_enabled: Attribute { id: 0, value: true },

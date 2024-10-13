@@ -11,8 +11,8 @@ use crate::tlv::tlv::TLV;
 ///
 #[derive(Clone)]
 pub struct NetworkInfo {
-    network_id: Vec<u8>,
-    connected: bool,
+    pub network_id: Vec<u8>,
+    pub connected: bool,
 }
 
 impl From<NetworkInfo> for ElementType {

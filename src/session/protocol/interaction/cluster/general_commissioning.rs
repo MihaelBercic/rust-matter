@@ -42,7 +42,6 @@ impl GeneralCommissioningCluster {
     }
 
     fn arm_fail_safe(&mut self, input: Option<TLV>) -> InvokeResponse {
-        log_info!("Invoking ArmFailSafe command! We have input: {:?}", input);
         // TODO: Not fake it...
         InvokeResponse {
             command: Some(

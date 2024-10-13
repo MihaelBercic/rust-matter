@@ -40,13 +40,19 @@ pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interfa
 
     let passcode = 20202021;
 
-    let mut pairing_code = format!("{}{:0>5}{:0>4}{:0>5}{:0>5}",
-                                   1 << 2 | device.discriminator >> 10,
-                                   ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
-                                   passcode >> 14,
-                                   device.vendor_id,
-                                   device.product_id
-    );
+    let mut pairing_code = if false {       // if use custom flow
+        format!("{}{:0>5}{:0>4}{:0>5}{:0>5}",
+                1 << 2 | device.discriminator >> 10,
+                ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
+                passcode >> 14,
+                device.vendor_id,
+                device.product_id)
+    } else {
+        format!("{}{:0>5}{:0>4}",
+                0 << 2 | device.discriminator >> 10,
+                ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
+                passcode >> 14)
+    };
     pairing_code.push_verhoeff_check_digit();
     log_info!("Pairing code: {}", pairing_code);
 

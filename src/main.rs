@@ -17,8 +17,8 @@ fn main() {
     let mut interface = NetworkInterface { index: 0xe, do_custom: true };         // WiFi
     let mut ip = Ipv6Addr::from_str("fe80::1828:f752:3892:a05b").unwrap();
     if is_eth {
-        interface = NetworkInterface { index: 0x12, do_custom: true };         // Eth   en7
-        ip = Ipv6Addr::from_str("fe80::40b:ec3:ed22:55b3").unwrap();
+        interface = NetworkInterface { index: 0x10, do_custom: true };         // Eth   en7
+        ip = Ipv6Addr::from_str("fe80::457:b3cc:da39:9caf").unwrap();
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];

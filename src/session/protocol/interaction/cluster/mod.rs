@@ -8,6 +8,7 @@ pub mod basic_commissioning_info;
 pub mod operational_credentials;
 pub mod descriptor_cluster;
 pub mod on_off;
+mod icd_management;
 
 use crate::log_debug;
 use crate::session::protocol::interaction::cluster::basic_commissioning_info::BasicCommissioningInfo;
@@ -127,12 +128,20 @@ impl Device {
         } else {
             format!("{:?}", attribute_path.cluster_id)
         };
-        log_debug!("Reading attributes => Endpoint: {:?}, Cluster: {:?}, Attribute: {:?}", attribute_path.endpoint_id, cluster_information, attribute_path.attribute_id);
+        log_debug!("[READ] Endpoint: {:?}, Cluster: {:?}, Attribute: {:?}", attribute_path.endpoint_id, cluster_information, attribute_path.attribute_id);
         match attribute_path.endpoint_id {
             QueryParameter::Wildcard => {
                 let mut vec = vec![];
                 for (endpoint_id, cluster_map) in &mut self.endpoints_map {
-                    vec.extend(Self::read_cluster(cluster_map, *endpoint_id, attribute_path.clone()))
+                    if let Specific(cluster_id) = attribute_path.cluster_id {
+                        if cluster_map.contains_key(&cluster_id) {
+                            let mut reports = Self::read_cluster(cluster_map, *endpoint_id, attribute_path.clone());
+                            for ar in &mut reports {
+                                ar.set_endpoint_id(*endpoint_id);
+                            }
+                            vec.extend(reports);
+                        }
+                    }
                 }
                 vec
             }
@@ -140,7 +149,11 @@ impl Device {
                 let mut cluster_map = self.endpoints_map.get_mut(&endpoint_id);
                 let mut vec = vec![];
                 if let Some(cluster_map) = cluster_map {
-                    vec.extend(Self::read_cluster(cluster_map, endpoint_id, attribute_path))
+                    let mut reports = Self::read_cluster(cluster_map, endpoint_id, attribute_path);
+                    for ar in &mut reports {
+                        ar.set_endpoint_id(endpoint_id);
+                    }
+                    vec.extend(reports)
                 } else {
                     vec.push(
                         AttributeReport {
@@ -159,6 +172,13 @@ impl Device {
 
     pub(crate) fn invoke_command(&mut self, command: CommandData) -> Vec<InvokeResponse> {
         let command_path = command.path.clone();
+        let cluster_information = if let Specific(id) = command_path.cluster_id {
+            format!("{:?}", ClusterID::from(id))
+        } else {
+            format!("{:?}", command_path.cluster_id)
+        };
+        log_debug!("[INVOKE] Endpoint: {:?}, Cluster: {:?}, Command: {:?}", command_path.endpoint_id, cluster_information, command_path.command_id);
+
         match command_path.endpoint_id {
             QueryParameter::Wildcard => {
                 let mut vec = vec![];
@@ -196,7 +216,6 @@ impl Device {
                     let mut to_add = cluster.read_attributes(attribute_path.clone());
                     for a_r in &mut to_add {
                         a_r.set_cluster_id(*cluster_id);
-                        a_r.set_endpoint_id(endpoint_id);
                     }
                     vec.extend(to_add);
                 }
@@ -206,7 +225,6 @@ impl Device {
                     let mut to_add = cluster.read_attributes(attribute_path.clone());
                     for a_r in &mut to_add {
                         a_r.set_cluster_id(cluster_id);
-                        a_r.set_endpoint_id(endpoint_id);
                     }
                     vec.extend(to_add);
                 } else {
