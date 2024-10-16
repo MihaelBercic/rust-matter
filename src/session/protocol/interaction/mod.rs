@@ -14,16 +14,17 @@ use crate::session::protocol::interaction::information_blocks::{AttributePath, C
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolInteractionModel;
 use crate::session::protocol_message::ProtocolMessage;
+use crate::session::session::Session;
 use crate::tlv::element_type::ElementType::{Array, BooleanTrue, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, tlv_error, MatterError};
-use crate::{log_debug, log_error, log_info, DEVICE};
+use crate::{log_debug, log_info, DEVICE};
 use std::io::Cursor;
 
-pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage) -> Result<ProtocolMessageBuilder, MatterError> {
+pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage, session: &mut Session) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     match opcode {
@@ -88,16 +89,15 @@ pub fn process_interaction_model(matter_message: &MatterMessage, protocol_messag
                         let Array(children) = child.control.element_type else {
                             return Err(tlv_error("Incorrect TLV type..."));
                         };
+                        let Ok(device) = &mut DEVICE.lock() else {
+                            return Err(generic_error("Unable to lock DEVICE!"))
+                        };
                         for child in children {
                             let command_data = CommandData::try_from(child)?;
-                            let Ok(device) = &mut DEVICE.lock() else {
-                                return Err(generic_error("Unable to lock DEVICE!"))
-                            };
-                            log_info!("Invoking: {:?}", command_data);
-                            responses.extend(device.invoke_command(command_data));
+                            responses.extend(device.invoke_command(command_data, session));
                         }
                     }
-                    _ => log_error!("Nothing to do with {}", tag_number)
+                    _ => ()
                 }
             }
             let mut tlv_responses = vec![];

@@ -10,8 +10,8 @@ pub trait BitSubset {
     fn bit_subset(&self, from_bit: usize, count: u32) -> Self;
 
     fn set_bits(&mut self, range: RangeInclusive<Self>, value: Self)
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }
 
 macro_rules! bit_subset {

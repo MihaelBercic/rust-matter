@@ -84,6 +84,13 @@ impl ElementType {
         }
     }
 
+    pub(crate) fn into_u8(self) -> Result<u8, MatterError> {
+        match self {
+            Unsigned8(value) => Ok(value),
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u32..."))
+        }
+    }
+
     pub(crate) fn into_u16(self) -> Result<u16, MatterError> {
         match self {
             Unsigned16(value) => Ok(value),

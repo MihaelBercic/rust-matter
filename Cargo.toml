@@ -6,7 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-p256 = { version = "0.13.2", features = ["ecdh", "ecdsa"] }
+cms = "0.2.3"
+der = "0.7.9"
+block-padding = "0.3.3"
+p256 = { version = "0.13.2", features = ["ecdh", "ecdsa", "ecdsa-core"] }
+ecdsa = { version = "0.16.9", features = ["der"] }
+sec1 = "0.7.3"
 rand = "0.9.0-alpha.0"
 sha2 = "0.10.8"
 hmac = "0.12.1"

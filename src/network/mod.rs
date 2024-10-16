@@ -5,7 +5,7 @@ use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::enums::SecureChannelProtocolOpcode;
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID;
-use crate::{build_network_message, log_debug, log_error, log_info};
+use crate::{build_network_message, log_error, log_info};
 use std::net::UdpSocket;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
@@ -76,7 +76,7 @@ pub(crate) fn start_outgoing_thread(receiver: Receiver<NetworkMessage>, udp_sock
             match outgoing_message {
                 Ok(network_message) => {
                     if let Some(recipient) = network_message.address {
-                        log_debug!("Sending a network message through the UDP to {}", recipient.to_string());
+                        // log_debug!("Sending a network message through the UDP to {}", recipient.to_string());
                         udp_socket.send_to(&network_message.message.to_bytes(), recipient).unwrap();
                     }
                 }

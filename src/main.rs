@@ -1,7 +1,13 @@
 use matter::mdns::enums::{CommissionState, DeviceType};
 use matter::mdns::mdns_device_information::MDNSDeviceInformation;
-use matter::session::protocol::interaction::cluster::{BasicInformationCluster, Device, GeneralCommissioningCluster, NetworkCommissioningCluster};
-use matter::session::protocol::interaction::enums::ClusterID::{BasicInformation, GeneralCommissioning, NetworkCommissioning};
+use matter::session::protocol::interaction;
+use matter::session::protocol::interaction::cluster;
+use matter::session::protocol::interaction::cluster::basic_information::BasicInformationCluster;
+use matter::session::protocol::interaction::cluster::general_commissioning::GeneralCommissioningCluster;
+use matter::session::protocol::interaction::cluster::network_commissioning::NetworkCommissioningCluster;
+use matter::session::protocol::interaction::cluster::operational_credentials::OperationalCredentialsCluster;
+use matter::session::protocol::interaction::cluster::Device;
+use matter::session::protocol::interaction::enums::ClusterID::{BasicInformation, Descriptor, GeneralCommissioning, NetworkCommissioning, OnOff, OperationalCredentials};
 use matter::NetworkInterface;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
@@ -11,8 +17,8 @@ fn main() {
     let mut interface = NetworkInterface { index: 0xe, do_custom: true };         // WiFi
     let mut ip = Ipv6Addr::from_str("fe80::1828:f752:3892:a05b").unwrap();
     if is_eth {
-        interface = NetworkInterface { index: 0xf, do_custom: true };         // Eth   en7
-        ip = Ipv6Addr::from_str("fe80::14c8:e38a:e7b2:673c").unwrap();
+        interface = NetworkInterface { index: 0x10, do_custom: true };         // Eth   en7
+        ip = Ipv6Addr::from_str("fe80::457:b3cc:da39:9caf").unwrap();
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
@@ -31,5 +37,14 @@ fn main() {
     device.insert(0, BasicInformation, BasicInformationCluster::new());
     device.insert(0, GeneralCommissioning, GeneralCommissioningCluster::new());
     device.insert(0, NetworkCommissioning, NetworkCommissioningCluster::new());
+    device.insert(0, OperationalCredentials, OperationalCredentialsCluster::new());
+    device.insert(0, Descriptor, interaction::cluster::descriptor_cluster::DescriptorCluster::new());
+
+
+    device.insert(1, OnOff, cluster::on_off::OnOffCluster::new());
+
+    device.modify_cluster::<NetworkCommissioningCluster>(0, NetworkCommissioning, |cluster| {
+        cluster.connect();
+    });
     matter::start(device_information, interface, device);
 }
