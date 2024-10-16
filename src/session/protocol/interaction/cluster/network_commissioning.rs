@@ -5,6 +5,7 @@ use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, InvokeResponse};
+use crate::session::session::Session;
 use std::any::Any;
 
 ///
@@ -80,7 +81,7 @@ impl ClusterImplementation for NetworkCommissioningCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
         todo!()
     }
 }

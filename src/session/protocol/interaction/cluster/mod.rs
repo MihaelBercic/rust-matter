@@ -19,6 +19,7 @@ use crate::session::protocol::interaction::enums::{ClusterID, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandStatus, InvokeResponse};
+use crate::session::session::Session;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Unsigned8;
 use crate::utils::{generic_error, MatterError};
@@ -94,7 +95,7 @@ pub trait ClusterImplementation: Any {
     fn as_any(&mut self) -> &mut dyn Any;
 
     // fn write_attribute(attribute_path: AttributePath, value: TLV);
-    fn invoke_command(&mut self, command: CommandData) -> Vec<InvokeResponse>;
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse>;
 }
 
 
@@ -170,7 +171,7 @@ impl Device {
         }
     }
 
-    pub(crate) fn invoke_command(&mut self, command: CommandData) -> Vec<InvokeResponse> {
+    pub(crate) fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
         let command_path = command.path.clone();
         let cluster_information = if let Specific(id) = command_path.cluster_id {
             format!("{:?}", ClusterID::from(id))
@@ -183,7 +184,7 @@ impl Device {
             QueryParameter::Wildcard => {
                 let mut vec = vec![];
                 for (endpoint_id, cluster_map) in &mut self.endpoints_map {
-                    vec.extend(Self::invoke_cluster(cluster_map, *endpoint_id, command.clone()))
+                    vec.extend(Self::invoke_cluster(cluster_map, *endpoint_id, command.clone(), session))
                 }
                 vec
             }
@@ -191,7 +192,7 @@ impl Device {
                 let mut cluster_map = self.endpoints_map.get_mut(&endpoint_id);
                 let mut vec = vec![];
                 if let Some(cluster_map) = cluster_map {
-                    vec.extend(Self::invoke_cluster(cluster_map, endpoint_id, command))
+                    vec.extend(Self::invoke_cluster(cluster_map, endpoint_id, command, session))
                 } else {
                     vec.push(
                         InvokeResponse {
@@ -244,13 +245,13 @@ impl Device {
         vec
     }
 
-    fn invoke_cluster(cluster_map: &mut HashMap<u32, Box<dyn ClusterImplementation + Send>>, endpoint_id: u16, command: CommandData) -> Vec<InvokeResponse> {
+    fn invoke_cluster(cluster_map: &mut HashMap<u32, Box<dyn ClusterImplementation + Send>>, endpoint_id: u16, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
         let mut vec = vec![];
         let command_path = command.path.clone();
         match command_path.cluster_id {
             QueryParameter::Wildcard => {
                 for (cluster_id, cluster) in cluster_map {
-                    let mut to_add = cluster.invoke_command(command.clone());
+                    let mut to_add = cluster.invoke_command(command.clone(), session);
                     for a_r in &mut to_add {
                         a_r.set_cluster_id(*cluster_id);
                         a_r.set_endpoint_id(endpoint_id);
@@ -260,7 +261,7 @@ impl Device {
             }
             QueryParameter::Specific(cluster_id) => {
                 if let Some(cluster) = cluster_map.get_mut(&cluster_id) {
-                    let mut to_add = cluster.invoke_command(command.clone());
+                    let mut to_add = cluster.invoke_command(command.clone(), session);
                     for a_r in &mut to_add {
                         a_r.set_cluster_id(cluster_id);
                         a_r.set_endpoint_id(endpoint_id);

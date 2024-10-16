@@ -5,6 +5,7 @@ use crate::session::protocol::interaction::enums::QueryParameter::Specific;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandPath, InvokeResponse};
+use crate::session::session::Session;
 use crate::tlv::element_type::ElementType::{Structure, UTFString8, Unsigned8};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
@@ -119,7 +120,7 @@ impl ClusterImplementation for GeneralCommissioningCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
         let command_path = command.path;
         let command_id = command_path.command_id;
         let mut vec = vec![];
