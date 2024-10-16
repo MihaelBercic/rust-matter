@@ -3,8 +3,6 @@
 ![Static Badge](https://img.shields.io/badge/Active%20Development%20-%20%234F75FF)
 ![Static Badge](https://img.shields.io/badge/Since%2003/03/2023%20-%20%2308C2FF)
 
-`in development since 03/03/2023`
-
 <img style="border-radius: 10px" src="https://repository-images.githubusercontent.com/766485479/44dd04cb-0cda-49af-853c-0fdbcfacea51"/>
 
 # Matter protocol implementation in Rust
