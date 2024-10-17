@@ -22,6 +22,10 @@ impl Tag {
             tag_number: Some(number),
         }
     }
+
+    pub fn short(number: u8) -> Self {
+        Self::simple(TagNumber::Short(number))
+    }
 }
 
 impl From<Tag> for Vec<u8> {
