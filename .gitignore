@@ -8,3 +8,5 @@ certification-declaration/
 operational-certificates/
 operational-certificates-error-cases/
 paa-root-certs
+gen-test-attestation-certs.sh
+gen-test-cds.sh
