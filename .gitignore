@@ -2,3 +2,9 @@
 /Cargo.lock
 .zed/
 .idea/
+attestation/
+cd-certs/
+certification-declaration/
+operational-certificates/
+operational-certificates-error-cases/
+paa-root-certs
