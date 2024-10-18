@@ -7,6 +7,8 @@ pub mod der;
 pub mod enums;
 pub mod information_blocks;
 
+use libc::PT_READ_D;
+
 use crate::mdns::enums::DeviceType;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
@@ -34,29 +36,10 @@ pub fn process_interaction_model(
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     match opcode {
         InteractionProtocolOpcode::ReadRequest => {
-            let Structure(children) = tlv.control.element_type else {
-                return Err(generic_error("Incorrect TLV type..."));
-            };
-
-            let mut attribute_requests: Vec<AttributePath> = vec![];
-            for child in children {
-                let Some(Short(tag_number)) = child.tag.tag_number else {
-                    return Err(generic_error("Incorrect tag number..."));
-                };
-                match tag_number {
-                    0 => {
-                        // 0 = Attribute Read
-                        let requests = parse_attribute_requests(child)?;
-                        attribute_requests.extend(requests);
-                        log_info!("Reading attribute requests!");
-                    }
-                    _ => {}
-                }
-            }
-            log_info!("We have {} attribute read requests!", attribute_requests.len());
+            let read_request = ReadRequest::try_from(tlv)?;
             let mut reports: Vec<AttributeReport> = vec![];
             if let Ok(guard) = &mut DEVICE.lock() {
-                for path in attribute_requests {
+                for path in read_request.attribute_paths {
                     reports.extend(guard.read_attributes(path))
                 }
             }
@@ -129,14 +112,48 @@ pub fn process_interaction_model(
     }
 }
 
-fn parse_attribute_requests(tlv: TLV) -> Result<Vec<AttributePath>, MatterError> {
-    let mut paths = Vec::new();
-    let Array(children) = tlv.control.element_type else {
-        return Err(generic_error("Incorrect Array of Attribute..."));
+macro_rules! bail_tlv {
+    ($text:tt) => {
+        return Err(tlv_error($text))
     };
+}
 
-    for child in children {
-        paths.push(AttributePath::try_from(child)?);
+macro_rules! bail_generic {
+    ($text:tt) => {
+        return Err(generic_error($text))
+    };
+}
+
+pub struct ReadRequest {
+    attribute_paths: Vec<AttributePath>,
+}
+
+impl TryFrom<TLV> for ReadRequest {
+    type Error = MatterError;
+
+    fn try_from(value: TLV) -> Result<Self, Self::Error> {
+        let mut attribute_paths: Vec<AttributePath> = vec![];
+        let Structure(children) = value.control.element_type else {
+            bail_tlv!("Incorrect TLV type");
+        };
+
+        for child in children {
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                bail_tlv!("Incorrect tag number");
+            };
+            // 0 = Attribute Read
+            match tag_number {
+                0 => {
+                    let Array(children) = child.control.element_type else {
+                        bail_tlv!("Incorrect Array of Attribute...");
+                    };
+                    for child in children {
+                        attribute_paths.push(AttributePath::try_from(child)?);
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(ReadRequest { attribute_paths })
     }
-    Ok(paths)
 }
