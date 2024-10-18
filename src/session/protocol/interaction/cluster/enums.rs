@@ -56,7 +56,7 @@ pub enum CommandEvent {
 }
 
 pub enum AttributeChanges {
-    OnOffChange { new_value: bool }
+    OnOffChange { new_value: bool },
 }
 
 pub enum ChangeEvent {
@@ -79,7 +79,6 @@ pub enum RegulatoryLocationType {
     Outdoor = 1,
     IndoorOutdoor = 2,
 }
-
 
 pub enum Features {
     Wifi = 0,
@@ -111,4 +110,24 @@ pub enum NetworkCommissioningStatus {
     IPv6Failed = 10,
     IPBindFailed = 11,
     UnknownError = 12,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum CertificateChainType {
+    DAC = 1,
+    PAI = 2,
+}
+
+pub enum OperationalCertificateStatus {
+    Ok = 0,
+    InvalidPublicKey = 1,
+    InvalidNodeOpId = 2,
+    InvalidNOC = 3,
+    MissingCsr = 4,
+    TableFull = 5,
+    InvalidAdminSubject = 6,
+    FabricConflict = 9,
+    LabelConflict = 10,
+    InvalidFabricIndex = 11,
 }

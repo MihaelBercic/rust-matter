@@ -17,12 +17,10 @@ pub struct NetworkInfo {
 
 impl From<NetworkInfo> for ElementType {
     fn from(value: NetworkInfo) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.network_id.clone().into(), ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.connected.clone().into(), ContextSpecific8, Tag::simple(Short(1))),
-            ]
-        )
+        Structure(vec![
+            TLV::new(value.network_id.clone().into(), ContextSpecific8, Tag::short(0)),
+            TLV::new(value.connected.clone().into(), ContextSpecific8, Tag::short(1)),
+        ])
     }
 }
 
@@ -35,5 +33,3 @@ impl From<Vec<NetworkInfo>> for ElementType {
         Array(vec)
     }
 }
-
-

@@ -306,6 +306,12 @@ impl From<Vec<u8>> for ElementType {
     }
 }
 
+impl From<Vec<u16>> for ElementType {
+    fn from(value: Vec<u16>) -> Self {
+        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
+    }
+}
+
 impl<const C: usize> From<[u8; C]> for ElementType {
     fn from(value: [u8; C]) -> Self {
         let len = C as u64;

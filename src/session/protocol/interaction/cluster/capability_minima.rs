@@ -18,8 +18,8 @@ pub struct CapabilityMinima {
 impl From<CapabilityMinima> for ElementType {
     fn from(value: CapabilityMinima) -> Self {
         Structure(vec![
-            TLV::new(value.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Tag::simple(Short(0))),
-            TLV::new(value.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Tag::simple(Short(1))),
+            TLV::new(value.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            TLV::new(value.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Tag::short(1)),
         ])
     }
 }

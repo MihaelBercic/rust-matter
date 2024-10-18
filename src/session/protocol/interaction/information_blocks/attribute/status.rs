@@ -26,18 +26,16 @@ pub struct Status {
 impl From<AttributeStatus> for ElementType {
     fn from(value: AttributeStatus) -> Self {
         Structure(vec![
-            TLV::new(value.path.into(), TagControl::ContextSpecific8, Tag::simple(Short(0))),
-            TLV::new(value.status.into(), TagControl::ContextSpecific8, Tag::simple(Short(1))),
+            TLV::new(value.path.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            TLV::new(value.status.into(), TagControl::ContextSpecific8, Tag::short(1)),
         ])
     }
 }
 impl From<Status> for ElementType {
     fn from(value: Status) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.status.into(), ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.cluster_status.into(), ContextSpecific8, Tag::simple(Short(1))),
-            ]
-        )
+        Structure(vec![
+            TLV::new(value.status.into(), ContextSpecific8, Tag::short(0)),
+            TLV::new(value.cluster_status.into(), ContextSpecific8, Tag::short(1)),
+        ])
     }
 }

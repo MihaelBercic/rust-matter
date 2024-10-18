@@ -20,8 +20,8 @@ impl Default for DeviceType {
 impl From<DeviceType> for ElementType {
     fn from(value: DeviceType) -> Self {
         Structure(vec![
-            TLV::new(value.id.into(), TagControl::ContextSpecific8, Tag::simple(Short(0))),
-            TLV::new(value.revision.into(), TagControl::ContextSpecific8, Tag::simple(Short(1))),
+            TLV::new(value.id.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            TLV::new(value.revision.into(), TagControl::ContextSpecific8, Tag::short(1)),
         ])
     }
 }

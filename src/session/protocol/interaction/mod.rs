@@ -3,6 +3,7 @@
 /// @date 21. 9. 24
 ///
 pub mod cluster;
+pub mod der;
 pub mod enums;
 pub mod information_blocks;
 
@@ -66,8 +67,8 @@ pub fn process_interaction_model(
                 to_send.push(TLV::simple(report.into()));
             }
             let response = Structure(vec![
-                TLV::new(Array(to_send), ContextSpecific8, Tag::simple(Short(1))),
-                TLV::new(BooleanTrue, ContextSpecific8, Tag::simple(Short(4))),
+                TLV::new(Array(to_send), ContextSpecific8, Tag::short(1)),
+                TLV::new(BooleanTrue, ContextSpecific8, Tag::short(4)),
             ]);
             let response: Vec<u8> = TLV::simple(response).into();
             let builder = ProtocolMessageBuilder::new()
@@ -110,8 +111,8 @@ pub fn process_interaction_model(
                 tlv_responses.push(TLV::simple(response.try_into()?))
             }
             let invoke_response = Structure(vec![
-                TLV::new(BooleanTrue, ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(Array(tlv_responses), ContextSpecific8, Tag::simple(Short(1))),
+                TLV::new(BooleanTrue, ContextSpecific8, Tag::short(0)),
+                TLV::new(Array(tlv_responses), ContextSpecific8, Tag::short(1)),
             ]);
 
             let tlv = TLV::simple(invoke_response);

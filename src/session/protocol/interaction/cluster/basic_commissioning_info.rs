@@ -17,11 +17,9 @@ pub struct BasicCommissioningInfo {
 
 impl From<BasicCommissioningInfo> for ElementType {
     fn from(value: BasicCommissioningInfo) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.fail_safe_expiry_length_seconds.into(), ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.max_cumulative_failsafe_seconds.into(), ContextSpecific8, Tag::simple(Short(1))),
-            ]
-        )
+        Structure(vec![
+            TLV::new(value.fail_safe_expiry_length_seconds.into(), ContextSpecific8, Tag::short(0)),
+            TLV::new(value.max_cumulative_failsafe_seconds.into(), ContextSpecific8, Tag::short(1)),
+        ])
     }
 }

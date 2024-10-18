@@ -1,8 +1,9 @@
 use crate::constants::{TEST_CMS_SIGNER_PRIVATE_KEY, TEST_CMS_SIGNER_SUBJECT_KEY_IDENTIFIER};
 use crate::crypto::constants::{CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES};
 use crate::mdns::enums::DeviceType;
-use crate::session::protocol::interaction::cluster::operational_credentials::{
-    CertificationDeclaration, DerCertificationDeclaration, DigestAlgorithmIdentifier, EncapsulatedContentInfo, Pkcs7SignedData, SignerInfo,
+use crate::session::protocol::interaction::cluster::CertificationDeclaration;
+use crate::session::protocol::interaction::der::{
+    DerCertificationDeclaration, DigestAlgorithmIdentifier, EncapsulatedContentInfo, Pkcs7SignedData, SignerInfo,
 };
 use crate::tlv::tlv::TLV;
 use der::asn1::{ContextSpecific, Int, OctetString, SetOf};
@@ -130,6 +131,8 @@ pub fn random_bits(len: usize) -> Vec<u8> {
 #[cfg(test)]
 #[test]
 pub fn csa_asn() {
+    use crate::session::protocol::interaction::der::{DigestAlgorithmIdentifier, Pkcs7SignedData, SignerInfo};
+
     let input = CertificationDeclaration {
         format_version: 1,
         vendor_id: 0xFFF1,

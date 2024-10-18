@@ -19,12 +19,10 @@ pub struct AttributeData {
 
 impl From<AttributeData> for ElementType {
     fn from(value: AttributeData) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.data_version.into(), ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.path.into(), ContextSpecific8, Tag::simple(Short(1))),
-                value.data
-            ]
-        )
+        Structure(vec![
+            TLV::new(value.data_version.into(), ContextSpecific8, Tag::short(0)),
+            TLV::new(value.path.into(), ContextSpecific8, Tag::short(1)),
+            value.data,
+        ])
     }
 }

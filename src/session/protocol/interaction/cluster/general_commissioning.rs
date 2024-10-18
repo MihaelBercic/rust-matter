@@ -36,8 +36,14 @@ impl GeneralCommissioningCluster {
                     max_cumulative_failsafe_seconds: 900,
                 },
             },
-            regulatory_config: Attribute { id: 0x02, value: RegulatoryLocationType::Indoor },
-            location_capability: Attribute { id: 0x03, value: RegulatoryLocationType::IndoorOutdoor },
+            regulatory_config: Attribute {
+                id: 0x02,
+                value: RegulatoryLocationType::Indoor,
+            },
+            location_capability: Attribute {
+                id: 0x03,
+                value: RegulatoryLocationType::IndoorOutdoor,
+            },
             supports_concurrent_connection: Attribute { id: 0x04, value: true },
         }
     }
@@ -45,45 +51,39 @@ impl GeneralCommissioningCluster {
     fn arm_fail_safe(&mut self, input: Option<TLV>) -> InvokeResponse {
         // TODO: Not fake it...
         InvokeResponse {
-            command: Some(
-                CommandData {
-                    path: CommandPath::new(Specific(1)),
-                    fields: Some(TLV::simple(Structure(vec![
-                        TLV::new(Unsigned8(0), ContextSpecific8, Tag::simple(Short(0))),
-                        TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::simple(Short(1))),
-                    ]))),
-                }
-            ),
+            command: Some(CommandData {
+                path: CommandPath::new(Specific(1)),
+                fields: Some(TLV::simple(Structure(vec![
+                    TLV::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
+                    TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
+                ]))),
+            }),
             status: None,
         }
     }
 
     fn set_regulatory_config(&mut self, input: Option<TLV>) -> InvokeResponse {
         InvokeResponse {
-            command: Some(
-                CommandData {
-                    path: CommandPath::new(Specific(3)),
-                    fields: Some(TLV::simple(Structure(vec![
-                        TLV::new(Unsigned8(0), ContextSpecific8, Tag::simple(Short(0))),
-                        TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::simple(Short(1))),
-                    ]))),
-                }
-            ),
+            command: Some(CommandData {
+                path: CommandPath::new(Specific(3)),
+                fields: Some(TLV::simple(Structure(vec![
+                    TLV::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
+                    TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
+                ]))),
+            }),
             status: None,
         }
     }
 
     fn commissioning_complete(&mut self, input: Option<TLV>) -> InvokeResponse {
         InvokeResponse {
-            command: Some(
-                CommandData {
-                    path: CommandPath::new(Specific(5)),
-                    fields: Some(TLV::simple(Structure(vec![
-                        TLV::new(Unsigned8(0), ContextSpecific8, Tag::simple(Short(0))),
-                        TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::simple(Short(1))),
-                    ]))),
-                }
-            ),
+            command: Some(CommandData {
+                path: CommandPath::new(Specific(5)),
+                fields: Some(TLV::simple(Structure(vec![
+                    TLV::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
+                    TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
+                ]))),
+            }),
             status: None,
         }
     }
@@ -102,16 +102,14 @@ impl ClusterImplementation for GeneralCommissioningCluster {
                 ]
             }
             QueryParameter::Specific(attribute_id) => {
-                vec![
-                    match attribute_id {
-                        0 => self.bread_crumb.clone().into(),
-                        1 => self.basic_commissioning_info.clone().into(),
-                        2 => self.regulatory_config.clone().into(),
-                        3 => self.location_capability.clone().into(),
-                        4 => self.supports_concurrent_connection.clone().into(),
-                        _ => todo!("")
-                    }
-                ]
+                vec![match attribute_id {
+                    0 => self.bread_crumb.clone().into(),
+                    1 => self.basic_commissioning_info.clone().into(),
+                    2 => self.regulatory_config.clone().into(),
+                    3 => self.location_capability.clone().into(),
+                    4 => self.supports_concurrent_connection.clone().into(),
+                    _ => todo!(""),
+                }]
             }
         }
     }
@@ -128,14 +126,12 @@ impl ClusterImplementation for GeneralCommissioningCluster {
             QueryParameter::Wildcard => {
                 log_info!("Invoking all commands!")
             }
-            QueryParameter::Specific(command_id) => {
-                match command_id {
-                    0 => vec.push(self.arm_fail_safe(command.fields)),
-                    2 => vec.push(self.set_regulatory_config(command.fields)),
-                    4 => vec.push(self.commissioning_complete(command.fields)),
-                    _ => {}
-                }
-            }
+            QueryParameter::Specific(command_id) => match command_id {
+                0 => vec.push(self.arm_fail_safe(command.fields)),
+                2 => vec.push(self.set_regulatory_config(command.fields)),
+                4 => vec.push(self.commissioning_complete(command.fields)),
+                _ => {}
+            },
         }
         vec
     }

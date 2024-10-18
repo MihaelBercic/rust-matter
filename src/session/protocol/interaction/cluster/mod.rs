@@ -8,10 +8,18 @@ pub mod general_commissioning;
 mod icd_management;
 pub mod network_commissioning;
 pub mod network_info;
+mod noc;
 pub mod on_off;
 pub mod operational_credentials;
 pub use device_type::*;
 pub use icd_management::*;
+pub use noc::*;
+
+mod fabric_descriptor;
+pub use fabric_descriptor::*;
+
+mod certification_declaration;
+pub use certification_declaration::CertificationDeclaration;
 
 use crate::log_debug;
 use crate::session::protocol::interaction::cluster::basic_commissioning_info::BasicCommissioningInfo;

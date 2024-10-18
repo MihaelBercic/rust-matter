@@ -1,6 +1,6 @@
+pub(crate) mod data;
 pub(crate) mod report;
 pub(crate) mod status;
-pub(crate) mod data;
 
 use crate::session::protocol::interaction::enums::GlobalStatusCode;
 use crate::session::protocol::interaction::information_blocks::attribute::data::AttributeData;
@@ -35,27 +35,29 @@ impl<T: Into<ElementType>> From<Attribute<T>> for AttributeReport {
             data: Some(AttributeData {
                 data_version: 1,
                 path: AttributePath::new(value.id),
-                data: TLV::new(value.value.into(), ContextSpecific8, Tag::simple(Short(2))),
+                data: TLV::new(value.value.into(), ContextSpecific8, Tag::short(2)),
             }),
         }
     }
 }
 
 impl<T> From<Option<Attribute<T>>> for AttributeReport
-    where Attribute<T>: Into<AttributeReport>
+where
+    Attribute<T>: Into<AttributeReport>,
 {
     fn from(value: Option<Attribute<T>>) -> Self {
         match value {
-            None => {
-                AttributeReport {
-                    status: Some(AttributeStatus {
-                        path: Default::default(),
-                        status: Status { status: GlobalStatusCode::UnsupportedAttribute as u8, cluster_status: 0 },
-                    }),
-                    data: None,
-                }
-            }
-            Some(attribute) => attribute.into()
+            None => AttributeReport {
+                status: Some(AttributeStatus {
+                    path: Default::default(),
+                    status: Status {
+                        status: GlobalStatusCode::UnsupportedAttribute as u8,
+                        cluster_status: 0,
+                    },
+                }),
+                data: None,
+            },
+            Some(attribute) => attribute.into(),
         }
     }
 }

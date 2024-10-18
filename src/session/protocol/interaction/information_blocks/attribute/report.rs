@@ -59,10 +59,10 @@ impl From<AttributeReport> for ElementType {
     fn from(value: AttributeReport) -> Self {
         let mut vec = vec![];
         if let Some(status) = value.status {
-            vec.push(TLV::new(status.into(), ContextSpecific8, Tag::simple(Short(0))));
+            vec.push(TLV::new(status.into(), ContextSpecific8, Tag::short(0)));
         }
         if let Some(data) = value.data {
-            vec.push(TLV::new(data.into(), ContextSpecific8, Tag::simple(Short(1))));
+            vec.push(TLV::new(data.into(), ContextSpecific8, Tag::short(1)));
         }
         Structure(vec)
     }
