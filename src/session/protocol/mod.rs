@@ -21,7 +21,7 @@ use crate::tlv::structs::Pake1;
 use crate::tlv::structs::Pake2;
 use crate::tlv::structs::Pake3;
 use crate::tlv::structs::StatusReport;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use crate::utils::{generic_error, transport_error, MatterError};
 use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::io::Cursor;
@@ -56,7 +56,7 @@ pub(crate) fn process_secure_channel(
     let Some(session_setup) = &mut session.session_setup else {
         return Err(transport_error("Missing session in the map!"));
     };
-    let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
+    let tlv = Tlv::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     let exchange_id = protocol_message.exchange_id;
     match opcode {
         SecureChannelProtocolOpcode::PBKDFParamRequest => {
@@ -69,7 +69,7 @@ pub(crate) fn process_secure_channel(
             session_setup.peer_session_id = request.initiator_session_id;
             session_setup.session_id = response.session_id;
 
-            let payload = TLV::from(response).to_bytes();
+            let payload = Tlv::from(response).to_bytes();
             session_setup.add_to_context(&protocol_message.payload);
             session_setup.add_to_context(&payload);
             let builder = ProtocolMessageBuilder::new()
@@ -97,7 +97,7 @@ pub(crate) fn process_secure_channel(
             let mut transcript = s2p.compute_transcript(&context, &[], &[], SpakeVerifier(verifier), &pake_1.p_a, &p_b);
             let confirmation = s2p.compute_confirmation_values(&transcript, &pake_1.p_a, &p_b, 256);
             let pake_2 = Pake2 { p_b, c_b: confirmation.cB };
-            let pake_tlv: TLV = pake_2.into();
+            let pake_tlv: Tlv = pake_2.into();
             let payload = pake_tlv.to_bytes();
             session_setup.p_a = Some(pake_1.p_a);
             session_setup.p_b = Some(p_b);

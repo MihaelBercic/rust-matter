@@ -2,7 +2,7 @@ use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -16,11 +16,11 @@ pub struct PBKDFParameterSet {
 }
 
 /// Computes TLV of the PBKDF Parameter Set using v1.3 specification.
-impl From<PBKDFParameterSet> for TLV {
+impl From<PBKDFParameterSet> for Tlv {
     fn from(value: PBKDFParameterSet) -> Self {
-        TLV::simple(Structure(vec![
-            TLV::new(value.iterations.into(), ContextSpecific8, Tag::short(1)),
-            TLV::new(value.salt.into(), ContextSpecific8, Tag::short(2)),
+        Tlv::simple(Structure(vec![
+            Tlv::new(value.iterations.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.salt.into(), ContextSpecific8, Tag::short(2)),
         ]))
     }
 }

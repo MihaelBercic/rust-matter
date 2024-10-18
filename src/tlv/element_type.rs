@@ -5,7 +5,7 @@ use p256::pkcs8::der::Writer;
 
 use crate::tlv::element_type::ElementType::*;
 use crate::tlv::encodable_value::EncodableValue;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use crate::utils::MatterError;
 use crate::utils::MatterLayer::Application;
 
@@ -36,9 +36,9 @@ pub enum ElementType {
     OctetString32(Vec<u8>),
     OctetString64(Vec<u8>),
     Null,
-    Structure(Vec<TLV>),
-    Array(Vec<TLV>),
-    List(Vec<TLV>),
+    Structure(Vec<Tlv>),
+    Array(Vec<Tlv>),
+    List(Vec<Tlv>),
     EndOfContainer,
     Reserved,
 }
@@ -106,11 +106,11 @@ impl ElementType {
         }
     }
 
-    fn read_children(cursor: &mut Cursor<&[u8]>) -> Vec<TLV> {
-        let mut children: Vec<TLV> = vec![];
+    fn read_children(cursor: &mut Cursor<&[u8]>) -> Vec<Tlv> {
+        let mut children: Vec<Tlv> = vec![];
         while cursor.read_u8().unwrap() != EndOfContainer.into() {
             cursor.set_position(cursor.position() - 1);
-            children.push(TLV::try_from_cursor(cursor).unwrap());
+            children.push(Tlv::try_from_cursor(cursor).unwrap());
         }
         children
     }
@@ -268,7 +268,7 @@ impl From<ElementType> for Option<Vec<u8>> {
 
 impl From<Vec<u32>> for ElementType {
     fn from(value: Vec<u32>) -> Self {
-        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
+        Array(value.into_iter().map(|x| Tlv::simple(x.into())).collect())
     }
 }
 
@@ -308,7 +308,7 @@ impl From<Vec<u8>> for ElementType {
 
 impl From<Vec<u16>> for ElementType {
     fn from(value: Vec<u16>) -> Self {
-        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
+        Array(value.into_iter().map(|x| Tlv::simple(x.into())).collect())
     }
 }
 
@@ -324,12 +324,12 @@ impl<const C: usize> From<[u8; C]> for ElementType {
     }
 }
 
-fn create_container(values: Vec<TLV>) -> Option<Vec<u8>> {
+fn create_container(values: Vec<Tlv>) -> Option<Vec<u8>> {
     let mut bytes: Vec<u8> = vec![];
     for tlv in values {
         bytes.extend_from_slice(&tlv.to_bytes());
     }
-    bytes.extend_from_slice(&TLV::simple(EndOfContainer).to_bytes());
+    bytes.extend_from_slice(&Tlv::simple(EndOfContainer).to_bytes());
     Some(bytes)
 }
 

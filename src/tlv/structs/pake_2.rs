@@ -3,7 +3,7 @@ use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -15,11 +15,11 @@ pub struct Pake2 {
     pub(crate) c_b: [u8; CRYPTO_HASH_LEN_BYTES],
 }
 
-impl From<Pake2> for TLV {
+impl From<Pake2> for Tlv {
     fn from(value: Pake2) -> Self {
-        TLV::simple(Structure(vec![
-            TLV::new(value.p_b.into(), ContextSpecific8, Tag::short(1)),
-            TLV::new(value.c_b.into(), ContextSpecific8, Tag::short(2)),
+        Tlv::simple(Structure(vec![
+            Tlv::new(value.p_b.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.c_b.into(), ContextSpecific8, Tag::short(2)),
         ]))
     }
 }

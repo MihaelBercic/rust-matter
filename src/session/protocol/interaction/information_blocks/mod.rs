@@ -8,7 +8,7 @@ use crate::tlv::element_type::ElementType::{List, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use crate::utils::{tlv_error, MatterError};
 
 ///
@@ -47,10 +47,10 @@ impl Default for AttributePath {
     }
 }
 
-impl TryFrom<TLV> for AttributePath {
+impl TryFrom<Tlv> for AttributePath {
     type Error = MatterError;
 
-    fn try_from(value: TLV) -> Result<Self, Self::Error> {
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
         let mut attribute_path = Self {
             enable_tag_compression: false,
             node_id: Wildcard,
@@ -86,24 +86,24 @@ impl TryFrom<TLV> for AttributePath {
 
 impl From<AttributePath> for ElementType {
     fn from(value: AttributePath) -> Self {
-        let mut vec = vec![TLV::new(value.enable_tag_compression.into(), ContextSpecific8, Tag::short(0))];
+        let mut vec = vec![Tlv::new(value.enable_tag_compression.into(), ContextSpecific8, Tag::short(0))];
         if let Specific(node_id) = value.node_id {
-            vec.push(TLV::new(node_id.into(), ContextSpecific8, Tag::short(1)));
+            vec.push(Tlv::new(node_id.into(), ContextSpecific8, Tag::short(1)));
         }
         if let Specific(endpoint_id) = value.endpoint_id {
-            vec.push(TLV::new(endpoint_id.into(), ContextSpecific8, Tag::short(2)));
+            vec.push(Tlv::new(endpoint_id.into(), ContextSpecific8, Tag::short(2)));
         }
 
         if let Specific(cluster_id) = value.cluster_id {
-            vec.push(TLV::new(cluster_id.into(), ContextSpecific8, Tag::short(3)));
+            vec.push(Tlv::new(cluster_id.into(), ContextSpecific8, Tag::short(3)));
         }
 
         if let Specific(attribute_id) = value.attribute_id {
-            vec.push(TLV::new(attribute_id.into(), ContextSpecific8, Tag::short(4)));
+            vec.push(Tlv::new(attribute_id.into(), ContextSpecific8, Tag::short(4)));
         }
 
         if let Some(list_index) = value.list_index {
-            vec.push(TLV::new(list_index.into(), ContextSpecific8, Tag::short(5)));
+            vec.push(Tlv::new(list_index.into(), ContextSpecific8, Tag::short(5)));
         }
         List(vec)
     }
@@ -158,15 +158,15 @@ impl From<CommandPath> for ElementType {
     fn from(value: CommandPath) -> Self {
         let mut vec = vec![];
         if let Specific(endpoint_id) = value.endpoint_id {
-            vec.push(TLV::new(endpoint_id.into(), ContextSpecific8, Tag::short(0)));
+            vec.push(Tlv::new(endpoint_id.into(), ContextSpecific8, Tag::short(0)));
         }
 
         if let Specific(cluster_id) = value.cluster_id {
-            vec.push(TLV::new(cluster_id.into(), ContextSpecific8, Tag::short(1)));
+            vec.push(Tlv::new(cluster_id.into(), ContextSpecific8, Tag::short(1)));
         }
 
         if let Specific(attribute_id) = value.command_id {
-            vec.push(TLV::new(attribute_id.into(), ContextSpecific8, Tag::short(2)));
+            vec.push(Tlv::new(attribute_id.into(), ContextSpecific8, Tag::short(2)));
         }
         List(vec)
     }
@@ -175,7 +175,7 @@ impl From<CommandPath> for ElementType {
 #[derive(Debug, Clone)]
 pub struct CommandData {
     pub path: CommandPath,
-    pub fields: Option<TLV>,
+    pub fields: Option<Tlv>,
 }
 
 pub struct InvokeResponse {
@@ -217,10 +217,10 @@ pub struct CommandStatus {
     pub status: Status,
 }
 
-impl TryFrom<TLV> for CommandData {
+impl TryFrom<Tlv> for CommandData {
     type Error = MatterError;
 
-    fn try_from(value: TLV) -> Result<Self, Self::Error> {
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
         let mut command_data = Self {
             path: CommandPath {
                 endpoint_id: QueryParameter::Wildcard,
@@ -254,10 +254,10 @@ impl TryFrom<InvokeResponse> for ElementType {
     fn try_from(value: InvokeResponse) -> Result<Self, Self::Error> {
         let mut children = vec![];
         if let Some(command) = value.command {
-            children.push(TLV::new(command.try_into()?, ContextSpecific8, Tag::short(0)));
+            children.push(Tlv::new(command.try_into()?, ContextSpecific8, Tag::short(0)));
         }
         if let Some(status) = value.status {
-            children.push(TLV::new(status.try_into()?, ContextSpecific8, Tag::short(1)));
+            children.push(Tlv::new(status.try_into()?, ContextSpecific8, Tag::short(1)));
         }
         Ok(Structure(children))
     }
@@ -267,7 +267,7 @@ impl TryFrom<CommandData> for ElementType {
     type Error = MatterError;
 
     fn try_from(value: CommandData) -> Result<Self, Self::Error> {
-        let mut children = vec![TLV::new(value.path.into(), ContextSpecific8, Tag::short(0))];
+        let mut children = vec![Tlv::new(value.path.into(), ContextSpecific8, Tag::short(0))];
         if let Some(mut fields) = value.fields {
             fields.tag.tag_number = Some(Short(1));
             fields.control.tag_control = ContextSpecific8;
@@ -282,8 +282,8 @@ impl TryFrom<CommandStatus> for ElementType {
 
     fn try_from(value: CommandStatus) -> Result<Self, Self::Error> {
         Ok(Structure(vec![
-            TLV::new(value.path.into(), ContextSpecific8, Tag::short(0)),
-            TLV::new(value.status.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.path.into(), ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.status.into(), ContextSpecific8, Tag::short(1)),
         ]))
     }
 }

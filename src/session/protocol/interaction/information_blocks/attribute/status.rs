@@ -5,7 +5,7 @@ use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -26,16 +26,16 @@ pub struct Status {
 impl From<AttributeStatus> for ElementType {
     fn from(value: AttributeStatus) -> Self {
         Structure(vec![
-            TLV::new(value.path.into(), TagControl::ContextSpecific8, Tag::short(0)),
-            TLV::new(value.status.into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.path.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.status.into(), TagControl::ContextSpecific8, Tag::short(1)),
         ])
     }
 }
 impl From<Status> for ElementType {
     fn from(value: Status) -> Self {
         Structure(vec![
-            TLV::new(value.status.into(), ContextSpecific8, Tag::short(0)),
-            TLV::new(value.cluster_status.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.status.into(), ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.cluster_status.into(), ContextSpecific8, Tag::short(1)),
         ])
     }
 }

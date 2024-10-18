@@ -5,7 +5,7 @@ use crate::tlv::structs::PBKDFParamRequest;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::{self, Anonymous0, CommonProfile16, CommonProfile32, ContextSpecific8, FullyQualified48, FullyQualified64};
 use crate::tlv::tag_number::TagNumber::{self, Long, Medium, Short};
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use std::io::Cursor;
 
 ///
@@ -17,7 +17,7 @@ fn booleans() {
     assert_eq!(tlv_as_hex(BooleanFalse), "08"); // Boolean false    08
     assert_eq!(tlv_as_hex(BooleanTrue), "09"); // Boolean true     09
                                                // Reverse
-    assert_eq!(as_hex_string(&TLV::try_from_cursor(&mut Cursor::new(&[0x14])).unwrap().to_bytes()), "14")
+    assert_eq!(as_hex_string(&Tlv::try_from_cursor(&mut Cursor::new(&[0x14])).unwrap().to_bytes()), "14")
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn tlv_samples() {}
 fn tlv_containers() {
     assert_eq!(tlv_as_hex(Structure(vec![])), "15 18"); // Empty Structure, {}    15 18
     assert_eq!(
-        as_hex_string(&TLV::try_from_cursor(&mut Cursor::new(&[0x15, 0x18])).unwrap().to_bytes()),
+        as_hex_string(&Tlv::try_from_cursor(&mut Cursor::new(&[0x15, 0x18])).unwrap().to_bytes()),
         "15 18"
     );
 
@@ -81,14 +81,14 @@ fn tlv_containers() {
     /// Structure, two context specific tags, Signed Integer, 1 octet values, {0 = 42, 1 = -17}       15 20 00 2a 20 01 ef 18
     assert_eq!(
         tlv_as_hex(Structure(vec![
-            TLV::new(42i8.into(), TagControl::ContextSpecific8, Tag::short(0)),
-            TLV::new((-17i8).into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(42i8.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            Tlv::new((-17i8).into(), TagControl::ContextSpecific8, Tag::short(1)),
         ])),
         "15 20 00 2a 20 01 ef 18"
     );
     assert_eq!(
         as_hex_string(
-            &TLV::try_from_cursor(&mut Cursor::new(&[0x15, 0x20, 0x00, 0x2a, 0x20, 0x01, 0xef, 0x18]))
+            &Tlv::try_from_cursor(&mut Cursor::new(&[0x15, 0x20, 0x00, 0x2a, 0x20, 0x01, 0xef, 0x18]))
                 .unwrap()
                 .to_bytes()
         ),
@@ -97,12 +97,12 @@ fn tlv_containers() {
 
     /// Array, Signed Integer, 1-octet values, [0, 1, 2, 3, 4]       16 00 00 00 01 00 02 00 03 00 04 18
     assert_eq!(
-        tlv_as_hex(Array((0..=4i8).map(|i| TLV::simple(i.into())).collect())),
+        tlv_as_hex(Array((0..=4i8).map(|i| Tlv::simple(i.into())).collect())),
         "16 00 00 00 01 00 02 00 03 00 04 18"
     );
     assert_eq!(
         as_hex_string(
-            &TLV::try_from_cursor(&mut Cursor::new(&[
+            &Tlv::try_from_cursor(&mut Cursor::new(&[
                 0x16, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x18
             ]))
             .unwrap()
@@ -114,17 +114,17 @@ fn tlv_containers() {
     /// List, mix of anonymous and context tags, Signed Integer, 1 octet values, [[1, 0 = 42, 2, 3, 0 = -17]]   17 00 01 20 00 2a 00 02 00 03 20 00 ef 18
     assert_eq!(
         tlv_as_hex(List(vec![
-            TLV::simple(Signed8(1)),
-            TLV::new(Signed8(42), ContextSpecific8, Tag::short(0)),
-            TLV::simple(Signed8(2)),
-            TLV::simple(Signed8(3)),
-            TLV::new(Signed8(-17), ContextSpecific8, Tag::short(0)),
+            Tlv::simple(Signed8(1)),
+            Tlv::new(Signed8(42), ContextSpecific8, Tag::short(0)),
+            Tlv::simple(Signed8(2)),
+            Tlv::simple(Signed8(3)),
+            Tlv::new(Signed8(-17), ContextSpecific8, Tag::short(0)),
         ])),
         "17 00 01 20 00 2a 00 02 00 03 20 00 ef 18"
     );
     assert_eq!(
         as_hex_string(
-            &TLV::try_from_cursor(&mut Cursor::new(&[
+            &Tlv::try_from_cursor(&mut Cursor::new(&[
                 0x17, 0x00, 0x01, 0x20, 0x00, 0x2a, 0x00, 0x02, 0x00, 0x03, 0x20, 0x00, 0xef, 0x18
             ]))
             .unwrap()
@@ -136,17 +136,17 @@ fn tlv_containers() {
     /// Array, mix of element types, [42, -170000, {}, 17.9, "Hello!"]      16 00 2a 02 f0 67 fd ff 15 18 0a 33 33 8f 41 0c 06 48 65 6c 6c 6f 21 18
     assert_eq!(
         tlv_as_hex(Array(vec![
-            TLV::simple(Signed8(42)),
-            TLV::simple(Signed32(-170000)),
-            TLV::simple(Structure(vec![])),
-            TLV::simple(FloatingPoint4(17.9)),
-            TLV::simple(UTFString8("Hello!".to_string())),
+            Tlv::simple(Signed8(42)),
+            Tlv::simple(Signed32(-170000)),
+            Tlv::simple(Structure(vec![])),
+            Tlv::simple(FloatingPoint4(17.9)),
+            Tlv::simple(UTFString8("Hello!".to_string())),
         ])),
         "16 00 2a 02 f0 67 fd ff 15 18 0a 33 33 8f 41 0c 06 48 65 6c 6c 6f 21 18"
     );
     assert_eq!(
         as_hex_string(
-            &TLV::try_from_cursor(&mut Cursor::new(&[
+            &Tlv::try_from_cursor(&mut Cursor::new(&[
                 0x16, 0x00, 0x2a, 0x02, 0xf0, 0x67, 0xfd, 0xff, 0x15, 0x18, 0x0a, 0x33, 0x33, 0x8f, 0x41, 0x0c, 0x06, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
                 0x21, 0x18
             ]))
@@ -163,19 +163,19 @@ pub fn vendor() {
     assert_eq!(as_hex_string(&parse_tlv(&[0x04, 0x2a]).to_bytes()), "04 2a");
 
     assert_eq!(
-        as_hex_string(&TLV::new(Unsigned8(42), ContextSpecific8, Tag::short(1)).to_bytes()),
+        as_hex_string(&Tlv::new(Unsigned8(42), ContextSpecific8, Tag::short(1)).to_bytes()),
         "24 01 2a"
     );
     assert_eq!(as_hex_string(&parse_tlv(&[0x24, 0x01, 0x2a]).to_bytes()), "24 01 2a");
 
     assert_eq!(
-        as_hex_string(&TLV::new(Unsigned8(42), CommonProfile16, Tag::medium(1)).to_bytes()),
+        as_hex_string(&Tlv::new(Unsigned8(42), CommonProfile16, Tag::medium(1)).to_bytes()),
         "44 01 00 2a"
     );
     assert_eq!(as_hex_string(&parse_tlv(&[0x44, 0x01, 0x00, 0x2a]).to_bytes()), "44 01 00 2a");
 
     assert_eq!(
-        as_hex_string(&TLV::new(Unsigned8(42), CommonProfile32, Tag::long(100000)).to_bytes()),
+        as_hex_string(&Tlv::new(Unsigned8(42), CommonProfile32, Tag::long(100000)).to_bytes()),
         "64 a0 86 01 00 2a"
     );
     assert_eq!(
@@ -185,7 +185,7 @@ pub fn vendor() {
 
     assert_eq!(
         as_hex_string(
-            &TLV::new(
+            &Tlv::new(
                 Unsigned8(42),
                 FullyQualified48,
                 Tag {
@@ -205,7 +205,7 @@ pub fn vendor() {
 
     assert_eq!(
         as_hex_string(
-            &TLV::new(
+            &Tlv::new(
                 Unsigned8(42),
                 FullyQualified64,
                 Tag {
@@ -225,8 +225,8 @@ pub fn vendor() {
 
     assert_eq!(
         as_hex_string(
-            &TLV::new(
-                Structure(vec![TLV::new(
+            &Tlv::new(
+                Structure(vec![Tlv::new(
                     Unsigned8(42),
                     FullyQualified48,
                     Tag {
@@ -258,14 +258,14 @@ pub fn context_difference() {
     let b = "1530012040e26f0d08cca5cb58fc48e1c9d696495c08b97b04bfcfe8cc623e779a2c637625025e02240300280435052601f401000026022c0100002503a00f1818";
     let a = hex::decode(a).unwrap();
     let b = hex::decode(b).unwrap();
-    let tlv_a = TLV::try_from_cursor(&mut Cursor::new(&a)).unwrap();
-    let tlv_b = TLV::try_from_cursor(&mut Cursor::new(&b)).unwrap();
+    let tlv_a = Tlv::try_from_cursor(&mut Cursor::new(&a)).unwrap();
+    let tlv_b = Tlv::try_from_cursor(&mut Cursor::new(&b)).unwrap();
 
     let p_a = PBKDFParamRequest::try_from(tlv_a).unwrap();
     let p_b = PBKDFParamRequest::try_from(tlv_b).unwrap();
 
-    let tlv_a: TLV = p_a.into();
-    let tlv_b: TLV = p_b.into();
+    let tlv_a: Tlv = p_a.into();
+    let tlv_b: Tlv = p_b.into();
 }
 
 #[test]
@@ -333,11 +333,11 @@ pub fn transcript_test() {
 }
 
 fn tlv_as_hex(element_type: ElementType) -> String {
-    as_hex_string(&TLV::simple(element_type).to_bytes())
+    as_hex_string(&Tlv::simple(element_type).to_bytes())
 }
 
-fn parse_tlv(data: &[u8]) -> TLV {
-    TLV::try_from_cursor(&mut Cursor::new(data)).unwrap()
+fn parse_tlv(data: &[u8]) -> Tlv {
+    Tlv::try_from_cursor(&mut Cursor::new(data)).unwrap()
 }
 
 fn as_hex_string(vec: &Vec<u8>) -> String {

@@ -8,6 +8,7 @@ use std::time::SystemTimeError;
 mod bit_subset;
 mod byte_encodable;
 mod padding;
+
 pub use bit_subset::BitSubset;
 pub use byte_encodable::ByteEncodable;
 pub use padding::*;
@@ -102,3 +103,18 @@ pub fn crypto_error(msg: &str) -> MatterError {
 pub fn session_error(msg: &str) -> MatterError {
     MatterError::new(MatterLayer::SecureSession, msg)
 }
+
+macro_rules! bail_tlv {
+    ($text:tt) => {
+        return Err(tlv_error($text))
+    };
+}
+
+macro_rules! bail_generic {
+    ($text:tt) => {
+        return Err(generic_error($text))
+    };
+}
+
+pub(crate) use bail_generic;
+pub(crate) use bail_tlv;

@@ -16,7 +16,7 @@ mod cryptography_tests {
     use crate::crypto::{hash_message, kdf, random_bytes};
     use crate::test::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
     use crate::tlv::structs::{PBKDFParamRequest, PBKDFParamResponse, PBKDFParameterSet};
-    use crate::tlv::tlv::TLV;
+    use crate::tlv::tlv::Tlv;
     use crate::utils::BitSubset;
     use ccm::aead::generic_array::GenericArray;
     use ccm::aead::Payload;
@@ -281,7 +281,7 @@ mod cryptography_tests {
             has_params: false,
             initiator_session_parameters: None,
         };
-        let req_bytes = Into::<TLV>::into(req).to_bytes();
+        let req_bytes = Into::<Tlv>::into(req).to_bytes();
         let as_tlv = hex::encode(&req_bytes);
         assert_eq!(
             "1530012094eab5c37d101df5ef01b2c8ecada03a7c3b0cf5e26a08feda72617f9cd391a6240247240300280418",
@@ -298,7 +298,7 @@ mod cryptography_tests {
             }),
             responder_session_params: None,
         };
-        let response_bytes = Into::<TLV>::into(response).to_bytes();
+        let response_bytes = Into::<Tlv>::into(response).to_bytes();
         let as_tlv = hex::encode(&response_bytes);
         assert_eq!("1530012094eab5c37d101df5ef01b2c8ecada03a7c3b0cf5e26a08feda72617f9cd391a630022022820a42684102fd4a92c0bad66ad1f21f3c5366f5a6d84203035e2c7caf3bae250357de35042501e80330022003959ebc20b8fcbda262d97f9a7a9e76e32d7a1b9c5166b6a3721e88acad88081818", as_tlv);
 
@@ -384,8 +384,8 @@ mod cryptography_tests {
             pbkdf_parameters: None,
             responder_session_params: None,
         };
-        let req_tlv: TLV = request.into();
-        let res_tlv: TLV = response.into();
+        let req_tlv: Tlv = request.into();
+        let res_tlv: Tlv = response.into();
 
         let mut context = vec![];
         context.extend_from_slice(&CONTEXT_PREFIX_VALUE);

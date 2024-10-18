@@ -22,8 +22,8 @@ use crate::tlv::element_type::ElementType::{Array, BooleanTrue, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
-use crate::utils::{generic_error, tlv_error, MatterError};
+use crate::tlv::tlv::Tlv;
+use crate::utils::{bail_tlv, generic_error, tlv_error, MatterError};
 use crate::{log_debug, log_info, DEVICE};
 use std::io::Cursor;
 
@@ -33,7 +33,7 @@ pub fn process_interaction_model(
     session: &mut Session,
 ) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
-    let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
+    let tlv = Tlv::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     match opcode {
         InteractionProtocolOpcode::ReadRequest => {
             let read_request = ReadRequest::try_from(tlv)?;
@@ -47,13 +47,13 @@ pub fn process_interaction_model(
             log_debug!("We have {} reports to send!", reports.len());
             let mut to_send = vec![];
             for report in reports {
-                to_send.push(TLV::simple(report.into()));
+                to_send.push(Tlv::simple(report.into()));
             }
             let response = Structure(vec![
-                TLV::new(Array(to_send), ContextSpecific8, Tag::short(1)),
-                TLV::new(BooleanTrue, ContextSpecific8, Tag::short(4)),
+                Tlv::new(Array(to_send), ContextSpecific8, Tag::short(1)),
+                Tlv::new(BooleanTrue, ContextSpecific8, Tag::short(4)),
             ]);
-            let response: Vec<u8> = TLV::simple(response).into();
+            let response: Vec<u8> = Tlv::simple(response).into();
             let builder = ProtocolMessageBuilder::new()
                 .set_protocol(ProtocolInteractionModel)
                 .set_needs_acknowledgement(false)
@@ -91,14 +91,14 @@ pub fn process_interaction_model(
             }
             let mut tlv_responses = vec![];
             for response in responses {
-                tlv_responses.push(TLV::simple(response.try_into()?))
+                tlv_responses.push(Tlv::simple(response.try_into()?))
             }
             let invoke_response = Structure(vec![
-                TLV::new(BooleanTrue, ContextSpecific8, Tag::short(0)),
-                TLV::new(Array(tlv_responses), ContextSpecific8, Tag::short(1)),
+                Tlv::new(BooleanTrue, ContextSpecific8, Tag::short(0)),
+                Tlv::new(Array(tlv_responses), ContextSpecific8, Tag::short(1)),
             ]);
 
-            let tlv = TLV::simple(invoke_response);
+            let tlv = Tlv::simple(invoke_response);
             let payload = tlv.to_bytes();
             let builder = ProtocolMessageBuilder::new()
                 .set_exchange_id(protocol_message.exchange_id)
@@ -112,40 +112,28 @@ pub fn process_interaction_model(
     }
 }
 
-macro_rules! bail_tlv {
-    ($text:tt) => {
-        return Err(tlv_error($text))
-    };
-}
-
-macro_rules! bail_generic {
-    ($text:tt) => {
-        return Err(generic_error($text))
-    };
-}
-
 pub struct ReadRequest {
     attribute_paths: Vec<AttributePath>,
 }
 
-impl TryFrom<TLV> for ReadRequest {
+impl TryFrom<Tlv> for ReadRequest {
     type Error = MatterError;
 
-    fn try_from(value: TLV) -> Result<Self, Self::Error> {
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
         let mut attribute_paths: Vec<AttributePath> = vec![];
         let Structure(children) = value.control.element_type else {
-            bail_tlv!("Incorrect TLV type");
+            bail_tlv!("Incorrect TLV type")
         };
 
         for child in children {
             let Some(Short(tag_number)) = child.tag.tag_number else {
-                bail_tlv!("Incorrect tag number");
+                bail_tlv!("Incorrect tag number")
             };
             // 0 = Attribute Read
             match tag_number {
                 0 => {
                     let Array(children) = child.control.element_type else {
-                        bail_tlv!("Incorrect Array of Attribute...");
+                        bail_tlv!("Incorrect Array of Attribute...")
                     };
                     for child in children {
                         attribute_paths.push(AttributePath::try_from(child)?);

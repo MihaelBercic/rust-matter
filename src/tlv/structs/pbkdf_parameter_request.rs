@@ -5,7 +5,7 @@ use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, Structure
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use crate::utils::MatterError;
 use crate::utils::MatterLayer::Application;
 use byteorder::{LittleEndian, WriteBytesExt, LE};
@@ -35,10 +35,10 @@ impl PBKDFParamRequest {
     }
 }
 
-impl TryFrom<TLV> for PBKDFParamRequest {
+impl TryFrom<Tlv> for PBKDFParamRequest {
     type Error = MatterError;
 
-    fn try_from(value: TLV) -> Result<Self, Self::Error> {
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
         let mut initiator_random = vec![];
         let mut initiator_session_id: u16 = 0;
         let mut passcode_id: u16 = 0;
@@ -74,21 +74,21 @@ impl TryFrom<TLV> for PBKDFParamRequest {
     }
 }
 
-impl From<PBKDFParamRequest> for TLV {
+impl From<PBKDFParamRequest> for Tlv {
     fn from(value: PBKDFParamRequest) -> Self {
         let mut children = vec![
-            TLV::new(value.initiator_random.into(), ContextSpecific8, Tag::short(1)),
-            TLV::new(value.initiator_session_id.into(), ContextSpecific8, Tag::short(2)),
-            TLV::new(value.passcode_id.into(), ContextSpecific8, Tag::short(3)),
-            TLV::new(if value.has_params { BooleanTrue } else { BooleanFalse }, ContextSpecific8, Tag::short(4)),
+            Tlv::new(value.initiator_random.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.initiator_session_id.into(), ContextSpecific8, Tag::short(2)),
+            Tlv::new(value.passcode_id.into(), ContextSpecific8, Tag::short(3)),
+            Tlv::new(if value.has_params { BooleanTrue } else { BooleanFalse }, ContextSpecific8, Tag::short(4)),
         ];
         if let Some(params) = value.initiator_session_parameters {
-            let mut tlv: TLV = params.into();
+            let mut tlv: Tlv = params.into();
             tlv.tag.tag_number = Some(Short(5));
             tlv.control.tag_control = ContextSpecific8;
             children.push(tlv);
         }
-        TLV::simple(Structure(children))
+        Tlv::simple(Structure(children))
     }
 }
 
@@ -115,10 +115,10 @@ impl SessionParameter {
     }
 }
 
-impl TryFrom<TLV> for SessionParameter {
+impl TryFrom<Tlv> for SessionParameter {
     type Error = MatterError;
 
-    fn try_from(value: TLV) -> Result<Self, Self::Error> {
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
         let mut session_idle_interval: Option<u32> = None;
         let mut session_active_interval: Option<u32> = None;
         let mut session_active_threshold: Option<u16> = None;
@@ -144,18 +144,18 @@ impl TryFrom<TLV> for SessionParameter {
     }
 }
 
-impl From<SessionParameter> for TLV {
+impl From<SessionParameter> for Tlv {
     fn from(value: SessionParameter) -> Self {
         let mut children = vec![];
         if let Some(idle_interval) = value.session_idle_interval {
-            children.push(TLV::new(idle_interval.into(), ContextSpecific8, Tag::short(1)));
+            children.push(Tlv::new(idle_interval.into(), ContextSpecific8, Tag::short(1)));
         }
         if let Some(active_interval) = value.session_active_interval {
-            children.push(TLV::new(active_interval.into(), ContextSpecific8, Tag::short(2)));
+            children.push(Tlv::new(active_interval.into(), ContextSpecific8, Tag::short(2)));
         }
         if let Some(active_threshold) = value.session_active_threshold {
-            children.push(TLV::new(active_threshold.into(), ContextSpecific8, Tag::short(3)));
+            children.push(Tlv::new(active_threshold.into(), ContextSpecific8, Tag::short(3)));
         }
-        TLV::simple(Structure(children))
+        Tlv::simple(Structure(children))
     }
 }

@@ -5,7 +5,7 @@ use crate::session::protocol::interaction::cluster::CertificationDeclaration;
 use crate::session::protocol::interaction::der::{
     DerCertificationDeclaration, DigestAlgorithmIdentifier, EncapsulatedContentInfo, Pkcs7SignedData, SignerInfo,
 };
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use der::asn1::{ContextSpecific, Int, OctetString, SetOf};
 use der::TagMode::Implicit;
 use der::{Encode, TagMode, TagNumber};
@@ -146,7 +146,7 @@ pub fn csa_asn() {
         dac_origin_vendor_id: None,
         dac_origin_product_id: None,
     };
-    let tlv: TLV = TLV::simple(input.into());
+    let tlv: Tlv = Tlv::simple(input.into());
     assert_eq!(
         hex::encode(tlv.clone().to_bytes()),
         "152400012501f1ff360205008018250334122c04135a494732303134315a423333303030312d32342405002406002507942624080018"
@@ -244,7 +244,7 @@ pub fn compute_certificate(product_id: u16, device_type: DeviceType, key: &[u8])
         dac_origin_vendor_id: None,
         dac_origin_product_id: None,
     };
-    let tlv: TLV = TLV::simple(input.into());
+    let tlv: Tlv = Tlv::simple(input.into());
     let signing_key: SigningKey = SigningKey::from_slice(key).unwrap();
     let signature: Signature = signing_key.sign(&tlv.clone().to_bytes());
     let der_signature = signature.clone().to_der().to_vec();

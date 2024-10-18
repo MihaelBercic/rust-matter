@@ -11,7 +11,7 @@ use crate::tlv::element_type::ElementType;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -35,7 +35,7 @@ impl<T: Into<ElementType>> From<Attribute<T>> for AttributeReport {
             data: Some(AttributeData {
                 data_version: 1,
                 path: AttributePath::new(value.id),
-                data: TLV::new(value.value.into(), ContextSpecific8, Tag::short(2)),
+                data: Tlv::new(value.value.into(), ContextSpecific8, Tag::short(2)),
             }),
         }
     }

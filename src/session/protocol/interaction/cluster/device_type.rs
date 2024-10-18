@@ -1,6 +1,6 @@
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::*;
-use crate::tlv::{tag::Tag, tag_control::TagControl, tag_number::TagNumber::*, tlv::TLV};
+use crate::tlv::{tag::Tag, tag_control::TagControl, tag_number::TagNumber::*, tlv::Tlv};
 
 #[derive(Copy, Clone)]
 pub struct DeviceType {
@@ -20,14 +20,14 @@ impl Default for DeviceType {
 impl From<DeviceType> for ElementType {
     fn from(value: DeviceType) -> Self {
         Structure(vec![
-            TLV::new(value.id.into(), TagControl::ContextSpecific8, Tag::short(0)),
-            TLV::new(value.revision.into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.id.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.revision.into(), TagControl::ContextSpecific8, Tag::short(1)),
         ])
     }
 }
 
 impl From<Vec<DeviceType>> for ElementType {
     fn from(value: Vec<DeviceType>) -> Self {
-        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
+        Array(value.into_iter().map(|x| Tlv::simple(x.into())).collect())
     }
 }

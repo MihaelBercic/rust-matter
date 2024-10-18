@@ -9,7 +9,7 @@ use crate::tlv::element_type::ElementType::{Array, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use std::any::Any;
 
 use super::DeviceType;

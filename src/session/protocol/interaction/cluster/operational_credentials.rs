@@ -1,5 +1,5 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
-use crate::crypto::{compute_certificate, sign_message_with_signature};
+use crate::crypto::{compute_certificate, sign_message_with_signature, KeyPair};
 use crate::log_info;
 use crate::mdns::enums::DeviceType::Thermostat;
 use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
@@ -15,7 +15,7 @@ use crate::tlv::element_type::ElementType::{Array, OctetString16, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
 use der::{Encode, Sequence, ValueOrd};
 use p256::ecdsa::SigningKey;
@@ -50,6 +50,7 @@ pub struct OperationalCredentialsCluster {
     pub commissioned_fabrics: Attribute<u8>,
     pub trusted_root_certificates: Attribute<Vec<Vec<u8>>>,
     pub current_fabric_index: Attribute<u8>,
+    pub temporary_key_pair: Option<KeyPair>,
 }
 
 impl OperationalCredentialsCluster {
@@ -61,10 +62,11 @@ impl OperationalCredentialsCluster {
             commissioned_fabrics: Default::default(),
             trusted_root_certificates: Default::default(),
             current_fabric_index: Default::default(),
+            temporary_key_pair: None,
         }
     }
 
-    fn attestation_request(&mut self, data: Option<TLV>, session: &mut Session) -> Vec<InvokeResponse> {
+    fn attestation_request(&mut self, data: Option<Tlv>, session: &mut Session) -> Vec<InvokeResponse> {
         let data = data.unwrap();
         let Structure(children) = data.control.element_type else {
             panic!("Yeah incorrect data...");
@@ -72,10 +74,10 @@ impl OperationalCredentialsCluster {
         let nonce = children.first().unwrap().to_owned().control.element_type.into_octet_string().unwrap();
         let certificate = fs::read("certification_declaration.der").expect("Missing file.");
 
-        let attestation_elements = TLV::simple(Structure(vec![
-            TLV::new(OctetString16(certificate.clone()), ContextSpecific8, Tag::short(1)),
-            TLV::new(nonce.into(), ContextSpecific8, Tag::short(2)),
-            TLV::new((677103357u32).into(), ContextSpecific8, Tag::short(3)),
+        let attestation_elements = Tlv::simple(Structure(vec![
+            Tlv::new(OctetString16(certificate.clone()), ContextSpecific8, Tag::short(1)),
+            Tlv::new(nonce.into(), ContextSpecific8, Tag::short(2)),
+            Tlv::new((677103357u32).into(), ContextSpecific8, Tag::short(3)),
         ]))
         .to_bytes();
 
@@ -90,15 +92,15 @@ impl OperationalCredentialsCluster {
         vec![InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(0x01)),
-                fields: Some(TLV::simple(Structure(vec![
-                    TLV::new(attestation_elements.into(), ContextSpecific8, Tag::short(0)),
-                    TLV::new(signature.to_vec().into(), ContextSpecific8, Tag::short(1)),
+                fields: Some(Tlv::simple(Structure(vec![
+                    Tlv::new(attestation_elements.into(), ContextSpecific8, Tag::short(0)),
+                    Tlv::new(signature.to_vec().into(), ContextSpecific8, Tag::short(1)),
                 ]))),
             }),
             status: None,
         }]
     }
-    fn certificate_chain_request(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+    fn certificate_chain_request(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         let mut chain: CertificateChainType = CertificateChainType::DAC;
         if let Some(tlv) = data {
             if let Structure(data) = tlv.control.element_type {
@@ -118,7 +120,7 @@ impl OperationalCredentialsCluster {
         vec![InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(0x03)),
-                fields: Some(TLV::simple(Structure(vec![TLV::new(
+                fields: Some(Tlv::simple(Structure(vec![Tlv::new(
                     certificate.into(),
                     ContextSpecific8,
                     Tag::short(0),
@@ -127,22 +129,32 @@ impl OperationalCredentialsCluster {
             status: None,
         }]
     }
-    fn csr_request(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+
+    /// v1.3 Core Specification 11.17.6.5
+    /// Execute the Node Operational CSR Procedure
+    /// Return NOCSR Information in the form of [CSRResponseCommand]
+    fn csr_request(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        let mut responses = vec![];
+        if let Some(data) = data {
+            let request = CsrRequest::from(data);
+            let key_pair = crate::crypto::generate_key_pair();
+            self.temporary_key_pair = Some(key_pair);
+        }
+        responses
+    }
+    fn add_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn add_noc(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+    fn update_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn update_noc(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+    fn update_fabric_label(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn update_fabric_label(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+    fn remove_fabric(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn remove_fabric(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
-        todo!()
-    }
-    fn add_trusted_root_certificate(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+    fn add_trusted_root_certificate(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
 }
@@ -181,5 +193,36 @@ impl ClusterImplementation for OperationalCredentialsCluster {
                 _ => todo!("Not implemented command!"),
             },
         }
+    }
+}
+
+struct CsrRequest {
+    csr_nonce: [u8; 32],
+    is_for_update_noc: bool,
+}
+
+/// TODO: Change into TryFrom
+impl From<Tlv> for CsrRequest {
+    fn from(value: Tlv) -> Self {
+        let mut request = CsrRequest {
+            csr_nonce: Default::default(),
+            is_for_update_noc: false,
+        };
+        let Structure(children) = value.control.element_type else {
+            return request;
+        };
+
+        for child in children {
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                return request;
+            };
+            match tag_number {
+                0 => request.csr_nonce = child.control.element_type.into_octet_string().unwrap().try_into().unwrap(),
+                1 => request.is_for_update_noc = child.control.element_type.into_boolean().unwrap(),
+                _ => (),
+            }
+        }
+
+        request
     }
 }

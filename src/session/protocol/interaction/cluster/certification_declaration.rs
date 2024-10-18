@@ -1,4 +1,4 @@
-use crate::tlv::{element_type::ElementType, tag::Tag, tag_control::TagControl::ContextSpecific8, tlv::TLV};
+use crate::tlv::{element_type::ElementType, tag::Tag, tag_control::TagControl::ContextSpecific8, tlv::Tlv};
 
 pub struct CertificationDeclaration {
     pub format_version: u16,
@@ -36,21 +36,21 @@ impl CertificationDeclaration {
 impl From<CertificationDeclaration> for ElementType {
     fn from(value: CertificationDeclaration) -> Self {
         let mut vec = vec![
-            TLV::new(value.format_version.into(), ContextSpecific8, Tag::short(0)),
-            TLV::new(value.vendor_id.into(), ContextSpecific8, Tag::short(1)),
-            TLV::new(value.product_id.into(), ContextSpecific8, Tag::short(2)),
-            TLV::new(value.device_type_id.into(), ContextSpecific8, Tag::short(3)),
-            TLV::new(value.certificate_id.into(), ContextSpecific8, Tag::short(4)),
-            TLV::new(value.security_level.into(), ContextSpecific8, Tag::short(5)),
-            TLV::new(value.security_information.into(), ContextSpecific8, Tag::short(6)),
-            TLV::new(value.version_number.into(), ContextSpecific8, Tag::short(7)),
-            TLV::new(value.certification_type.into(), ContextSpecific8, Tag::short(8)),
+            Tlv::new(value.format_version.into(), ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.vendor_id.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.product_id.into(), ContextSpecific8, Tag::short(2)),
+            Tlv::new(value.device_type_id.into(), ContextSpecific8, Tag::short(3)),
+            Tlv::new(value.certificate_id.into(), ContextSpecific8, Tag::short(4)),
+            Tlv::new(value.security_level.into(), ContextSpecific8, Tag::short(5)),
+            Tlv::new(value.security_information.into(), ContextSpecific8, Tag::short(6)),
+            Tlv::new(value.version_number.into(), ContextSpecific8, Tag::short(7)),
+            Tlv::new(value.certification_type.into(), ContextSpecific8, Tag::short(8)),
         ];
         if value.dac_origin_vendor_id.is_some() {
-            vec.push(TLV::new(value.dac_origin_vendor_id.unwrap().into(), ContextSpecific8, Tag::short(9)))
+            vec.push(Tlv::new(value.dac_origin_vendor_id.unwrap().into(), ContextSpecific8, Tag::short(9)))
         };
         if value.dac_origin_product_id.is_some() {
-            vec.push(TLV::new(value.dac_origin_product_id.unwrap().into(), ContextSpecific8, Tag::short(10)))
+            vec.push(Tlv::new(value.dac_origin_product_id.unwrap().into(), ContextSpecific8, Tag::short(10)))
         };
         // if true { vec.push(TLV::new(value.authorized_paa_list.into(), ContextSpecific8, Tag::simple(Short(11)))};
         ElementType::Structure(vec)

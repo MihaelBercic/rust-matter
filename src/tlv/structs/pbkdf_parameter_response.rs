@@ -9,7 +9,7 @@ use crate::tlv::structs::pbkdf_parameter_set::PBKDFParameterSet;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use crate::utils::MatterError;
 
 ///
@@ -68,25 +68,25 @@ impl PBKDFParamResponse {
     }
 }
 
-impl From<PBKDFParamResponse> for TLV {
+impl From<PBKDFParamResponse> for Tlv {
     fn from(value: PBKDFParamResponse) -> Self {
         let mut children = vec![
-            TLV::new(value.initiator_random.into(), ContextSpecific8, Tag::short(1)),
-            TLV::new(value.responder_random.into(), ContextSpecific8, Tag::short(2)),
-            TLV::new(value.session_id.into(), ContextSpecific8, Tag::short(3)),
+            Tlv::new(value.initiator_random.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.responder_random.into(), ContextSpecific8, Tag::short(2)),
+            Tlv::new(value.session_id.into(), ContextSpecific8, Tag::short(3)),
         ];
         if let Some(parameters) = value.pbkdf_parameters {
-            let mut tlv: TLV = parameters.into();
+            let mut tlv: Tlv = parameters.into();
             tlv.control.tag_control = ContextSpecific8;
             tlv.tag.tag_number = Some(Short(4));
             children.push(tlv);
         }
         if let Some(parameters) = value.responder_session_params {
-            let mut tlv: TLV = parameters.into();
+            let mut tlv: Tlv = parameters.into();
             tlv.control.tag_control = ContextSpecific8;
             tlv.tag.tag_number = Some(Short(5));
             children.push(tlv);
         }
-        TLV::simple(Structure(children))
+        Tlv::simple(Structure(children))
     }
 }

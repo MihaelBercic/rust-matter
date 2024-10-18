@@ -10,7 +10,7 @@ use crate::tlv::element_type::ElementType::{Structure, UTFString8, Unsigned8};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use std::any::Any;
 
 ///
@@ -48,40 +48,40 @@ impl GeneralCommissioningCluster {
         }
     }
 
-    fn arm_fail_safe(&mut self, input: Option<TLV>) -> InvokeResponse {
+    fn arm_fail_safe(&mut self, input: Option<Tlv>) -> InvokeResponse {
         // TODO: Not fake it...
         InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(1)),
-                fields: Some(TLV::simple(Structure(vec![
-                    TLV::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
-                    TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
+                fields: Some(Tlv::simple(Structure(vec![
+                    Tlv::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
+                    Tlv::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
                 ]))),
             }),
             status: None,
         }
     }
 
-    fn set_regulatory_config(&mut self, input: Option<TLV>) -> InvokeResponse {
+    fn set_regulatory_config(&mut self, input: Option<Tlv>) -> InvokeResponse {
         InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(3)),
-                fields: Some(TLV::simple(Structure(vec![
-                    TLV::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
-                    TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
+                fields: Some(Tlv::simple(Structure(vec![
+                    Tlv::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
+                    Tlv::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
                 ]))),
             }),
             status: None,
         }
     }
 
-    fn commissioning_complete(&mut self, input: Option<TLV>) -> InvokeResponse {
+    fn commissioning_complete(&mut self, input: Option<Tlv>) -> InvokeResponse {
         InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(5)),
-                fields: Some(TLV::simple(Structure(vec![
-                    TLV::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
-                    TLV::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
+                fields: Some(Tlv::simple(Structure(vec![
+                    Tlv::new(Unsigned8(0), ContextSpecific8, Tag::short(0)),
+                    Tlv::new(UTFString8(String::from("")), ContextSpecific8, Tag::short(1)),
                 ]))),
             }),
             status: None,
