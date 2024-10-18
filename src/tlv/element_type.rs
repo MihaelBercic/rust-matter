@@ -272,6 +272,52 @@ impl From<Vec<u32>> for ElementType {
     }
 }
 
+impl From<bool> for ElementType {
+    fn from(value: bool) -> Self {
+        if value {
+            BooleanTrue
+        } else {
+            BooleanFalse
+        }
+    }
+}
+
+impl From<String> for ElementType {
+    fn from(value: String) -> ElementType {
+        let data = value.to_string();
+        match data.len() {
+            0..0xFF => UTFString8(data),
+            0xFF..0xFF_FF => UTFString16(data),
+            0xFF_FF..0xFF_FF_FF_FF => UTFString32(data),
+            _ => UTFString64(data),
+        }
+    }
+}
+
+impl From<Vec<u8>> for ElementType {
+    fn from(value: Vec<u8>) -> Self {
+        let len = value.len() as u64;
+        match len {
+            0..=0xFF => OctetString8(value),
+            0x100..=0xFF_FF => OctetString16(value),
+            0x10000..=0xFF_FF_FF_FF => OctetString32(value),
+            _ => OctetString64(value),
+        }
+    }
+}
+
+impl<const C: usize> From<[u8; C]> for ElementType {
+    fn from(value: [u8; C]) -> Self {
+        let len = C as u64;
+        match len {
+            0..=0xFF => OctetString8(value.into()),
+            0x100..=0xFF_FF => OctetString16(value.into()),
+            0x10000..=0xFF_FF_FF_FF => OctetString32(value.into()),
+            _ => OctetString64(value.into()),
+        }
+    }
+}
+
 fn create_container(values: Vec<TLV>) -> Option<Vec<u8>> {
     let mut bytes: Vec<u8> = vec![];
     for tlv in values {
