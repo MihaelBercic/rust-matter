@@ -1,4 +1,6 @@
-use crate::crypto::constants::{CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES};
+use crate::crypto::constants::{
+    CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES,
+};
 use crate::crypto::hash_message;
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values::Values::SpakeVerifier;
@@ -13,43 +15,46 @@ use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolSecureChannel;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::session::Session;
-use crate::tlv::structs::pake_1::Pake1;
-use crate::tlv::structs::pake_2::Pake2;
-use crate::tlv::structs::pake_3::Pake3;
-use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
-use crate::tlv::structs::pbkdf_parameter_response::PBKDFParamResponse;
-use crate::tlv::structs::status_report;
-use crate::tlv::structs::status_report::StatusReport;
+use crate::tlv::structs::PBKDFParamRequest;
+use crate::tlv::structs::PBKDFParamResponse;
+use crate::tlv::structs::Pake1;
+use crate::tlv::structs::Pake2;
+use crate::tlv::structs::Pake3;
+use crate::tlv::structs::StatusReport;
 use crate::tlv::tlv::TLV;
 use crate::utils::{generic_error, transport_error, MatterError};
 use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::io::Cursor;
 
-pub mod exchange_flags;
-pub mod secured_extensions;
-pub mod message_builder;
 pub mod enums;
-pub mod protocol_id;
+pub mod exchange_flags;
 pub mod interaction;
+pub mod message_builder;
+pub mod protocol_id;
+pub mod secured_extensions;
 
-
-pub(crate) fn process_secure_channel(message: &MatterMessage, protocol_message: ProtocolMessage, peer_node_id: u64, session: &mut Session) -> Result<ProtocolMessageBuilder, MatterError> {
+pub(crate) fn process_secure_channel(
+    message: &MatterMessage,
+    protocol_message: ProtocolMessage,
+    peer_node_id: u64,
+    session: &mut Session,
+) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = SecureChannelProtocolOpcode::from(protocol_message.opcode);
     match opcode {
         SecureChannelProtocolOpcode::StatusReport => {
-            let status_report = status_report::StatusReport::try_from(protocol_message);
+            let status_report = StatusReport::try_from(protocol_message);
             let representation = format!("{:?}", status_report);
             return Err(transport_error(&representation));
         }
         SecureChannelProtocolOpcode::MRPStandaloneAcknowledgement => {
             // TODO: Remove from retransmission...
-            return Err(generic_error("Nothing to do about this..."))
+            return Err(generic_error("Nothing to do about this..."));
         }
-        _ => ()
+        _ => (),
     }
 
     let Some(session_setup) = &mut session.session_setup else {
-        return Err(transport_error("Missing session in the map!"))
+        return Err(transport_error("Missing session in the map!"));
     };
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     let exchange_id = protocol_message.exchange_id;
@@ -82,7 +87,12 @@ pub(crate) fn process_secure_channel(message: &MatterMessage, protocol_message: 
             let s2p = Spake2P::new();
             let prover = Spake2P::compute_prover(20202021, salt, iterations);
             let verifier = Spake2P::compute_verifier(20202021, salt, iterations);
-            let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = s2p.compute_public_verifier(&verifier.w0)?.to_encoded_point(false).as_bytes().try_into().unwrap();
+            let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = s2p
+                .compute_public_verifier(&verifier.w0)?
+                .to_encoded_point(false)
+                .as_bytes()
+                .try_into()
+                .unwrap();
             let context = hash_message(&session_setup.context);
             let mut transcript = s2p.compute_transcript(&context, &[], &[], SpakeVerifier(verifier), &pake_1.p_a, &p_b);
             let confirmation = s2p.compute_confirmation_values(&transcript, &pake_1.p_a, &p_b, 256);
@@ -106,7 +116,11 @@ pub(crate) fn process_secure_channel(message: &MatterMessage, protocol_message: 
                 return Err(transport_error("No confirmation present..."));
             };
             let is_okay = confirmation.c_a == pake_3.c_a;
-            let (general_code, protocol_code) = if is_okay { (Success, SessionEstablishmentSuccess) } else { (Failure, InvalidParameter) };
+            let (general_code, protocol_code) = if is_okay {
+                (Success, SessionEstablishmentSuccess)
+            } else {
+                (Failure, InvalidParameter)
+            };
             let status_report = StatusReport::new(general_code, ProtocolSecureChannel, protocol_code);
             if is_okay {
                 let kdf = key_derivation(&confirmation.k_e, None, &CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS * 3);
@@ -133,6 +147,6 @@ pub(crate) fn process_secure_channel(message: &MatterMessage, protocol_message: 
                 .set_payload(&status_report.to_bytes());
             Ok(builder)
         }
-        _ => todo!("Received OPCODE: {:?}", protocol_message.opcode)
+        _ => todo!("Received OPCODE: {:?}", protocol_message.opcode),
     }
 }

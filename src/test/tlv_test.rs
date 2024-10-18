@@ -1,7 +1,7 @@
 use crate::crypto::spake::Spake2P;
 use crate::tlv::element_type::ElementType::{self, *};
 use crate::tlv::encodable_value::EncodableValue;
-use crate::tlv::structs::pbkdf_parameter_request::PBKDFParamRequest;
+use crate::tlv::structs::PBKDFParamRequest;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::{self, Anonymous0, CommonProfile16, CommonProfile32, ContextSpecific8, FullyQualified48, FullyQualified64};
 use crate::tlv::tag_number::TagNumber::{self, Long, Medium, Short};
