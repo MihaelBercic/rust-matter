@@ -9,13 +9,14 @@ use crate::session::matter::builder::MatterMessageBuilder;
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::MatterDestinationID::Group;
 use crate::session::matter_message::MatterMessage;
-use crate::session::protocol::interaction::cluster::{ClusterImplementation, Device};
+use crate::session::protocol::interaction::cluster::ClusterImplementation;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::session::Session;
 use crate::session::start_processing_thread;
 use byteorder::WriteBytesExt;
 use p256::elliptic_curve::group::GroupEncoding;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
+use session::Device;
 use std::collections::HashMap;
 use std::net::UdpSocket;
 use std::sync::atomic::AtomicU32;
@@ -24,16 +25,15 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::thread;
 use std::time::SystemTime;
 
+pub mod constants;
+pub mod crypto;
 pub mod logging;
 pub mod mdns;
-pub mod constants;
-pub mod test;
-pub mod crypto;
-pub mod utils;
 pub mod network;
-pub mod tlv;
 pub mod session;
-
+pub mod test;
+pub mod tlv;
+pub mod utils;
 
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 pub static SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
@@ -49,7 +49,9 @@ pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface, de
     mdns::start_advertising(&udp_socket, device_info, &interface);
     start_listening_thread(processing_sender.clone(), udp_socket.clone(), outgoing_sender.clone());
     start_outgoing_thread(outgoing_receiver, udp_socket);
-    start_processing_thread(processing_receiver, outgoing_sender).join().expect("Unable to start the thread for processing messages...");
+    start_processing_thread(processing_receiver, outgoing_sender)
+        .join()
+        .expect("Unable to start the thread for processing messages...");
 }
 
 fn perform_validity_checks(message: &MatterMessage) -> bool {
@@ -58,18 +60,14 @@ fn perform_validity_checks(message: &MatterMessage) -> bool {
     let path_check = header.destination_node_id.is_none() || header.source_node_id.is_none();
     let group_check = header.is_group_session() && path_check;
 
-    if header.flags.version() != 0
-        || unicast_check
-        || group_check {
+    if header.flags.version() != 0 || unicast_check || group_check {
         return false;
     }
     true
 }
 
 fn start_modifying_thread(device_arc: Arc<Mutex<Device>>) {
-    thread::Builder::new().name("Device modification thread".to_string()).spawn(|| {
-        loop {}
-    });
+    thread::Builder::new().name("Device modification thread".to_string()).spawn(|| loop {});
 }
 
 /// Builds a [NetworkMessage] and [MatterMessage] based on [ProtocolMessage] provided.
@@ -85,7 +83,6 @@ fn build_network_message(protocol_message: ProtocolMessage, counter: &AtomicU32,
         retry_counter: 0,
     }
 }
-
 
 pub struct NetworkInterface {
     pub index: u32,

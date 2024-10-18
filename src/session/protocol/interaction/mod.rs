@@ -2,11 +2,11 @@
 /// @author Mihael Berčič
 /// @date 21. 9. 24
 ///
-
-pub mod information_blocks;
 pub mod cluster;
 pub mod enums;
+pub mod information_blocks;
 
+use crate::mdns::enums::DeviceType;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
@@ -24,7 +24,11 @@ use crate::utils::{generic_error, tlv_error, MatterError};
 use crate::{log_debug, log_info, DEVICE};
 use std::io::Cursor;
 
-pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage, session: &mut Session) -> Result<ProtocolMessageBuilder, MatterError> {
+pub fn process_interaction_model(
+    matter_message: &MatterMessage,
+    protocol_message: ProtocolMessage,
+    session: &mut Session,
+) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
     let tlv = TLV::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     match opcode {
@@ -39,7 +43,8 @@ pub fn process_interaction_model(matter_message: &MatterMessage, protocol_messag
                     return Err(generic_error("Incorrect tag number..."));
                 };
                 match tag_number {
-                    0 => {           // 0 = Attribute Read
+                    0 => {
+                        // 0 = Attribute Read
                         let requests = parse_attribute_requests(child)?;
                         attribute_requests.extend(requests);
                         log_info!("Reading attribute requests!");
@@ -90,14 +95,14 @@ pub fn process_interaction_model(matter_message: &MatterMessage, protocol_messag
                             return Err(tlv_error("Incorrect TLV type..."));
                         };
                         let Ok(device) = &mut DEVICE.lock() else {
-                            return Err(generic_error("Unable to lock DEVICE!"))
+                            return Err(generic_error("Unable to lock DEVICE!"));
                         };
                         for child in children {
                             let command_data = CommandData::try_from(child)?;
                             responses.extend(device.invoke_command(command_data, session));
                         }
                     }
-                    _ => ()
+                    _ => (),
                 }
             }
             let mut tlv_responses = vec![];
@@ -106,7 +111,7 @@ pub fn process_interaction_model(matter_message: &MatterMessage, protocol_messag
             }
             let invoke_response = Structure(vec![
                 TLV::new(BooleanTrue, ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(Array(tlv_responses), ContextSpecific8, Tag::simple(Short(1)))
+                TLV::new(Array(tlv_responses), ContextSpecific8, Tag::simple(Short(1))),
             ]);
 
             let tlv = TLV::simple(invoke_response);
@@ -119,9 +124,7 @@ pub fn process_interaction_model(matter_message: &MatterMessage, protocol_messag
                 .set_protocol(ProtocolInteractionModel);
             Ok(builder)
         }
-        _ => {
-            Err(generic_error(&format!("OPCODE: {:?}", opcode)))
-        }
+        _ => Err(generic_error(&format!("OPCODE: {:?}", opcode))),
     }
 }
 
@@ -136,9 +139,3 @@ fn parse_attribute_requests(tlv: TLV) -> Result<Vec<AttributePath>, MatterError>
     }
     Ok(paths)
 }
-
-
-
-
-
-

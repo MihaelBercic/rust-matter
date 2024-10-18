@@ -19,22 +19,26 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 
+pub mod counters;
+mod device;
+pub mod matter;
+pub mod matter_message;
+pub mod message_reception;
 ///
 /// @author Mihael Berčič
 /// @date 18. 9. 24
 ///
 pub mod protocol;
-pub mod matter;
-pub mod matter_message;
 pub mod protocol_message;
-pub mod counters;
-pub mod message_reception;
 pub mod session;
+pub use device::*;
 
 /// Message processing thread
 pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
-    thread::Builder::new().name("Processing thread".to_string()).stack_size(50 * 1024).spawn(move || {
-        loop {
+    thread::Builder::new()
+        .name("Processing thread".to_string())
+        .stack_size(50 * 1024)
+        .spawn(move || loop {
             let message_to_process = receiver.recv();
             match message_to_process {
                 Ok(network_message) => {
@@ -46,16 +50,16 @@ pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoi
                         log_error!("Unable to process message: {:?}", error);
                     }
                 }
-                Err(error) => log_error!("Unable to receive the message {:?}", error)
+                Err(error) => log_error!("Unable to receive the message {:?}", error),
             }
-        }
-    }).expect("Unable to start processing thread...")
+        })
+        .expect("Unable to start processing thread...")
 }
 
 fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>) -> Result<(), MatterError> {
     let mut matter_message = network_message.message;
     let Ok(session_map) = &mut SESSIONS.lock() else {
-        return Err(generic_error("Unable to obtain active sessions map!"))
+        return Err(generic_error("Unable to obtain active sessions map!"));
     };
 
     if !session_map.contains_key(&matter_message.header.session_id) {
@@ -71,10 +75,14 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
     let debug_opcode = match protocol_message.protocol_id {
         ProtocolID::ProtocolSecureChannel => format!("{:?}", SecureChannelProtocolOpcode::from(protocol_message.opcode)),
         ProtocolID::ProtocolInteractionModel => format!("{:?}", InteractionProtocolOpcode::from(protocol_message.opcode)),
-        _ => todo!("Not implemented protocol yet...")
+        _ => todo!("Not implemented protocol yet..."),
     };
 
-    log_info!("{color_red}|{:?}|{color_yellow}{}|{color_reset}", &protocol_message.protocol_id, debug_opcode);
+    log_info!(
+        "{color_red}|{:?}|{color_yellow}{}|{color_reset}",
+        &protocol_message.protocol_id,
+        debug_opcode
+    );
     let mut builder = match protocol_message.protocol_id {
         ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session),
         ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message, session),
@@ -83,10 +91,18 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         ProtocolID::ProtocolForTesting => todo!("Not yet implemented"),
     }?;
 
-    session.message_counter = if matter_message.header.is_insecure_unicast_session() { increase_counter(&GLOBAL_UNENCRYPTED_COUNTER) } else { matter_message.header.message_counter + 1 };
+    session.message_counter = if matter_message.header.is_insecure_unicast_session() {
+        increase_counter(&GLOBAL_UNENCRYPTED_COUNTER)
+    } else {
+        matter_message.header.message_counter + 1
+    };
     let payload: Vec<u8> = builder.build().into();
     let mut message = MatterMessageBuilder::new()
-        .set_session_id(if matter_message.header.is_insecure_unicast_session() { 0 } else { session.peer_session_id })
+        .set_session_id(if matter_message.header.is_insecure_unicast_session() {
+            0
+        } else {
+            session.peer_session_id
+        })
         .set_destination(MatterDestinationID::Node(source_node_id))
         .set_counter(session.message_counter)
         .set_payload(&payload)

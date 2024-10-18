@@ -51,7 +51,7 @@ impl ElementType {
             Unsigned32(value) => Ok(value as u64),
             Unsigned16(value) => Ok(value as u64),
             Unsigned8(value) => Ok(value as u64),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u64..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u64...")),
         }
     }
 
@@ -61,7 +61,7 @@ impl ElementType {
             OctetString16(value) => Ok(value),
             OctetString32(value) => Ok(value),
             OctetString64(value) => Ok(value),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into string..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into string...")),
         }
     }
 
@@ -71,7 +71,7 @@ impl ElementType {
             UTFString16(value) => Ok(value),
             UTFString32(value) => Ok(value),
             UTFString64(value) => Ok(value),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into string..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into string...")),
         }
     }
 
@@ -80,14 +80,14 @@ impl ElementType {
             Unsigned32(value) => Ok(value),
             Unsigned16(value) => Ok(value as u32),
             Unsigned8(value) => Ok(value as u32),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u32..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u32...")),
         }
     }
 
     pub(crate) fn into_u8(self) -> Result<u8, MatterError> {
         match self {
             Unsigned8(value) => Ok(value),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u32..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u32...")),
         }
     }
 
@@ -95,7 +95,7 @@ impl ElementType {
         match self {
             Unsigned16(value) => Ok(value),
             Unsigned8(value) => Ok(value as u16),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u16..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u16...")),
         }
     }
 
@@ -103,7 +103,7 @@ impl ElementType {
         match self {
             BooleanFalse => Ok(false),
             BooleanTrue => Ok(true),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u16..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u16...")),
         }
     }
 
@@ -183,7 +183,7 @@ impl ElementType {
             22 => Array(Self::read_children(cursor)),
             23 => List(Self::read_children(cursor)),
             24 => EndOfContainer,
-            _ => Reserved
+            _ => Reserved,
         };
         Ok(x)
     }
@@ -196,7 +196,7 @@ impl ElementType {
             3 | 7 | 11 | 15 | 19 => 8,
             8 | 9 => 1,
             20 => 1,
-            _ => 0
+            _ => 0,
         }
     }
 }
@@ -267,6 +267,12 @@ impl From<ElementType> for Option<Vec<u8>> {
     }
 }
 
+impl From<Vec<u32>> for ElementType {
+    fn from(value: Vec<u32>) -> Self {
+        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
+    }
+}
+
 fn create_container(values: Vec<TLV>) -> Option<Vec<u8>> {
     let mut bytes: Vec<u8> = vec![];
     for tlv in values {
@@ -276,7 +282,6 @@ fn create_container(values: Vec<TLV>) -> Option<Vec<u8>> {
     Some(bytes)
 }
 
-#[allow(unused)]
 fn create_string_representation<T: LengthCollection>(value: T) -> Vec<u8> {
     combine_vectors(remove_trailing_zero_bytes(&mut value.len().to_le_bytes().to_vec()), &value.into_bytes())
 }
@@ -338,5 +343,3 @@ impl LengthCollection for Vec<u8> {
         self
     }
 }
-
-
