@@ -48,7 +48,7 @@ fn main() {
     device.insert(1, OnOff, cluster::on_off::OnOffCluster::new());
 
     device.modify_cluster::<NetworkCommissioningCluster>(0, NetworkCommissioning, |cluster| {
-        cluster.connect();
+        cluster.connect(); // sample function call of [NetworkCommissioningCluster].
     });
-    matter::start(device_information, interface, device);
+    matter::start(device_information, interface, device); // TODO: return a sender for modifications.
 }

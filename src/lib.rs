@@ -37,7 +37,7 @@ pub mod utils;
 
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 pub static SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
-pub(crate) static DEVICE: LazyLock<Arc<Mutex<Device>>> = LazyLock::new(|| Arc::new(Mutex::new(Device::new())));
+pub static DEVICE: LazyLock<Arc<Mutex<Device>>> = LazyLock::new(|| Arc::new(Mutex::new(Device::new())));
 
 /// Starts the matter protocol advertisement (if needed) and starts running the matter protocol based on the settings provided.
 pub fn start(device_info: MDNSDeviceInformation, interface: NetworkInterface, device: Device) {
@@ -67,7 +67,7 @@ fn perform_validity_checks(message: &MatterMessage) -> bool {
 }
 
 fn start_modifying_thread(device_arc: Arc<Mutex<Device>>) {
-    thread::Builder::new().name("Device modification thread".to_string()).spawn(|| loop {});
+    // TODO: Start a modification thread...
 }
 
 /// Builds a [NetworkMessage] and [MatterMessage] based on [ProtocolMessage] provided.

@@ -26,13 +26,25 @@ impl Tag {
     pub fn short(number: u8) -> Self {
         Self::simple(TagNumber::Short(number))
     }
+
+    pub fn medium(number: u16) -> Self {
+        Self::simple(TagNumber::Medium(number))
+    }
+
+    pub fn long(number: u32) -> Self {
+        Self::simple(TagNumber::Long(number))
+    }
 }
 
 impl From<Tag> for Vec<u8> {
     fn from(tag: Tag) -> Vec<u8> {
         let mut data = vec![];
-        if let Some(vendor) = tag.vendor { data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."); }
-        if let Some(profile) = tag.profile { data.write_u16::<LittleEndian>(profile).expect("Unable to write vendor id..."); }
+        if let Some(vendor) = tag.vendor {
+            data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id...");
+        }
+        if let Some(profile) = tag.profile {
+            data.write_u16::<LittleEndian>(profile).expect("Unable to write vendor id...");
+        }
 
         if let Some(tag) = tag.tag_number {
             match tag {
@@ -51,4 +63,3 @@ impl From<Tag> for Vec<u8> {
         data
     }
 }
-

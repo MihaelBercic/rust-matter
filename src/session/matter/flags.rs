@@ -1,6 +1,6 @@
 use crate::session::matter::enums::MatterDestinationType;
 use crate::session::matter::enums::MatterDestinationType::{GroupID, NodeID};
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct MatterMessageFlags {
@@ -24,7 +24,7 @@ impl MatterMessageFlags {
         match destination {
             1 => Some(NodeID),
             2 => Some(GroupID),
-            _ => None
+            _ => None,
         }
     }
 

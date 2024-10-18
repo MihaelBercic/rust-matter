@@ -3,7 +3,6 @@ use std::io::{Cursor, Read};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use p256::pkcs8::der::Writer;
 
-use crate::tlv::create_tlv;
 use crate::tlv::element_type::ElementType::*;
 use crate::tlv::encodable_value::EncodableValue;
 use crate::tlv::tlv::TLV;
@@ -278,7 +277,7 @@ fn create_container(values: Vec<TLV>) -> Option<Vec<u8>> {
     for tlv in values {
         bytes.extend_from_slice(&tlv.to_bytes());
     }
-    bytes.extend_from_slice(&create_tlv(EndOfContainer).to_bytes());
+    bytes.extend_from_slice(&TLV::simple(EndOfContainer).to_bytes());
     Some(bytes)
 }
 

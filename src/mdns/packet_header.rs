@@ -1,4 +1,4 @@
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 
 ///
 /// @author Mihael Berčič
@@ -51,17 +51,31 @@ impl MDNSPacketHeader {
         Self { identification: id, flags }
     }
 
-    pub fn is_response(&self) -> bool { self.flags.bit_subset(15, 1) == 1 }
+    pub fn is_response(&self) -> bool {
+        self.flags.bit_subset(15, 1) == 1
+    }
 
-    pub fn opcode(&self) -> u8 { self.flags.bit_subset(11, 4) as u8 }
+    pub fn opcode(&self) -> u8 {
+        self.flags.bit_subset(11, 4) as u8
+    }
 
-    pub fn is_authoritative_answer(&self) -> bool { self.flags.bit_subset(10, 1) == 1 }
+    pub fn is_authoritative_answer(&self) -> bool {
+        self.flags.bit_subset(10, 1) == 1
+    }
 
-    pub fn is_truncated(&self) -> bool { self.flags.bit_subset(9, 1) == 1 }
+    pub fn is_truncated(&self) -> bool {
+        self.flags.bit_subset(9, 1) == 1
+    }
 
-    pub fn is_recursion_desired(&self) -> bool { self.flags.bit_subset(8, 1) == 1 }
+    pub fn is_recursion_desired(&self) -> bool {
+        self.flags.bit_subset(8, 1) == 1
+    }
 
-    pub fn is_recursion_available(&self) -> bool { self.flags.bit_subset(7, 1) == 1 }
+    pub fn is_recursion_available(&self) -> bool {
+        self.flags.bit_subset(7, 1) == 1
+    }
 
-    pub fn response_code(&self) -> u8 { self.flags.bit_subset(0, 4) as u8 }
+    pub fn response_code(&self) -> u8 {
+        self.flags.bit_subset(0, 4) as u8
+    }
 }
