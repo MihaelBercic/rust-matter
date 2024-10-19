@@ -1,5 +1,5 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
-use crate::crypto::{compute_certificate, sign_message_with_signature, KeyPair};
+use crate::crypto::sign_message_with_signature;
 use crate::log_info;
 use crate::mdns::enums::DeviceType::Thermostat;
 use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
@@ -17,12 +17,18 @@ use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
-use der::{Encode, Sequence, ValueOrd};
-use p256::ecdsa::SigningKey;
+use der::oid::AssociatedOid;
+use der::{Encode, FixedTag, Sequence, ValueOrd};
+use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
 use p256::NistP256;
 use sec1::DecodeEcPrivateKey;
+use signature::Signer;
 use std::any::Any;
 use std::fs;
+use std::str::FromStr;
+use x509_cert::builder::{Builder, RequestBuilder};
+use x509_cert::name::Name;
+use x509_cert::spki::{AlgorithmIdentifierOwned, AlgorithmIdentifierWithOid, DynSignatureAlgorithmIdentifier};
 
 use super::{FabricDescriptor, NOC};
 
@@ -50,7 +56,7 @@ pub struct OperationalCredentialsCluster {
     pub commissioned_fabrics: Attribute<u8>,
     pub trusted_root_certificates: Attribute<Vec<Vec<u8>>>,
     pub current_fabric_index: Attribute<u8>,
-    pub temporary_key_pair: Option<KeyPair>,
+    pub temporary_key_pair: Option<SigningKey>,
 }
 
 impl OperationalCredentialsCluster {
@@ -137,8 +143,14 @@ impl OperationalCredentialsCluster {
         let mut responses = vec![];
         if let Some(data) = data {
             let request = CsrRequest::from(data);
+
             let key_pair = crate::crypto::generate_key_pair();
-            self.temporary_key_pair = Some(key_pair);
+            let subject = Name::from_str("csr").unwrap();
+            // let mut builder = x509_cert::builder::RequestBuilder::new(subject, &key_pair).expect("Create CSR.");
+
+            self.temporary_key_pair = Some(key_pair.clone());
+
+            // let signature = builder.build::<DerSignature>().unwrap();
         }
         responses
     }

@@ -38,9 +38,9 @@ pub fn process_interaction_model(
         InteractionProtocolOpcode::ReadRequest => {
             let read_request = ReadRequest::try_from(tlv)?;
             let mut reports: Vec<AttributeReport> = vec![];
-            if let Ok(guard) = &mut DEVICE.lock() {
+            if let Ok(device) = &mut DEVICE.lock() {
                 for path in read_request.attribute_paths {
-                    reports.extend(guard.read_attributes(path))
+                    reports.extend(device.read_attributes(path))
                 }
             }
 

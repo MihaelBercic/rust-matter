@@ -3,11 +3,19 @@ name = "matter"
 version = "0.0.1"
 edition = "2021"
 
+[profile.release]
+opt-level = 3
+# z = 1141144B
+# s = 1063640B
+# 3 = 994648B
+# 0 = 2277000B
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # All dependencies are cryptography related.
 [dependencies]
-x509-cert = "0.2.5"
+x509-cert = { version = "0.2.5", features = ["builder"] }
+signature = "2.2.0"
 cms = "0.2.3"
 der = "0.7.9"
 sec1 = "0.7.3"

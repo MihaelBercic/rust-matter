@@ -65,7 +65,7 @@ mod cryptography_tests {
     fn sign_message() {
         let signing_key = crypto::generate_key_pair();
         let message = b"Test";
-        let _signed = crypto::sign_message(&signing_key.private_key, message);
+        let _signed = crypto::sign_message(&signing_key, message);
     }
 
     #[test]
