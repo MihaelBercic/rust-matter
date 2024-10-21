@@ -146,11 +146,15 @@ impl OperationalCredentialsCluster {
 
             let key_pair = crate::crypto::generate_key_pair();
             let subject = Name::from_str("csr").unwrap();
-            // let mut builder = x509_cert::builder::RequestBuilder::new(subject, &key_pair).expect("Create CSR.");
-
+            let mut builder = RequestBuilder::new(subject, &key_pair).expect("Create CSR.");
             self.temporary_key_pair = Some(key_pair.clone());
 
-            // let signature = builder.build::<DerSignature>().unwrap();
+            let signature = builder.build::<DerSignature>().unwrap().to_der().unwrap();
+
+            let elements = Structure(vec![
+                Tlv::new(signature.into(), ContextSpecific8, Tag::short(1)),
+                Tlv::new(request.csr_nonce.into(), ContextSpecific8, Tag::short(2)),
+            ]);
         }
         responses
     }

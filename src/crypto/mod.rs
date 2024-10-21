@@ -16,7 +16,7 @@ use p256::ecdsa::signature::Verifier;
 use p256::ecdsa::signature::{SignatureEncoding, Signer};
 use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
 use p256::elliptic_curve::rand_core::OsRng;
-use p256::PublicKey;
+use p256::{NistP256, PublicKey};
 use rand::{thread_rng, Rng};
 use sha2::{Digest, Sha256};
 use signature::Keypair;
@@ -60,8 +60,8 @@ pub fn verify_hmac(key: &[u8], message: &[u8], code_bytes: &[u8]) -> Result<(), 
 }
 
 /// ECDSA - Generates a Public - Private key pair using NIST-P256
-pub fn generate_key_pair() -> SigningKey {
-    SigningKey::random(&mut OsRng)
+pub fn generate_key_pair() -> ecdsa::SigningKey<NistP256> {
+    ecdsa::SigningKey::random(&mut OsRng)
 }
 
 /// ECDH - Generates a Public - Private key pair using NIST-P256
