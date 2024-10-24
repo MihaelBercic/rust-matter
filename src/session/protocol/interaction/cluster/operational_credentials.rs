@@ -1,14 +1,14 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
 use crate::crypto::sign_message_with_signature;
-use crate::log_info;
 use crate::mdns::enums::DeviceType::Thermostat;
 use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
-use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::enums::QueryParameter::Specific;
+use crate::session::protocol::interaction::enums::{GlobalStatusCode, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
+use crate::session::protocol::interaction::information_blocks::attribute::status::Status;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
-use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandPath, InvokeResponse};
+use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandPath, CommandStatus, InvokeResponse};
 use crate::session::session::Session;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::{Array, OctetString16, Structure};
@@ -16,6 +16,7 @@ use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
+use crate::{log_debug, log_info};
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
 use der::oid::AssociatedOid;
 use der::{Encode, FixedTag, Sequence, ValueOrd};
@@ -58,6 +59,7 @@ pub struct OperationalCredentialsCluster {
     pub current_fabric_index: Attribute<u8>,
     pub temporary_key_pair: Option<SigningKey>,
     pub working_on: CertificateChainType,
+    pub pending_root_cert: Vec<u8>,
 }
 
 impl OperationalCredentialsCluster {
@@ -71,6 +73,7 @@ impl OperationalCredentialsCluster {
             current_fabric_index: Default::default(),
             temporary_key_pair: None,
             working_on: CertificateChainType::DAC,
+            pending_root_cert: vec![],
         }
     }
 
@@ -193,7 +196,25 @@ impl OperationalCredentialsCluster {
         todo!()
     }
     fn add_trusted_root_certificate(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
-        todo!()
+        if let Some(data) = data {
+            log_info!("Tlv received: {:?}", data);
+            if let Some(Short(tag_number)) = data.tag.tag_number {
+                match tag_number {
+                    0 => self.pending_root_cert = data.control.element_type.into_octet_string().unwrap(),
+                    _ => log_debug!("Tag number received: {}", tag_number),
+                }
+            }
+        }
+        vec![InvokeResponse {
+            command: None,
+            status: Some(CommandStatus {
+                path: CommandPath::new(Specific(0x0B)),
+                status: Status {
+                    status: GlobalStatusCode::Success as u8,
+                    cluster_status: 0,
+                },
+            }),
+        }]
     }
 }
 
