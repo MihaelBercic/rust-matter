@@ -12,28 +12,29 @@
 ## Active Development
 
 ### Interaction Protocol [Currently in development]
-
 - [x] Attribute Read & Response
-- [ ] Command Invoke & Response
+- [x] Command Invoke & Response
+- [x] p256 encryption
+- [x] ASN.1 Encoding
+- [x] x509 Certification request
+- [x] Commissioning
+- [ ] MDNS advertisement change after commissioning
+- [ ] Efficient rewrite `Currently working on`
 
 ### Session initialisation
-
 - [x] Insecure session computation (PASE)
 - [x] Secure session encryption
 
 ### TLV
-
 - [x] Encoding
 - [x] Decoding
 - [x] Compression
 
 ### Message Protocol
-
 - [x] Matter message builder
 - [x] Protocol message builder
 
 ### Discovery
-
 - [x] MulticastSocket
 - [x] mDNS Packet Header
 - [x] mDNS Packet Label compression
@@ -41,8 +42,7 @@
 - [x] mDNS Packet building
 - [x] mDNS Service advertising
 
-### Chapter 3: Cryptographic Primitives
-
+### Cryptographic Primitives
 - [x] Deterministic Random Bit Generator (DRBG)
 - [x] True Random Number Generator (TRNG)
 - [x] Keyed hash - HMAC
@@ -52,4 +52,4 @@
 - [x] Message signature verification
 - [x] ECDH
 - [x] Certificate validation
-- [x] SPAKE2+
+- [x] **SPAKE2+** `complex`
