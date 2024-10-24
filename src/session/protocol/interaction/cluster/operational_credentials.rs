@@ -16,6 +16,7 @@ use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
+use crate::utils::{bail_tlv, MatterError};
 use crate::{log_debug, log_info};
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
 use der::oid::AssociatedOid;
@@ -184,7 +185,18 @@ impl OperationalCredentialsCluster {
         responses
     }
     fn add_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
-        todo!()
+        let mut responses = vec![];
+        if let Some(tlv) = data {
+            let parameters = AddNocParameters::try_from(tlv).expect("Yeah should've parsed.");
+            responses.push(InvokeResponse {
+                command: Some(CommandData {
+                    path: CommandPath::new(Specific(0x08)),
+                    fields: Some(Tlv::simple(Structure(vec![Tlv::new(0u8.into(), ContextSpecific8, Tag::short(0))]))),
+                }),
+                status: None,
+            });
+        }
+        responses
     }
     fn update_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
@@ -197,7 +209,6 @@ impl OperationalCredentialsCluster {
     }
     fn add_trusted_root_certificate(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         if let Some(data) = data {
-            log_info!("Tlv received: {:?}", data);
             if let Some(Short(tag_number)) = data.tag.tag_number {
                 match tag_number {
                     0 => self.pending_root_cert = data.control.element_type.into_octet_string().unwrap(),
@@ -283,5 +294,47 @@ impl From<Tlv> for CsrRequest {
         }
 
         request
+    }
+}
+
+pub struct AddNocParameters {
+    pub noc_value: Vec<u8>,
+    pub icac_value: Option<Vec<u8>>,
+    pub ipk_value: Vec<u8>,
+    pub case_admin_subject: u64,
+    pub admin_vendor_id: u16,
+}
+
+impl TryFrom<Tlv> for AddNocParameters {
+    type Error = MatterError;
+
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
+        let mut parameters = Self {
+            noc_value: vec![],
+            icac_value: None,
+            ipk_value: vec![],
+            case_admin_subject: 0,
+            admin_vendor_id: 0,
+        };
+        let Structure(children) = value.control.element_type else {
+            bail_tlv!("Incorrect Tlv structure...");
+        };
+
+        for child in children {
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                bail_tlv!("Missing tag number!");
+            };
+            let element = child.control.element_type;
+            match tag_number {
+                0 => parameters.noc_value = element.into_octet_string().unwrap(),
+                1 => parameters.icac_value = Some(element.into_octet_string().unwrap()),
+                2 => parameters.ipk_value = element.into_octet_string().unwrap(),
+                3 => parameters.case_admin_subject = element.into_u64().unwrap(),
+                4 => parameters.admin_vendor_id = element.into_u16().unwrap(),
+                _ => log_debug!("Not covered TAG_NUMBER {}", tag_number),
+            }
+        }
+
+        Ok(parameters)
     }
 }

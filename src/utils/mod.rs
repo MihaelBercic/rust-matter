@@ -106,13 +106,13 @@ pub fn session_error(msg: &str) -> MatterError {
 
 macro_rules! bail_tlv {
     ($text:tt) => {
-        return Err(tlv_error($text))
+        return Err(crate::utils::tlv_error($text))
     };
 }
 
 macro_rules! bail_generic {
     ($text:tt) => {
-        return Err(generic_error($text))
+        return Err(crate::utisl::generic_error($text))
     };
 }
 
