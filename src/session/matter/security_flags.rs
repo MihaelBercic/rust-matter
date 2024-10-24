@@ -1,6 +1,6 @@
 use crate::session::matter::enums::MatterSessionType;
 use crate::session::matter::enums::MatterSessionType::{Group, ReservedForFuture, Unicast};
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct MatterSecurityFlags {
@@ -28,7 +28,7 @@ impl MatterSecurityFlags {
         match self.flags.bit_subset(0, 2) {
             0 => Unicast,
             1 => Group,
-            _ => ReservedForFuture
+            _ => ReservedForFuture,
         }
     }
 
@@ -55,7 +55,7 @@ impl MatterSecurityFlags {
         let value = match session_type {
             Unicast => 0,
             Group => 1,
-            ReservedForFuture => 2
+            ReservedForFuture => 2,
         };
         self.flags.set_bits(0..=2, value);
         self

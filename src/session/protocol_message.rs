@@ -28,15 +28,17 @@ impl ProtocolMessage {
             Some(vendor) => data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."),
             None => {}
         }
-        data.write_u16::<LittleEndian>(self.protocol_id.clone() as u16).expect("Unable to write Protocol id...");
+        data.write_u16::<LittleEndian>(self.protocol_id.clone() as u16)
+            .expect("Unable to write Protocol id...");
         match self.acknowledged_message_counter {
             None => {}
-            Some(counter) => data.write_u32::<LittleEndian>(counter).expect("Unable to write ACK message counter...")
+            Some(counter) => data.write_u32::<LittleEndian>(counter).expect("Unable to write ACK message counter..."),
         }
         match &self.secured_extensions {
             None => {}
             Some(extensions) => {
-                data.write_u16::<LittleEndian>(extensions.data_length).expect("Unable to write Extensions Data Length...");
+                data.write_u16::<LittleEndian>(extensions.data_length)
+                    .expect("Unable to write Extensions Data Length...");
                 data.extend(&extensions.data);
             }
         }
@@ -55,15 +57,17 @@ impl From<ProtocolMessage> for Vec<u8> {
             Some(vendor) => data.write_u16::<LittleEndian>(vendor).expect("Unable to write vendor id..."),
             None => {}
         }
-        data.write_u16::<LittleEndian>(value.protocol_id.clone() as u16).expect("Unable to write Protocol id...");
+        data.write_u16::<LittleEndian>(value.protocol_id.clone() as u16)
+            .expect("Unable to write Protocol id...");
         match value.acknowledged_message_counter {
             None => {}
-            Some(counter) => data.write_u32::<LittleEndian>(counter).expect("Unable to write ACK message counter...")
+            Some(counter) => data.write_u32::<LittleEndian>(counter).expect("Unable to write ACK message counter..."),
         }
         match &value.secured_extensions {
             None => {}
             Some(extensions) => {
-                data.write_u16::<LittleEndian>(extensions.data_length).expect("Unable to write Extensions Data Length...");
+                data.write_u16::<LittleEndian>(extensions.data_length)
+                    .expect("Unable to write Extensions Data Length...");
                 data.extend(&extensions.data);
             }
         }
@@ -80,14 +84,25 @@ impl TryFrom<&[u8]> for ProtocolMessage {
         let exchange_flags = ProtocolExchangeFlags { byte: cursor.read_u8()? };
         let opcode = cursor.read_u8()?;
         let exchange_id = cursor.read_u16::<LittleEndian>()?;
-        let protocol_vendor_id = if exchange_flags.is_vendor_present() { Some(cursor.read_u16::<LittleEndian>()?) } else { None };
+        let protocol_vendor_id = if exchange_flags.is_vendor_present() {
+            Some(cursor.read_u16::<LittleEndian>()?)
+        } else {
+            None
+        };
         let protocol_id = ProtocolID::from(cursor.read_u16::<LittleEndian>()?);
-        let acknowledged_message_counter = if exchange_flags.is_acknowledgement() { Some(cursor.read_u32::<LittleEndian>()?) } else { None };
+        let acknowledged_message_counter = if exchange_flags.is_acknowledgement() {
+            Some(cursor.read_u32::<LittleEndian>()?)
+        } else {
+            None
+        };
         let secured_extensions = if exchange_flags.is_secured_extensions_present() {
             let data_length = cursor.read_u16::<LittleEndian>()?;
             let mut extensions_vec: Vec<u8> = vec![0; data_length as usize];
             cursor.read(&mut extensions_vec)?;
-            Some(ProtocolSecuredExtensions { data_length, data: extensions_vec })
+            Some(ProtocolSecuredExtensions {
+                data_length,
+                data: extensions_vec,
+            })
         } else {
             None
         };
@@ -105,4 +120,3 @@ impl TryFrom<&[u8]> for ProtocolMessage {
         })
     }
 }
-

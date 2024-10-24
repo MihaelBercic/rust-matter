@@ -9,8 +9,10 @@ use crate::mdns::records::record_information::RecordInformation;
 use crate::mdns::records::record_type::RecordType;
 use crate::mdns::records::record_type::RecordType::{AAAA, PTR, SRV, TXT};
 use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
-use crate::session::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
-use crate::utils::padding::StringExtensions;
+use crate::session::counters::{
+    initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER,
+};
+use crate::utils::StringExtensions;
 use crate::{log_debug, log_error, log_info, NetworkInterface};
 use rand::Rng;
 use std::io::Write;
@@ -21,13 +23,13 @@ use std::thread::sleep;
 use std::time::Duration;
 use verhoeff::VerhoeffMut;
 
-pub(crate) mod multicast_socket;
-pub(crate) mod records;
-pub(crate) mod packet;
-pub mod enums;
-pub mod packet_header;
 pub(crate) mod constants;
+pub mod enums;
 pub mod mdns_device_information;
+pub(crate) mod multicast_socket;
+pub(crate) mod packet;
+pub mod packet_header;
+pub(crate) mod records;
 
 /// Starts the mDNS-SD advertisement for our device.
 pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interface: &NetworkInterface) {
@@ -40,18 +42,23 @@ pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interfa
 
     let passcode = 20202021;
 
-    let mut pairing_code = if false {       // if use custom flow
-        format!("{}{:0>5}{:0>4}{:0>5}{:0>5}",
-                1 << 2 | device.discriminator >> 10,
-                ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
-                passcode >> 14,
-                device.vendor_id,
-                device.product_id)
+    let mut pairing_code = if false {
+        // if use custom flow
+        format!(
+            "{}{:0>5}{:0>4}{:0>5}{:0>5}",
+            1 << 2 | device.discriminator >> 10,
+            ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
+            passcode >> 14,
+            device.vendor_id,
+            device.product_id
+        )
     } else {
-        format!("{}{:0>5}{:0>4}",
-                0 << 2 | device.discriminator >> 10,
-                ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
-                passcode >> 14)
+        format!(
+            "{}{:0>5}{:0>4}",
+            0 << 2 | device.discriminator >> 10,
+            ((device.discriminator as u32 & 0x300) << 6) | (passcode & 0x3FFF),
+            passcode >> 14
+        )
     };
     pairing_code.push_verhoeff_check_digit();
     log_info!("Pairing code: {}", pairing_code);
@@ -92,7 +99,8 @@ pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interfa
             priority: 0,
             weight: 0,
             port: udp.local_addr().unwrap().port(),
-        }.into(),
+        }
+        .into(),
     };
     let aaaa_record = CompleteRecord {
         record_information: RecordInformation {
@@ -103,7 +111,10 @@ pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interfa
             has_property: true,
         },
         ttl: 30,
-        data: AAAARecord { address: device.ip.to_string() }.into(),
+        data: AAAARecord {
+            address: device.ip.to_string(),
+        }
+        .into(),
     };
 
     let sub_l_record = CompleteRecord {
@@ -169,9 +180,10 @@ pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interfa
                 ("DT", (device.device_type as u16).to_string()),
                 ("DN", device.device_name.clone()),
                 ("PH", "1".to_string()),
-                ("VP", format!("{}+{}", device.vendor_id, device.product_id))
-            ]
-        }.into(),
+                ("VP", format!("{}+{}", device.vendor_id, device.product_id)),
+            ],
+        }
+        .into(),
     };
 
     let mut _total = 0usize;
@@ -180,63 +192,84 @@ pub fn start_advertising(udp: &UdpSocket, device: MDNSDeviceInformation, interfa
 
     log_debug!("Spawning a new multicast listening thread...");
     let ip = device.ip.clone();
-    thread::Builder::new().name("Multicast listening".to_string()).stack_size(50 * 1024).spawn(move || {
-        loop {
-            match socket.receive_from() {
-                Ok((size, sender)) => {
-                    let data = &socket.buffer[0..size];
-                    //TODO: Uncomment after stopped testing: if sender.ip() == ip { continue; }
-                    match MDNSPacket::try_from(data) {
-                        Ok(packet) => {
-                            _total += 1;
-                            let desired_queries: Vec<RecordInformation> = packet.query_records.iter()
-                                                                                .filter(|x| (x.label.contains(PROTOCOL) || x.label == host_name))
-                                                                                .map(|x| x.to_owned())
-                                                                                .collect();
-                            if desired_queries.is_empty() { continue; }
-                            let mut query_iterator = desired_queries.iter();
-                            let include_pointer = query_iterator.any(|x| x.record_type == PTR);
-                            let include_txt = query_iterator.any(|r| r.record_type == TXT);
-                            let include_srv = query_iterator.any(|r| r.record_type == SRV);
-                            let include_aaaa = query_iterator.any(|r| r.record_type == AAAA);
-                            let is_unicast = query_iterator.any(|q| q.has_property);
+    thread::Builder::new()
+        .name("Multicast listening".to_string())
+        .stack_size(50 * 1024)
+        .spawn(move || {
+            loop {
+                match socket.receive_from() {
+                    Ok((size, sender)) => {
+                        let data = &socket.buffer[0..size];
+                        //TODO: Uncomment after stopped testing: if sender.ip() == ip { continue; }
+                        match MDNSPacket::try_from(data) {
+                            Ok(packet) => {
+                                _total += 1;
+                                let desired_queries: Vec<RecordInformation> = packet
+                                    .query_records
+                                    .iter()
+                                    .filter(|x| (x.label.contains(PROTOCOL) || x.label == host_name))
+                                    .map(|x| x.to_owned())
+                                    .collect();
+                                if desired_queries.is_empty() {
+                                    continue;
+                                }
+                                let mut query_iterator = desired_queries.iter();
+                                let include_pointer = query_iterator.any(|x| x.record_type == PTR);
+                                let include_txt = query_iterator.any(|r| r.record_type == TXT);
+                                let include_srv = query_iterator.any(|r| r.record_type == SRV);
+                                let include_aaaa = query_iterator.any(|r| r.record_type == AAAA);
+                                let is_unicast = query_iterator.any(|q| q.has_property);
 
-                            let mut answer_records: Vec<CompleteRecord> = vec![];
-                            let mut additional_records: Vec<CompleteRecord> = vec![];
-                            if include_pointer {
-                                answer_records.push(ptr_record.clone());
-                                additional_records.extend_from_slice(&[txt_record.clone(), aaaa_record.clone(), srv_record.clone(), sub_l_record.clone(), sub_cm_record.clone(), sub_s_record.clone(), sub_t_record.clone()]);
+                                let mut answer_records: Vec<CompleteRecord> = vec![];
+                                let mut additional_records: Vec<CompleteRecord> = vec![];
+                                if include_pointer {
+                                    answer_records.push(ptr_record.clone());
+                                    additional_records.extend_from_slice(&[
+                                        txt_record.clone(),
+                                        aaaa_record.clone(),
+                                        srv_record.clone(),
+                                        sub_l_record.clone(),
+                                        sub_cm_record.clone(),
+                                        sub_s_record.clone(),
+                                        sub_t_record.clone(),
+                                    ]);
+                                }
+                                if include_txt {
+                                    answer_records.push(txt_record.clone())
+                                }
+                                if include_srv {
+                                    answer_records.push(srv_record.clone())
+                                }
+                                if include_aaaa {
+                                    answer_records.push(aaaa_record.clone())
+                                }
+
+                                let packet_response: Vec<u8> = MDNSPacket {
+                                    header: MDNSPacketHeader::new_with_flags(0, true, 0, false, false),
+                                    query_records: desired_queries,
+                                    answer_records,
+                                    additional_records,
+                                    authority_records: vec![],
+                                }
+                                .into();
+
+                                sleep(Duration::from_millis(150));
+                                if is_unicast {
+                                    socket.send(&packet_response, sender);
+                                } else {
+                                    socket.send(&packet_response, &mdns_dst);
+                                }
                             }
-                            if include_txt { answer_records.push(txt_record.clone()) }
-                            if include_srv { answer_records.push(srv_record.clone()) }
-                            if include_aaaa { answer_records.push(aaaa_record.clone()) }
-
-                            let packet_response: Vec<u8> = MDNSPacket {
-                                header: MDNSPacketHeader::new_with_flags(0, true, 0, false, false),
-                                query_records: desired_queries,
-                                answer_records,
-                                additional_records,
-                                authority_records: vec![],
-                            }.into();
-
-
-                            sleep(Duration::from_millis(150));
-                            if is_unicast {
-                                socket.send(&packet_response, sender);
-                            } else {
-                                socket.send(&packet_response, &mdns_dst);
+                            Err(_) => {
+                                _failed += 1;
                             }
-                        }
-                        Err(_) => {
-                            _failed += 1;
                         }
                     }
-                }
-                Err(receive_error) => {
-                    log_error!("Socket error: {}", receive_error);
-                    sleep(Duration::from_secs(5));
-                }
-            };
-        }
-    });
+                    Err(receive_error) => {
+                        log_error!("Socket error: {}", receive_error);
+                        sleep(Duration::from_secs(5));
+                    }
+                };
+            }
+        });
 }

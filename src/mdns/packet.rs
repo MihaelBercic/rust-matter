@@ -7,7 +7,7 @@ use crate::mdns::packet_header::MDNSPacketHeader;
 use crate::mdns::records::complete_record::CompleteRecord;
 use crate::mdns::records::record_information::RecordInformation;
 use crate::mdns::records::record_type::RecordType;
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 
 ///
 /// @author Mihael Berčič
@@ -38,9 +38,15 @@ impl TryFrom<&[u8]> for MDNSPacket {
         let additional_count = byte_reader.read_u16::<BigEndian>()?;
 
         let query_records: Vec<RecordInformation> = (0..query_count).filter_map(|_| read_record_information(&mut byte_reader).ok()).collect();
-        let answer_records: Vec<CompleteRecord> = (0..answer_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
-        let authority_records: Vec<CompleteRecord> = (0..authority_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
-        let additional_records: Vec<CompleteRecord> = (0..additional_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
+        let answer_records: Vec<CompleteRecord> = (0..answer_count)
+            .filter_map(|_| read_complete_record(&mut byte_reader, true).ok())
+            .collect();
+        let authority_records: Vec<CompleteRecord> = (0..authority_count)
+            .filter_map(|_| read_complete_record(&mut byte_reader, true).ok())
+            .collect();
+        let additional_records: Vec<CompleteRecord> = (0..additional_count)
+            .filter_map(|_| read_complete_record(&mut byte_reader, true).ok())
+            .collect();
         return Ok(MDNSPacket {
             header,
             query_records,
@@ -61,10 +67,18 @@ impl From<MDNSPacket> for Vec<u8> {
         buffer.write_u16::<BigEndian>(value.authority_records.len() as u16).unwrap();
         buffer.write_u16::<BigEndian>(value.additional_records.len() as u16).unwrap();
 
-        for x in value.query_records { buffer.extend::<Vec<u8>>(x.into()) }
-        for x in value.answer_records { buffer.extend::<Vec<u8>>(x.into()) }
-        for x in value.authority_records { buffer.extend::<Vec<u8>>(x.into()) }
-        for x in value.additional_records { buffer.extend::<Vec<u8>>(x.into()) }
+        for x in value.query_records {
+            buffer.extend::<Vec<u8>>(x.into())
+        }
+        for x in value.answer_records {
+            buffer.extend::<Vec<u8>>(x.into())
+        }
+        for x in value.authority_records {
+            buffer.extend::<Vec<u8>>(x.into())
+        }
+        for x in value.additional_records {
+            buffer.extend::<Vec<u8>>(x.into())
+        }
 
         buffer
     }
@@ -75,7 +89,7 @@ pub(crate) fn encode_label(label: &str) -> Vec<u8> {
     for x in label.split(".") {
         encoded.push(x.len() as u8);
         encoded.extend_from_slice(x.as_bytes());
-    };
+    }
     encoded.push(0); // Indicating the end of the label.
     return encoded;
 }
@@ -85,8 +99,16 @@ pub(crate) fn read_label(buffer: &mut Cursor<&[u8]>) -> Result<String, io::Error
     let mut return_to: u64 = 0;
     loop {
         let byte = match buffer.read_u8() {
-            Ok(b) => { if b == 0 { break; } else { b } }
-            Err(_) => { break; }
+            Ok(b) => {
+                if b == 0 {
+                    break;
+                } else {
+                    b
+                }
+            }
+            Err(_) => {
+                break;
+            }
         };
         let is_pointer = byte >= 0b11000000;
         if is_pointer {
@@ -147,4 +169,3 @@ pub(crate) fn read_complete_record(buffer: &mut Cursor<&[u8]>, discard_data: boo
         data,
     })
 }
-

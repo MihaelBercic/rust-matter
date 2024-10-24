@@ -1,12 +1,14 @@
-use crate::crypto::constants::{NIST_P_256_n, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_M_BYTES, CRYPTO_N_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES};
+use crate::crypto::constants::{
+    NIST_P_256_n, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_M_BYTES, CRYPTO_N_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES,
+};
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::spake_confirmation::SpakeConfirmation;
 use crate::crypto::spake::values::Values;
 use crate::crypto::spake::values_initiator::ProverValues;
 use crate::crypto::spake::values_responder::VerifierValues;
 use crate::crypto::{hash_message, hmac, kdf};
-use crate::utils::byte_encodable::ByteEncodable;
-use crate::utils::padding::Extensions;
+use crate::utils::ByteEncodable;
+use crate::utils::Extensions;
 use crate::utils::MatterError;
 use crate::utils::MatterLayer::Cryptography;
 use byteorder::{WriteBytesExt, LE};
@@ -20,14 +22,14 @@ use p256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar};
 use std::error::Error;
 use std::ops::{Add, Mul, Rem};
 
+pub mod spake_confirmation;
+pub mod values;
 ///
 /// @author Mihael Berčič
 /// @date 7. 8. 24
 ///
 pub mod values_initiator;
 pub mod values_responder;
-pub mod spake_confirmation;
-pub mod values;
 
 #[allow(non_snake_case)]
 pub struct Spake2P {
@@ -68,8 +70,14 @@ impl Spake2P {
         let order = NonZero::new(NIST_P_256_n.resize::<REQUIRED_LIMBS>()).unwrap();
         let pbkdf = kdf::password_key_derivation(&passcode.to_le_bytes(), salt, iterations, CRYPTO_W_SIZE_BITS * 2);
         const REQUIRED_OUTPUT: usize = { nlimbs!(CRYPTO_GROUP_SIZE_BITS) };
-        let w0 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[0..CRYPTO_W_SIZE_BYTES]).rem(&order).resize::<REQUIRED_OUTPUT>().to_be_bytes();
-        let w1 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[CRYPTO_W_SIZE_BYTES..]).rem(&order).resize::<REQUIRED_OUTPUT>().to_be_bytes();
+        let w0 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[0..CRYPTO_W_SIZE_BYTES])
+            .rem(&order)
+            .resize::<REQUIRED_OUTPUT>()
+            .to_be_bytes();
+        let w1 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[CRYPTO_W_SIZE_BYTES..])
+            .rem(&order)
+            .resize::<REQUIRED_OUTPUT>()
+            .to_be_bytes();
         ProverValues {
             w0: w0[..CRYPTO_GROUP_SIZE_BYTES].try_into().unwrap(),
             w1: w1[..CRYPTO_GROUP_SIZE_BYTES].try_into().unwrap(),
@@ -108,7 +116,7 @@ impl Spake2P {
     pub fn compute_transcript(&self, context: &[u8], id_p: &[u8], id_v: &[u8], values: Values, p_a: &[u8], p_b: &[u8]) -> Vec<u8> {
         let mut w0 = match &values {
             Values::SpakeVerifier(r) => r.w0,
-            Values::SpakeProver(i) => i.w0
+            Values::SpakeProver(i) => i.w0,
         };
 
         let (z, v) = self.compute_shared_values(&values, p_a, p_b);
@@ -176,7 +184,9 @@ impl ByteEncodable for Scalar {
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, MatterError> {
         let result = Scalar::from_repr(*GenericArray::from_slice(&bytes));
         let choice = result.is_none().unwrap_u8();
-        if choice == 1 { return Err(MatterError::new(Cryptography, "Unable to compute scalar from byte array.")); }
+        if choice == 1 {
+            return Err(MatterError::new(Cryptography, "Unable to compute scalar from byte array."));
+        }
         Ok(result.unwrap())
     }
 }

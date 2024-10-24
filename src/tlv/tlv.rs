@@ -18,15 +18,18 @@ use crate::utils::MatterError;
 /// @date 2. 8. 24
 ///
 #[derive(Clone, Debug)]
-pub struct TLV {
+pub struct Tlv {
     pub control: Control,
     pub tag: Tag,
 }
 
-impl TLV {
+impl Tlv {
     pub fn simple(element_type: ElementType) -> Self {
-        TLV {
-            control: Control { tag_control: TagControl::Anonymous0, element_type },
+        Tlv {
+            control: Control {
+                tag_control: TagControl::Anonymous0,
+                element_type,
+            },
             tag: Tag {
                 vendor: None,
                 profile: None,
@@ -35,7 +38,7 @@ impl TLV {
         }
     }
 
-    pub fn new(element_type: ElementType, tag_control: TagControl, tag: Tag) -> TLV {
+    pub fn new(element_type: ElementType, tag_control: TagControl, tag: Tag) -> Tlv {
         Self {
             control: Control { tag_control, element_type },
             tag,
@@ -82,15 +85,12 @@ impl TLV {
         let element_type = control_byte & 0b11111;
         let element_type = ElementType::from_with_value(element_type, cursor)?;
         let control = Control { tag_control, element_type };
-        Ok(TLV {
-            control,
-            tag,
-        })
+        Ok(Tlv { control, tag })
     }
 }
 
-impl From<TLV> for Vec<u8> {
-    fn from(tlv: TLV) -> Self {
+impl From<Tlv> for Vec<u8> {
+    fn from(tlv: Tlv) -> Self {
         let mut data = vec![];
         let control_byte: u8 = tlv.control.clone().into();
         let tag_data: Vec<u8> = tlv.tag.into();

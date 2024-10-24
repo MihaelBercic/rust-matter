@@ -1,25 +1,38 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
-use crate::crypto::compute_certificate;
+use crate::crypto::sign_message_with_signature;
 use crate::mdns::enums::DeviceType::Thermostat;
-use crate::session::protocol::interaction::cluster::operational_credentials::CertificateChainType::PAI;
+use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
-use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::enums::QueryParameter::Specific;
+use crate::session::protocol::interaction::enums::{GlobalStatusCode, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
+use crate::session::protocol::interaction::information_blocks::attribute::status::Status;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
-use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandPath, InvokeResponse};
+use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandPath, CommandStatus, InvokeResponse};
 use crate::session::session::Session;
 use crate::tlv::element_type::ElementType;
-use crate::tlv::element_type::ElementType::{Array, Structure};
+use crate::tlv::element_type::ElementType::{Array, OctetString16, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
-use crate::{crypto, log_info, START_TIME};
+use crate::tlv::tlv::Tlv;
+use crate::utils::{bail_tlv, MatterError};
+use crate::{log_debug, log_info};
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
-use der::{Encode, Sequence, ValueOrd};
+use der::oid::AssociatedOid;
+use der::{Encode, FixedTag, Sequence, ValueOrd};
+use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
+use p256::NistP256;
 use sec1::DecodeEcPrivateKey;
+use signature::Signer;
 use std::any::Any;
+use std::fs;
+use std::str::FromStr;
+use x509_cert::builder::{Builder, RequestBuilder};
+use x509_cert::name::{Name, RdnSequence};
+use x509_cert::spki::{AlgorithmIdentifierOwned, AlgorithmIdentifierWithOid, DynSignatureAlgorithmIdentifier};
+
+use super::{FabricDescriptor, NOC};
 
 ///
 /// @author Mihael Berčič
@@ -45,6 +58,9 @@ pub struct OperationalCredentialsCluster {
     pub commissioned_fabrics: Attribute<u8>,
     pub trusted_root_certificates: Attribute<Vec<Vec<u8>>>,
     pub current_fabric_index: Attribute<u8>,
+    pub temporary_key_pair: Option<SigningKey>,
+    pub working_on: CertificateChainType,
+    pub pending_root_cert: Vec<u8>,
 }
 
 impl OperationalCredentialsCluster {
@@ -56,74 +72,161 @@ impl OperationalCredentialsCluster {
             commissioned_fabrics: Default::default(),
             trusted_root_certificates: Default::default(),
             current_fabric_index: Default::default(),
+            temporary_key_pair: None,
+            working_on: CertificateChainType::DAC,
+            pending_root_cert: vec![],
         }
     }
 
-    fn attestation_request(&mut self, data: Option<TLV>, session: &mut Session) -> Vec<InvokeResponse> {
+    fn attestation_request(&mut self, data: Option<Tlv>, session: &mut Session) -> Vec<InvokeResponse> {
         let data = data.unwrap();
         let Structure(children) = data.control.element_type else {
             panic!("Yeah incorrect data...");
         };
         let nonce = children.first().unwrap().to_owned().control.element_type.into_octet_string().unwrap();
+        let certificate = fs::read("certification_declaration.der").expect("Missing file.");
 
-        let der = compute_certificate(0x8000, Thermostat);
-        let attestation_elements = TLV::simple(Structure(vec![
-            TLV::new(der.clone().into(), ContextSpecific8, Tag::simple(Short(1))),
-            TLV::new(nonce.into(), ContextSpecific8, Tag::simple(Short(2))),
-            TLV::new((START_TIME.elapsed().unwrap().as_secs() as u32).into(), ContextSpecific8, Tag::simple(Short(3))),
-        ])).to_bytes();
-
+        let attestation_elements = Tlv::simple(Structure(vec![
+            Tlv::new(OctetString16(certificate.clone()), ContextSpecific8, Tag::short(1)),
+            Tlv::new(nonce.into(), ContextSpecific8, Tag::short(2)),
+            Tlv::new((677103357u32).into(), ContextSpecific8, Tag::short(3)),
+        ]))
+        .to_bytes();
 
         let mut tbs = attestation_elements.clone();
         tbs.extend_from_slice(&session.attestation_challenge);
 
+        let path = fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Key.der").expect("Missing file");
+        let key: SigningKey = SigningKey::from_sec1_der(&path).expect("Unable to create key");
+        let signature = sign_message_with_signature(&key, &tbs);
+        println!("Signature length: {}", signature.clone().to_vec().len());
 
-        let key = ecdsa::SigningKey::from_sec1_der(&der[..]).unwrap();
-        let signature = crypto::sign_message(&key, &tbs);
-
-        vec![
-            InvokeResponse {
-                command: Some(CommandData {
-                    path: CommandPath::new(Specific(0x01)),
-                    fields: Some(
-                        TLV::simple(Structure(vec![
-                            TLV::new(attestation_elements.into(), ContextSpecific8, Tag::simple(Short(0))),
-                            TLV::new(signature.to_vec().into(), ContextSpecific8, Tag::simple(Short(1))),
-                        ]))
-                    ),
-                }),
-                status: None,
-            }
-        ]
+        vec![InvokeResponse {
+            command: Some(CommandData {
+                path: CommandPath::new(Specific(0x01)),
+                fields: Some(Tlv::simple(Structure(vec![
+                    Tlv::new(attestation_elements.into(), ContextSpecific8, Tag::short(0)),
+                    Tlv::new(signature.to_vec().into(), ContextSpecific8, Tag::short(1)),
+                ]))),
+            }),
+            status: None,
+        }]
     }
-    fn certificate_chain_request(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> {
+    fn certificate_chain_request(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        let mut chain: CertificateChainType = CertificateChainType::DAC;
         if let Some(tlv) = data {
             if let Structure(data) = tlv.control.element_type {
                 for child in data {
                     let chain_type = child.control.element_type.into_u8().unwrap();
                     let chain_type = if chain_type == 1 { CertificateChainType::DAC } else { PAI };
                     log_info!("Working with certificate type: {:?}", chain_type);
+                    chain = chain_type;
                 }
             }
         }
-        vec![
-            InvokeResponse {
+        let certificate = if chain == CertificateChainType::DAC {
+            self.working_on = DAC;
+            fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Cert.der").unwrap()
+        } else {
+            self.working_on = PAI;
+            fs::read("attestation/Chip-Test-PAI-FFF1-8000-Cert.der").unwrap()
+        };
+        vec![InvokeResponse {
+            command: Some(CommandData {
+                path: CommandPath::new(Specific(0x03)),
+                fields: Some(Tlv::simple(Structure(vec![Tlv::new(
+                    certificate.into(),
+                    ContextSpecific8,
+                    Tag::short(0),
+                )]))),
+            }),
+            status: None,
+        }]
+    }
+
+    /// v1.3 Core Specification 11.17.6.5
+    /// Execute the Node Operational CSR Procedure
+    /// Return NOCSR Information in the form of [CSRResponseCommand]
+    fn csr_request(&mut self, data: Option<Tlv>, session: &mut Session) -> Vec<InvokeResponse> {
+        let mut responses = vec![];
+        if let Some(data) = data {
+            let request = CsrRequest::from(data);
+            let key_pair = crate::crypto::generate_key_pair();
+            let subject = Name::from_str("O=CSA").unwrap();
+
+            let mut builder = RequestBuilder::new(subject, &key_pair).expect("Create CSR.");
+            let csr = builder.build::<DerSignature>().unwrap().to_der().unwrap();
+
+            self.temporary_key_pair = Some(key_pair.clone());
+            println!("Signature: {}", hex::encode(&csr));
+            let elements = Tlv::simple(Structure(vec![
+                Tlv::new(csr.into(), ContextSpecific8, Tag::short(1)),
+                Tlv::new(request.csr_nonce.into(), ContextSpecific8, Tag::short(2)),
+            ]));
+            let mut tbs = elements.clone().to_bytes();
+            tbs.extend_from_slice(&session.attestation_challenge);
+
+            let path = fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Key.der").expect("Missing file");
+            let key: SigningKey = SigningKey::from_sec1_der(&path).expect("Unable to create key");
+            let signature = sign_message_with_signature(&key, &tbs);
+
+            let response = InvokeResponse {
                 command: Some(CommandData {
-                    path: CommandPath::new(Specific(0x03)),
-                    fields: Some(TLV::simple(Structure(vec![
-                        TLV::new(hex::decode(TEST_CERT_PAA_NO_VID_CERT).unwrap().into(), ContextSpecific8, Tag::simple(Short(0))),
+                    path: CommandPath::new(Specific(0x5)),
+                    fields: Some(Tlv::simple(Structure(vec![
+                        Tlv::new(elements.to_bytes().into(), ContextSpecific8, Tag::short(0)),
+                        Tlv::new(signature.to_vec().into(), ContextSpecific8, Tag::short(1)),
                     ]))),
                 }),
                 status: None,
-            }
-        ]
+            };
+            responses.push(response);
+        }
+        responses
     }
-    fn csr_request(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> { todo!() }
-    fn add_noc(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> { todo!() }
-    fn update_noc(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> { todo!() }
-    fn update_fabric_label(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> { todo!() }
-    fn remove_fabric(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> { todo!() }
-    fn add_trusted_root_certificate(&mut self, data: Option<TLV>) -> Vec<InvokeResponse> { todo!() }
+    fn add_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        let mut responses = vec![];
+        if let Some(tlv) = data {
+            let parameters = AddNocParameters::try_from(tlv).expect("Yeah should've parsed.");
+            responses.push(InvokeResponse {
+                command: Some(CommandData {
+                    path: CommandPath::new(Specific(0x08)),
+                    fields: Some(Tlv::simple(Structure(vec![Tlv::new(0u8.into(), ContextSpecific8, Tag::short(0))]))),
+                }),
+                status: None,
+            });
+        }
+        responses
+    }
+    fn update_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        todo!()
+    }
+    fn update_fabric_label(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        todo!()
+    }
+    fn remove_fabric(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        todo!()
+    }
+    fn add_trusted_root_certificate(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        if let Some(data) = data {
+            if let Some(Short(tag_number)) = data.tag.tag_number {
+                match tag_number {
+                    0 => self.pending_root_cert = data.control.element_type.into_octet_string().unwrap(),
+                    _ => log_debug!("Tag number received: {}", tag_number),
+                }
+            }
+        }
+        vec![InvokeResponse {
+            command: None,
+            status: Some(CommandStatus {
+                path: CommandPath::new(Specific(0x0B)),
+                status: Status {
+                    status: GlobalStatusCode::Success as u8,
+                    cluster_status: 0,
+                },
+            }),
+        }]
+    }
 }
 
 impl ClusterImplementation for OperationalCredentialsCluster {
@@ -148,191 +251,90 @@ impl ClusterImplementation for OperationalCredentialsCluster {
             QueryParameter::Wildcard => {
                 todo!("Reading of this cluster has not been implemented yet.")
             }
-            QueryParameter::Specific(command_id) => {
-                match command_id {
-                    0x00 => self.attestation_request(data, session),
-                    0x02 => self.certificate_chain_request(data),
-                    0x04 => self.csr_request(data),
-                    0x06 => self.add_noc(data),
-                    0x07 => self.update_noc(data),
-                    0x09 => self.update_fabric_label(data),
-                    0x0A => self.remove_fabric(data),
-                    0x0B => self.add_trusted_root_certificate(data),
-                    _ => todo!("Not implemented command!")
-                }
+            QueryParameter::Specific(command_id) => match command_id {
+                0x00 => self.attestation_request(data, session),
+                0x02 => self.certificate_chain_request(data),
+                0x04 => self.csr_request(data, session),
+                0x06 => self.add_noc(data),
+                0x07 => self.update_noc(data),
+                0x09 => self.update_fabric_label(data),
+                0x0A => self.remove_fabric(data),
+                0x0B => self.add_trusted_root_certificate(data),
+                _ => todo!("Not implemented command!"),
+            },
+        }
+    }
+}
+
+struct CsrRequest {
+    csr_nonce: [u8; 32],
+    is_for_update_noc: bool,
+}
+
+/// TODO: Change into TryFrom
+impl From<Tlv> for CsrRequest {
+    fn from(value: Tlv) -> Self {
+        let mut request = CsrRequest {
+            csr_nonce: Default::default(),
+            is_for_update_noc: false,
+        };
+        let Structure(children) = value.control.element_type else {
+            return request;
+        };
+
+        for child in children {
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                return request;
+            };
+            match tag_number {
+                0 => request.csr_nonce = child.control.element_type.into_octet_string().unwrap().try_into().unwrap(),
+                1 => request.is_for_update_noc = child.control.element_type.into_boolean().unwrap(),
+                _ => (),
             }
         }
+
+        request
     }
 }
 
-#[derive(Debug)]
-#[repr(u8)]
-pub enum CertificateChainType {
-    DAC = 1,
-    PAI = 2,
+pub struct AddNocParameters {
+    pub noc_value: Vec<u8>,
+    pub icac_value: Option<Vec<u8>>,
+    pub ipk_value: Vec<u8>,
+    pub case_admin_subject: u64,
+    pub admin_vendor_id: u16,
 }
 
-pub enum OperationalCertificateStatus {
-    Ok = 0,
-    InvalidPublicKey = 1,
-    InvalidNodeOpId = 2,
-    InvalidNOC = 3,
-    MissingCsr = 4,
-    TableFull = 5,
-    InvalidAdminSubject = 6,
-    FabricConflict = 9,
-    LabelConflict = 10,
-    InvalidFabricIndex = 11,
-}
+impl TryFrom<Tlv> for AddNocParameters {
+    type Error = MatterError;
 
-/// `noc`: Node Operational Certificate
-///
-/// `icac`: Intermediate Certificate Authority Certificate
-pub struct NOC {
-    noc: Vec<u8>,
-    icac: Vec<u8>,
-}
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
+        let mut parameters = Self {
+            noc_value: vec![],
+            icac_value: None,
+            ipk_value: vec![],
+            case_admin_subject: 0,
+            admin_vendor_id: 0,
+        };
+        let Structure(children) = value.control.element_type else {
+            bail_tlv!("Incorrect Tlv structure...");
+        };
 
-pub struct FabricDescriptor {
-    root_public_key: Vec<u8>,
-    vendor_id: u16,
-    fabric_id: u64,
-    node_id: u64,
-    label: String,
-}
-
-pub struct CertificationDeclaration {
-    pub format_version: u16,
-    pub vendor_id: u16,
-    pub product_id: Vec<u16>,
-    pub device_type_id: u32,
-    pub certificate_id: String,
-    pub security_level: u8,
-    pub security_information: u16,
-    pub version_number: u16,
-    pub certification_type: u8,
-    pub dac_origin_vendor_id: Option<u16>,
-    pub dac_origin_product_id: Option<u16>,
-    // ToDo: Add later... authorized_paa_list: Option<[[u8; 20]; 10]>,
-}
-
-impl CertificationDeclaration {
-    pub fn new() -> Self {
-        Self {
-            format_version: 1,
-            vendor_id: 0xFFF1,
-            product_id: vec![0x8000],
-            device_type_id: 22,
-            certificate_id: "CSA00000SWC00000-00".to_string(),
-            security_level: 0,
-            security_information: 0,
-            version_number: 1,
-            certification_type: 0,            // 0 = Test, 1 = Provisional/In certification, 2 = official
-            dac_origin_vendor_id: None,
-            dac_origin_product_id: None,
+        for child in children {
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                bail_tlv!("Missing tag number!");
+            };
+            let element = child.control.element_type;
+            match tag_number {
+                0 => parameters.noc_value = element.into_octet_string().unwrap(),
+                1 => parameters.icac_value = Some(element.into_octet_string().unwrap()),
+                2 => parameters.ipk_value = element.into_octet_string().unwrap(),
+                3 => parameters.case_admin_subject = element.into_u64().unwrap(),
+                4 => parameters.admin_vendor_id = element.into_u16().unwrap(),
+                _ => log_debug!("Not covered TAG_NUMBER {}", tag_number),
+            }
         }
+
+        Ok(parameters)
     }
 }
-
-impl From<CertificationDeclaration> for ElementType {
-    fn from(value: CertificationDeclaration) -> Self {
-        Structure(vec![
-            TLV::new(value.format_version.into(), ContextSpecific8, Tag::simple(Short(0))),
-            TLV::new(value.vendor_id.into(), ContextSpecific8, Tag::simple(Short(1))),
-            TLV::new(value.product_id.into(), ContextSpecific8, Tag::simple(Short(2))),
-            TLV::new(value.device_type_id.into(), ContextSpecific8, Tag::simple(Short(3))),
-            TLV::new(value.certificate_id.into(), ContextSpecific8, Tag::simple(Short(4))),
-            TLV::new(value.security_level.into(), ContextSpecific8, Tag::simple(Short(5))),
-            TLV::new(value.security_information.into(), ContextSpecific8, Tag::simple(Short(6))),
-            TLV::new(value.version_number.into(), ContextSpecific8, Tag::simple(Short(7))),
-            TLV::new(value.certification_type.into(), ContextSpecific8, Tag::simple(Short(8))),
-            // TLV::new(value.dac_origin_vendor_id.into(), ContextSpecific8, Tag::simple(Short(9))),
-            // TLV::new(value.dac_origin_product_id.into(), ContextSpecific8, Tag::simple(Short(10))),
-            // TLV::new(value.authorized_paa_list.into(), ContextSpecific8, Tag::simple(Short(11))),
-        ])
-    }
-}
-
-impl From<Vec<u16>> for ElementType {
-    fn from(value: Vec<u16>) -> Self {
-        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
-    }
-}
-
-impl<T: Into<ElementType>> From<Option<T>> for ElementType {
-    fn from(value: Option<T>) -> Self {
-        if let Some(value) = value { value.into() } else {
-            panic!("Not implemented yet...")
-        }
-    }
-}
-
-
-#[derive(Sequence)]
-pub struct Pkcs7SignedData {
-    pub algorithm: ObjectIdentifier,
-    pub value: ContextSpecific<DerCertificationDeclaration>,
-}
-
-#[derive(Sequence, ValueOrd)]
-pub struct DigestAlgorithmIdentifier {
-    pub algorithm: ObjectIdentifier,
-}
-
-#[derive(Sequence)]
-pub struct DerCertificationDeclaration {
-    pub version: der::asn1::Int,
-    pub digest_algorithm: der::asn1::SetOf<DigestAlgorithmIdentifier, 1>,
-    pub encapsulated_content: EncapsulatedContentInfo,
-    pub signer_info: SetOf<SignerInfo, 1>,
-}
-
-#[derive(Sequence)]
-pub struct EncapsulatedContentInfo {
-    pub content_type: ObjectIdentifier,
-    pub content: ContextSpecific<OctetString>,
-}
-
-#[derive(Sequence, ValueOrd)]
-pub struct SignerInfo {
-    pub version: der::asn1::Int,
-    pub subject_key_identifier: ContextSpecific<OctetString>,
-    pub digest_algorithm: DigestAlgorithmIdentifier,
-    pub signature_algorithm: DigestAlgorithmIdentifier,
-    pub signature: OctetString,
-}
-
-
-/*// impl Encode for EncapsulatedContentInfo {
-//     fn encoded_len(&self) -> p256::pkcs8::der::Result<Length> {
-//         self.content_type.encoded_len()?
-//             + self.content.encoded_len()?
-//     }
-//
-//     fn encode(&self, encoder: &mut impl Writer) -> p256::pkcs8::der::Result<()> {
-//         self.content_type.encode(encoder)?;
-//         self.content.encode(encoder)?;
-//         Ok(())
-//     }
-// }
-*/
-
-/*
-impl Encode for SignerInfo {
-    fn encoded_len(&self) -> der::Result<Length> {
-        self.version.encoded_len()? + self.subject_key_identifier.encoded_len()?
-            + self.digest_algorithm.encoded_len()?
-            + self.signature_algorithm.encoded_len()?
-            + self.signature.encoded_len()?
-    }
-
-    fn encode(&self, encoder: &mut impl Writer) -> der::Result<()> {
-        self.version.encode(encoder)?;
-        self.subject_key_identifier.encode(encoder)?;
-        self.digest_algorithm.encode(encoder)?;
-        self.signature_algorithm.encode(encoder)?;
-        self.signature.encode(encoder)?;
-        Ok(())
-    }
-}
-*/

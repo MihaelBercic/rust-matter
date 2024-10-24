@@ -1,10 +1,9 @@
-use crate::tlv::create_advanced_tlv;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -18,12 +17,10 @@ pub struct CapabilityMinima {
 
 impl From<CapabilityMinima> for ElementType {
     fn from(value: CapabilityMinima) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Tag::simple(Short(1)))
-            ]
-        )
+        Structure(vec![
+            Tlv::new(value.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Tag::short(1)),
+        ])
     }
 }
 
@@ -38,11 +35,9 @@ impl Default for CapabilityMinima {
 
 impl CapabilityMinima {
     pub fn as_element_type(&self) -> ElementType {
-        Structure(
-            vec![
-                create_advanced_tlv(self.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Some(Short(0)), None, None),
-                create_advanced_tlv(self.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Some(Short(1)), None, None),
-            ]
-        )
+        Structure(vec![
+            Tlv::new(self.case_sessions_per_fabric.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            Tlv::new(self.subscriptions_per_fabric.into(), TagControl::ContextSpecific8, Tag::short(1)),
+        ])
     }
 }
