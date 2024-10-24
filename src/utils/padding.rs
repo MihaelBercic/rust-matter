@@ -35,6 +35,7 @@ impl Extensions for [u8] {
     }
 }
 
+// TODO: Delete
 pub trait StringExtensions {
     fn pad(self, mode: PaddingMode, size: usize, value: char) -> String;
 }
@@ -42,10 +43,14 @@ pub trait StringExtensions {
 // TODO: optimise this
 impl StringExtensions for String {
     fn pad(self, mode: PaddingMode, size: usize, value: char) -> String {
-        if self.len() >= size { return self; }
+        if self.len() >= size {
+            return self;
+        }
         let missing = size - self.len();
         let mut new_string = String::new();
-        for i in 0..missing { new_string.push(value) }
+        for i in 0..missing {
+            new_string.push(value)
+        }
         new_string.push_str(&self);
         new_string
     }

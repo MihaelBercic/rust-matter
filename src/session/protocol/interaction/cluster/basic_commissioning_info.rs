@@ -3,7 +3,7 @@ use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -17,11 +17,9 @@ pub struct BasicCommissioningInfo {
 
 impl From<BasicCommissioningInfo> for ElementType {
     fn from(value: BasicCommissioningInfo) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.fail_safe_expiry_length_seconds.into(), ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.max_cumulative_failsafe_seconds.into(), ContextSpecific8, Tag::simple(Short(1))),
-            ]
-        )
+        Structure(vec![
+            Tlv::new(value.fail_safe_expiry_length_seconds.into(), ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.max_cumulative_failsafe_seconds.into(), ContextSpecific8, Tag::short(1)),
+        ])
     }
 }

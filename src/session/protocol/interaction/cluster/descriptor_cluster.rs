@@ -9,8 +9,10 @@ use crate::tlv::element_type::ElementType::{Array, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use std::any::Any;
+
+use super::DeviceType;
 
 ///
 /// @author Mihael Berčič
@@ -33,10 +35,7 @@ impl DescriptorCluster {
             },
             server_list: Default::default(),
             client_list: Default::default(),
-            parts_list: Attribute {
-                id: 3,
-                value: vec![1],
-            },
+            parts_list: Attribute { id: 3, value: vec![1] },
             tag_list: Default::default(),
         }
     }
@@ -55,16 +54,14 @@ impl ClusterImplementation for DescriptorCluster {
                 ]
             }
             QueryParameter::Specific(id) => {
-                vec![
-                    match id {
-                        0 => self.device_type_list.clone().into(),
-                        1 => self.server_list.clone().into(),
-                        2 => self.client_list.clone().into(),
-                        3 => self.parts_list.clone().into(),
-                        4 => self.tag_list.clone().into(),
-                        _ => panic!("Okay not configured for this id...")
-                    }
-                ]
+                vec![match id {
+                    0 => self.device_type_list.clone().into(),
+                    1 => self.server_list.clone().into(),
+                    2 => self.client_list.clone().into(),
+                    3 => self.parts_list.clone().into(),
+                    4 => self.tag_list.clone().into(),
+                    _ => panic!("Okay not configured for this id..."),
+                }]
             }
         }
     }
@@ -75,42 +72,6 @@ impl ClusterImplementation for DescriptorCluster {
 
     fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
         todo!()
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct DeviceType {
-    pub id: u16,
-    pub revision: u16,
-}
-
-impl Default for DeviceType {
-    fn default() -> Self {
-        Self {
-            id: 0x0100, // Light
-            revision: 1,
-        }
-    }
-}
-
-impl From<DeviceType> for ElementType {
-    fn from(value: DeviceType) -> Self {
-        Structure(vec![
-            TLV::new(value.id.into(), TagControl::ContextSpecific8, Tag::simple(Short(0))),
-            TLV::new(value.revision.into(), TagControl::ContextSpecific8, Tag::simple(Short(1))),
-        ])
-    }
-}
-
-impl From<Vec<DeviceType>> for ElementType {
-    fn from(value: Vec<DeviceType>) -> Self {
-        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
-    }
-}
-
-impl From<Vec<u32>> for ElementType {
-    fn from(value: Vec<u32>) -> Self {
-        Array(value.into_iter().map(|x| TLV::simple(x.into())).collect())
     }
 }
 

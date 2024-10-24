@@ -7,11 +7,7 @@ use ctr::cipher::{KeyIvInit, StreamCipher};
 
 use crate::crypto::constants::{CRYPTO_AEAD_NONCE_LENGTH_BYTES, CRYPTO_PRIVACY_NONCE_LENGTH_BYTES};
 
-pub fn encrypt<'a>(
-    key: &[u8],
-    payload: Payload,
-    nonce: &[u8; CRYPTO_AEAD_NONCE_LENGTH_BYTES],
-) -> Result<Vec<u8>, Error> {
+pub fn encrypt<'a>(key: &[u8], payload: Payload, nonce: &[u8; CRYPTO_AEAD_NONCE_LENGTH_BYTES]) -> Result<Vec<u8>, Error> {
     type Cipher = Ccm<Aes128, U16, U13>;
     let cipher = Cipher::new_from_slice(key).unwrap();
     let nonce = GenericArray::from_slice(nonce);
@@ -19,11 +15,7 @@ pub fn encrypt<'a>(
     encrypted
 }
 
-pub fn decrypt(
-    key: &[u8],
-    encrypted_payload: Payload,
-    nonce: &[u8; CRYPTO_AEAD_NONCE_LENGTH_BYTES],
-) -> Result<Vec<u8>, Error> {
+pub fn decrypt(key: &[u8], encrypted_payload: Payload, nonce: &[u8; CRYPTO_AEAD_NONCE_LENGTH_BYTES]) -> Result<Vec<u8>, Error> {
     type Cipher = Ccm<Aes128, U16, U13>;
     let cipher = Cipher::new_from_slice(key).expect("Issue decrypting AES key.");
     let nonce = GenericArray::from_slice(nonce);

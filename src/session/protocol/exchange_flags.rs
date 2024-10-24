@@ -1,4 +1,4 @@
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ProtocolExchangeFlags {

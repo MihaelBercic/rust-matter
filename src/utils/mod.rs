@@ -5,9 +5,13 @@ use std::fmt;
 use std::io;
 use std::time::SystemTimeError;
 
-pub mod bit_subset;
-pub mod byte_encodable;
-pub mod padding;
+mod bit_subset;
+mod byte_encodable;
+mod padding;
+
+pub use bit_subset::BitSubset;
+pub use byte_encodable::ByteEncodable;
+pub use padding::*;
 
 #[derive(Debug)]
 pub enum MatterLayer {
@@ -34,6 +38,7 @@ impl MatterError {
     }
 }
 
+/// Implement the debugging trait for MatterError.
 impl fmt::Display for MatterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -43,6 +48,7 @@ impl fmt::Display for MatterError {
     }
 }
 
+/// Generate a MatterError from the std::Error::Error.
 impl std::error::Error for MatterError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
@@ -52,35 +58,63 @@ impl std::error::Error for MatterError {
     }
 }
 
+/// Generate a MatterError from the built in io::Error.
 impl From<io::Error> for MatterError {
     fn from(err: io::Error) -> MatterError {
         MatterError::Io(err)
     }
 }
 
+/// Generate a MatterError from the failed attempt of TryFrom<Vec<u8>> for whatever the attempt was.
 impl From<Vec<u8>> for MatterError {
     fn from(value: Vec<u8>) -> Self {
         MatterError::new(Parsing, "Unable to perform vector try_into.")
     }
 }
 
+/// Generate MatterError from the SystemTimeError for ease of use when returning Result.
 impl From<SystemTimeError> for MatterError {
     fn from(value: SystemTimeError) -> Self {
         MatterError::new(Parsing, "Unable to parse SystemTime.")
     }
 }
+
+/// Generate a MatterError with [MatterLayer::Transport] layer.
 pub fn transport_error(msg: &str) -> MatterError {
     MatterError::new(Transport, msg)
 }
 
-pub fn generic_error(msg: &str) -> MatterError { MatterError::new(MatterLayer::Generic, msg) }
-pub fn tlv_error(msg: &str) -> MatterError { MatterError::new(MatterLayer::TLV, msg) }
+/// Generate a MatterError with a generic layer.
+pub fn generic_error(msg: &str) -> MatterError {
+    MatterError::new(MatterLayer::Generic, msg)
+}
 
+/// Generate a MatterError with TLV encoding layer.
+pub fn tlv_error(msg: &str) -> MatterError {
+    MatterError::new(MatterLayer::TLV, msg)
+}
+
+/// Generate a MatterError with Cryptography layer.
 pub fn crypto_error(msg: &str) -> MatterError {
     MatterError::new(MatterLayer::Cryptography, msg)
 }
 
+/// Generate a MatterError with Session layer.
 pub fn session_error(msg: &str) -> MatterError {
     MatterError::new(MatterLayer::SecureSession, msg)
 }
 
+macro_rules! bail_tlv {
+    ($text:tt) => {
+        return Err(tlv_error($text))
+    };
+}
+
+macro_rules! bail_generic {
+    ($text:tt) => {
+        return Err(generic_error($text))
+    };
+}
+
+pub(crate) use bail_generic;
+pub(crate) use bail_tlv;

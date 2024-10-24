@@ -4,7 +4,7 @@ use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -14,17 +14,15 @@ use crate::tlv::tlv::TLV;
 pub struct AttributeData {
     pub data_version: u32,
     pub path: AttributePath,
-    pub data: TLV,
+    pub data: Tlv,
 }
 
 impl From<AttributeData> for ElementType {
     fn from(value: AttributeData) -> Self {
-        Structure(
-            vec![
-                TLV::new(value.data_version.into(), ContextSpecific8, Tag::simple(Short(0))),
-                TLV::new(value.path.into(), ContextSpecific8, Tag::simple(Short(1))),
-                value.data
-            ]
-        )
+        Structure(vec![
+            Tlv::new(value.data_version.into(), ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.path.into(), ContextSpecific8, Tag::short(1)),
+            value.data,
+        ])
     }
 }

@@ -6,18 +6,23 @@ use matter::session::protocol::interaction::cluster::basic_information::BasicInf
 use matter::session::protocol::interaction::cluster::general_commissioning::GeneralCommissioningCluster;
 use matter::session::protocol::interaction::cluster::network_commissioning::NetworkCommissioningCluster;
 use matter::session::protocol::interaction::cluster::operational_credentials::OperationalCredentialsCluster;
-use matter::session::protocol::interaction::cluster::Device;
-use matter::session::protocol::interaction::enums::ClusterID::{BasicInformation, Descriptor, GeneralCommissioning, NetworkCommissioning, OnOff, OperationalCredentials};
+use matter::session::protocol::interaction::enums::ClusterID::{
+    BasicInformation, Descriptor, GeneralCommissioning, NetworkCommissioning, OnOff, OperationalCredentials,
+};
+use matter::session::Device;
 use matter::NetworkInterface;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
 
 fn main() {
     let is_eth = true;
-    let mut interface = NetworkInterface { index: 0xe, do_custom: true };         // WiFi
+    let mut interface = NetworkInterface { index: 0xe, do_custom: true }; // WiFi
     let mut ip = Ipv6Addr::from_str("fe80::1828:f752:3892:a05b").unwrap();
     if is_eth {
-        interface = NetworkInterface { index: 0x10, do_custom: true };         // Eth   en7
+        interface = NetworkInterface {
+            index: 0x10,
+            do_custom: true,
+        }; // Eth   en7
         ip = Ipv6Addr::from_str("fe80::457:b3cc:da39:9caf").unwrap();
     }
 
@@ -40,11 +45,10 @@ fn main() {
     device.insert(0, OperationalCredentials, OperationalCredentialsCluster::new());
     device.insert(0, Descriptor, interaction::cluster::descriptor_cluster::DescriptorCluster::new());
 
-
     device.insert(1, OnOff, cluster::on_off::OnOffCluster::new());
 
     device.modify_cluster::<NetworkCommissioningCluster>(0, NetworkCommissioning, |cluster| {
-        cluster.connect();
+        cluster.connect(); // sample function call of [NetworkCommissioningCluster].
     });
-    matter::start(device_information, interface, device);
+    matter::start(device_information, interface, device); // TODO: return a sender for modifications.
 }

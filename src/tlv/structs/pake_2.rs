@@ -1,9 +1,9 @@
 use crate::crypto::constants::{CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::tlv::element_type::ElementType::Structure;
+use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
-use crate::tlv::tlv::TLV;
-use crate::tlv::{create_advanced_tlv, create_tlv, tlv_octet_string};
+use crate::tlv::tlv::Tlv;
 
 ///
 /// @author Mihael Berčič
@@ -15,11 +15,11 @@ pub struct Pake2 {
     pub(crate) c_b: [u8; CRYPTO_HASH_LEN_BYTES],
 }
 
-impl From<Pake2> for TLV {
+impl From<Pake2> for Tlv {
     fn from(value: Pake2) -> Self {
-        create_tlv(Structure(vec![
-            create_advanced_tlv(tlv_octet_string(&value.p_b), ContextSpecific8, Some(Short(1)), None, None),
-            create_advanced_tlv(tlv_octet_string(&value.c_b), ContextSpecific8, Some(Short(2)), None, None),
+        Tlv::simple(Structure(vec![
+            Tlv::new(value.p_b.into(), ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.c_b.into(), ContextSpecific8, Tag::short(2)),
         ]))
     }
 }

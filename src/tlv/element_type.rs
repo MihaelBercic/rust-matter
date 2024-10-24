@@ -3,10 +3,9 @@ use std::io::{Cursor, Read};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use p256::pkcs8::der::Writer;
 
-use crate::tlv::create_tlv;
 use crate::tlv::element_type::ElementType::*;
 use crate::tlv::encodable_value::EncodableValue;
-use crate::tlv::tlv::TLV;
+use crate::tlv::tlv::Tlv;
 use crate::utils::MatterError;
 use crate::utils::MatterLayer::Application;
 
@@ -37,9 +36,9 @@ pub enum ElementType {
     OctetString32(Vec<u8>),
     OctetString64(Vec<u8>),
     Null,
-    Structure(Vec<TLV>),
-    Array(Vec<TLV>),
-    List(Vec<TLV>),
+    Structure(Vec<Tlv>),
+    Array(Vec<Tlv>),
+    List(Vec<Tlv>),
     EndOfContainer,
     Reserved,
 }
@@ -51,7 +50,7 @@ impl ElementType {
             Unsigned32(value) => Ok(value as u64),
             Unsigned16(value) => Ok(value as u64),
             Unsigned8(value) => Ok(value as u64),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u64..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u64...")),
         }
     }
 
@@ -61,7 +60,7 @@ impl ElementType {
             OctetString16(value) => Ok(value),
             OctetString32(value) => Ok(value),
             OctetString64(value) => Ok(value),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into string..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into string...")),
         }
     }
 
@@ -71,7 +70,7 @@ impl ElementType {
             UTFString16(value) => Ok(value),
             UTFString32(value) => Ok(value),
             UTFString64(value) => Ok(value),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into string..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into string...")),
         }
     }
 
@@ -80,14 +79,14 @@ impl ElementType {
             Unsigned32(value) => Ok(value),
             Unsigned16(value) => Ok(value as u32),
             Unsigned8(value) => Ok(value as u32),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u32..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u32...")),
         }
     }
 
     pub(crate) fn into_u8(self) -> Result<u8, MatterError> {
         match self {
             Unsigned8(value) => Ok(value),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u32..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u32...")),
         }
     }
 
@@ -95,7 +94,7 @@ impl ElementType {
         match self {
             Unsigned16(value) => Ok(value),
             Unsigned8(value) => Ok(value as u16),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u16..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u16...")),
         }
     }
 
@@ -103,15 +102,15 @@ impl ElementType {
         match self {
             BooleanFalse => Ok(false),
             BooleanTrue => Ok(true),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u16..."))
+            _ => Err(MatterError::new(Application, "Not possible to be matched into u16...")),
         }
     }
 
-    fn read_children(cursor: &mut Cursor<&[u8]>) -> Vec<TLV> {
-        let mut children: Vec<TLV> = vec![];
+    fn read_children(cursor: &mut Cursor<&[u8]>) -> Vec<Tlv> {
+        let mut children: Vec<Tlv> = vec![];
         while cursor.read_u8().unwrap() != EndOfContainer.into() {
             cursor.set_position(cursor.position() - 1);
-            children.push(TLV::try_from_cursor(cursor).unwrap());
+            children.push(Tlv::try_from_cursor(cursor).unwrap());
         }
         children
     }
@@ -183,7 +182,7 @@ impl ElementType {
             22 => Array(Self::read_children(cursor)),
             23 => List(Self::read_children(cursor)),
             24 => EndOfContainer,
-            _ => Reserved
+            _ => Reserved,
         };
         Ok(x)
     }
@@ -196,7 +195,7 @@ impl ElementType {
             3 | 7 | 11 | 15 | 19 => 8,
             8 | 9 => 1,
             20 => 1,
-            _ => 0
+            _ => 0,
         }
     }
 }
@@ -267,16 +266,73 @@ impl From<ElementType> for Option<Vec<u8>> {
     }
 }
 
-fn create_container(values: Vec<TLV>) -> Option<Vec<u8>> {
+impl From<Vec<u32>> for ElementType {
+    fn from(value: Vec<u32>) -> Self {
+        Array(value.into_iter().map(|x| Tlv::simple(x.into())).collect())
+    }
+}
+
+impl From<bool> for ElementType {
+    fn from(value: bool) -> Self {
+        if value {
+            BooleanTrue
+        } else {
+            BooleanFalse
+        }
+    }
+}
+
+impl From<String> for ElementType {
+    fn from(value: String) -> ElementType {
+        let data = value.to_string();
+        match data.len() {
+            0..0xFF => UTFString8(data),
+            0xFF..0xFF_FF => UTFString16(data),
+            0xFF_FF..0xFF_FF_FF_FF => UTFString32(data),
+            _ => UTFString64(data),
+        }
+    }
+}
+
+impl From<Vec<u8>> for ElementType {
+    fn from(value: Vec<u8>) -> Self {
+        let len = value.len() as u64;
+        match len {
+            0..=0xFF => OctetString8(value),
+            0x100..=0xFF_FF => OctetString16(value),
+            0x10000..=0xFF_FF_FF_FF => OctetString32(value),
+            _ => OctetString64(value),
+        }
+    }
+}
+
+impl From<Vec<u16>> for ElementType {
+    fn from(value: Vec<u16>) -> Self {
+        Array(value.into_iter().map(|x| Tlv::simple(x.into())).collect())
+    }
+}
+
+impl<const C: usize> From<[u8; C]> for ElementType {
+    fn from(value: [u8; C]) -> Self {
+        let len = C as u64;
+        match len {
+            0..=0xFF => OctetString8(value.into()),
+            0x100..=0xFF_FF => OctetString16(value.into()),
+            0x10000..=0xFF_FF_FF_FF => OctetString32(value.into()),
+            _ => OctetString64(value.into()),
+        }
+    }
+}
+
+fn create_container(values: Vec<Tlv>) -> Option<Vec<u8>> {
     let mut bytes: Vec<u8> = vec![];
     for tlv in values {
         bytes.extend_from_slice(&tlv.to_bytes());
     }
-    bytes.extend_from_slice(&create_tlv(EndOfContainer).to_bytes());
+    bytes.extend_from_slice(&Tlv::simple(EndOfContainer).to_bytes());
     Some(bytes)
 }
 
-#[allow(unused)]
 fn create_string_representation<T: LengthCollection>(value: T) -> Vec<u8> {
     combine_vectors(remove_trailing_zero_bytes(&mut value.len().to_le_bytes().to_vec()), &value.into_bytes())
 }
@@ -338,5 +394,3 @@ impl LengthCollection for Vec<u8> {
         self
     }
 }
-
-

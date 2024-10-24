@@ -7,7 +7,7 @@ use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::enums::SecureChannelProtocolOpcode::PASEPake1;
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -19,7 +19,10 @@ fn protocol_message_builder() {
         .set_is_sent_by_initiator(true)
         .set_acknowledged_message_counter(Some(GLOBAL_UNENCRYPTED_COUNTER.load(Ordering::Relaxed)).unwrap())
         .set_vendor(123)
-        .set_secure_extensions(ProtocolSecuredExtensions { data_length: 0, data: vec![] })
+        .set_secure_extensions(ProtocolSecuredExtensions {
+            data_length: 0,
+            data: vec![],
+        })
         .set_payload("protocol_payload".as_bytes())
         .build();
 
@@ -107,9 +110,13 @@ fn queue_test() {
                     assert_eq!(total_received, id);
                     total_received += 1;
                 }
-                Err(error) => { panic!("{:#?}", error) }
+                Err(error) => {
+                    panic!("{:#?}", error)
+                }
             }
         }
         assert_eq!(total_received, 5);
-    }).join().expect("Unable to join the thread...");
+    })
+    .join()
+    .expect("Unable to join the thread...");
 }

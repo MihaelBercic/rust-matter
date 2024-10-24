@@ -2,7 +2,7 @@ use crate::session::protocol::exchange_flags::ProtocolExchangeFlags;
 use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::session::protocol_message::ProtocolMessage;
-use crate::utils::bit_subset::BitSubset;
+use crate::utils::BitSubset;
 
 pub struct ProtocolMessageBuilder {
     message: ProtocolMessage,
@@ -21,10 +21,9 @@ impl ProtocolMessageBuilder {
                 acknowledged_message_counter: None,
                 secured_extensions: None,
                 payload: vec![],
-            }
+            },
         }
     }
-
 
     /// Sets the opcode of the message.
     pub fn set_opcode(mut self, opcode: u8) -> Self {
