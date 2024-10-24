@@ -27,7 +27,7 @@ use std::any::Any;
 use std::fs;
 use std::str::FromStr;
 use x509_cert::builder::{Builder, RequestBuilder};
-use x509_cert::name::Name;
+use x509_cert::name::{Name, RdnSequence};
 use x509_cert::spki::{AlgorithmIdentifierOwned, AlgorithmIdentifierWithOid, DynSignatureAlgorithmIdentifier};
 
 use super::{FabricDescriptor, NOC};
@@ -57,6 +57,7 @@ pub struct OperationalCredentialsCluster {
     pub trusted_root_certificates: Attribute<Vec<Vec<u8>>>,
     pub current_fabric_index: Attribute<u8>,
     pub temporary_key_pair: Option<SigningKey>,
+    pub working_on: CertificateChainType,
 }
 
 impl OperationalCredentialsCluster {
@@ -69,6 +70,7 @@ impl OperationalCredentialsCluster {
             trusted_root_certificates: Default::default(),
             current_fabric_index: Default::default(),
             temporary_key_pair: None,
+            working_on: CertificateChainType::DAC,
         }
     }
 
@@ -119,8 +121,10 @@ impl OperationalCredentialsCluster {
             }
         }
         let certificate = if chain == CertificateChainType::DAC {
+            self.working_on = DAC;
             fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Cert.der").unwrap()
         } else {
+            self.working_on = PAI;
             fs::read("attestation/Chip-Test-PAI-FFF1-8000-Cert.der").unwrap()
         };
         vec![InvokeResponse {
@@ -139,22 +143,40 @@ impl OperationalCredentialsCluster {
     /// v1.3 Core Specification 11.17.6.5
     /// Execute the Node Operational CSR Procedure
     /// Return NOCSR Information in the form of [CSRResponseCommand]
-    fn csr_request(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+    fn csr_request(&mut self, data: Option<Tlv>, session: &mut Session) -> Vec<InvokeResponse> {
         let mut responses = vec![];
         if let Some(data) = data {
             let request = CsrRequest::from(data);
-
             let key_pair = crate::crypto::generate_key_pair();
-            let subject = Name::from_str("csr").unwrap();
+            let subject = Name::from_str("O=CSA").unwrap();
+
             let mut builder = RequestBuilder::new(subject, &key_pair).expect("Create CSR.");
+            let csr = builder.build::<DerSignature>().unwrap().to_der().unwrap();
+
             self.temporary_key_pair = Some(key_pair.clone());
-
-            let signature = builder.build::<DerSignature>().unwrap().to_der().unwrap();
-
-            let elements = Structure(vec![
-                Tlv::new(signature.into(), ContextSpecific8, Tag::short(1)),
+            println!("Signature: {}", hex::encode(&csr));
+            let elements = Tlv::simple(Structure(vec![
+                Tlv::new(csr.into(), ContextSpecific8, Tag::short(1)),
                 Tlv::new(request.csr_nonce.into(), ContextSpecific8, Tag::short(2)),
-            ]);
+            ]));
+            let mut tbs = elements.clone().to_bytes();
+            tbs.extend_from_slice(&session.attestation_challenge);
+
+            let path = fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Key.der").expect("Missing file");
+            let key: SigningKey = SigningKey::from_sec1_der(&path).expect("Unable to create key");
+            let signature = sign_message_with_signature(&key, &tbs);
+
+            let response = InvokeResponse {
+                command: Some(CommandData {
+                    path: CommandPath::new(Specific(0x5)),
+                    fields: Some(Tlv::simple(Structure(vec![
+                        Tlv::new(elements.to_bytes().into(), ContextSpecific8, Tag::short(0)),
+                        Tlv::new(signature.to_vec().into(), ContextSpecific8, Tag::short(1)),
+                    ]))),
+                }),
+                status: None,
+            };
+            responses.push(response);
         }
         responses
     }
@@ -200,7 +222,7 @@ impl ClusterImplementation for OperationalCredentialsCluster {
             QueryParameter::Specific(command_id) => match command_id {
                 0x00 => self.attestation_request(data, session),
                 0x02 => self.certificate_chain_request(data),
-                0x04 => self.csr_request(data),
+                0x04 => self.csr_request(data, session),
                 0x06 => self.add_noc(data),
                 0x07 => self.update_noc(data),
                 0x09 => self.update_fabric_label(data),
