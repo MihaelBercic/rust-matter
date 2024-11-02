@@ -13,7 +13,10 @@ trait SampleTrait: Any {
 struct Device {
     clusters: HashMap<u16, Box<dyn SampleTrait>>,
 }
-fn compute_key(i: u8, u: u8) -> u16 { 0 }
+
+fn compute_key(i: u8, u: u8) -> u16 {
+    0
+}
 
 impl Device {
     fn insert<T: SampleTrait>(&mut self, endpoint_id: u8, id: u8, val: T) {

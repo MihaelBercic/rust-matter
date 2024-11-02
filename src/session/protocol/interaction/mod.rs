@@ -18,19 +18,21 @@ use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolInteractionModel;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::session::Session;
+use crate::session::Device;
 use crate::tlv::element_type::ElementType::{Array, BooleanTrue, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 use crate::utils::{bail_tlv, generic_error, tlv_error, MatterError};
-use crate::{log_debug, log_info, DEVICE};
+use crate::{log_debug, log_info, SharedDevice};
 use std::io::Cursor;
 
 pub fn process_interaction_model(
     matter_message: &MatterMessage,
     protocol_message: ProtocolMessage,
     session: &mut Session,
+    device: &mut Device,
 ) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
     let tlv = Tlv::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
@@ -38,12 +40,9 @@ pub fn process_interaction_model(
         InteractionProtocolOpcode::ReadRequest => {
             let read_request = ReadRequest::try_from(tlv)?;
             let mut reports: Vec<AttributeReport> = vec![];
-            if let Ok(device) = &mut DEVICE.lock() {
-                for path in read_request.attribute_paths {
-                    reports.extend(device.read_attributes(path))
-                }
+            for path in read_request.attribute_paths {
+                reports.extend(device.read_attributes(path))
             }
-
             log_debug!("We have {} reports to send!", reports.len());
             let mut to_send = vec![];
             for report in reports {
@@ -77,9 +76,6 @@ pub fn process_interaction_model(
                     2 => {
                         let Array(children) = child.control.element_type else {
                             return Err(tlv_error("Incorrect TLV type..."));
-                        };
-                        let Ok(device) = &mut DEVICE.lock() else {
-                            return Err(generic_error("Unable to lock DEVICE!"));
                         };
                         for child in children {
                             let command_data = CommandData::try_from(child)?;

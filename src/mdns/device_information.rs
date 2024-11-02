@@ -5,7 +5,7 @@ use std::net::Ipv6Addr;
 /// @author Mihael Berčič
 /// @date 15. 9. 24
 ///
-pub struct MDNSDeviceInformation {
+pub struct DeviceInformation {
     pub ip: Ipv6Addr,
     pub mac: [u8; 6],
     pub device_name: String,
@@ -15,4 +15,3 @@ pub struct MDNSDeviceInformation {
     pub vendor_id: u16,
     pub product_id: u16,
 }
-

@@ -1,5 +1,5 @@
+use matter::mdns::device_information::DeviceInformation;
 use matter::mdns::enums::{CommissionState, DeviceType};
-use matter::mdns::mdns_device_information::MDNSDeviceInformation;
 use matter::session::protocol::interaction;
 use matter::session::protocol::interaction::cluster;
 use matter::session::protocol::interaction::cluster::basic_information::BasicInformationCluster;
@@ -23,11 +23,11 @@ fn main() {
             index: 0x10,
             do_custom: true,
         }; // Eth   en7
-        ip = Ipv6Addr::from_str("fe80::457:b3cc:da39:9caf").unwrap();
+        ip = Ipv6Addr::from_str("fe80::8f8:f223:d1c0:5e05").unwrap();
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
-    let device_information = MDNSDeviceInformation {
+    let device_information = DeviceInformation {
         ip,
         mac,
         device_name: "thermostat".to_string(),
@@ -38,7 +38,7 @@ fn main() {
         product_id: 0x8000,
     };
 
-    let mut device = Device::new();
+    let mut device = Device::new(device_information);
     device.insert(0, BasicInformation, BasicInformationCluster::new());
     device.insert(0, GeneralCommissioning, GeneralCommissioningCluster::new());
     device.insert(0, NetworkCommissioning, NetworkCommissioningCluster::new());
@@ -50,5 +50,5 @@ fn main() {
     device.modify_cluster::<NetworkCommissioningCluster>(0, NetworkCommissioning, |cluster| {
         cluster.connect(); // sample function call of [NetworkCommissioningCluster].
     });
-    matter::start(device_information, interface, device); // TODO: return a sender for modifications.
+    matter::start(interface, device); // TODO: return a sender for modifications.
 }
