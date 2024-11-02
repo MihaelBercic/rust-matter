@@ -13,6 +13,7 @@ use crate::session::protocol::process_secure_channel;
 use crate::session::protocol::protocol_id::ProtocolID;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::utils::{generic_error, MatterError};
+use crate::SharedDevice;
 use crate::{log_error, log_info, perform_validity_checks, SESSIONS};
 use byteorder::WriteBytesExt;
 use std::sync::mpsc::{Receiver, Sender};
@@ -34,7 +35,11 @@ pub mod session;
 pub use device::*;
 
 /// Message processing thread
-pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
+pub(crate) fn start_processing_thread(
+    receiver: Receiver<NetworkMessage>,
+    outgoing_sender: Sender<NetworkMessage>,
+    device: SharedDevice,
+) -> JoinHandle<()> {
     thread::Builder::new()
         .name("Processing thread".to_string())
         .stack_size(50 * 1024)
@@ -46,7 +51,7 @@ pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoi
                         log_error!("Failed validity checks...");
                         continue;
                     }
-                    if let Err(error) = process_message(network_message, &outgoing_sender) {
+                    if let Err(error) = process_message(network_message, &outgoing_sender, device.clone()) {
                         log_error!("Unable to process message: {:?}", error);
                     }
                 }
@@ -56,7 +61,7 @@ pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoi
         .expect("Unable to start processing thread...")
 }
 
-fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>) -> Result<(), MatterError> {
+fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>, device: SharedDevice) -> Result<(), MatterError> {
     let mut matter_message = network_message.message;
     let Ok(session_map) = &mut SESSIONS.lock() else {
         return Err(generic_error("Unable to obtain active sessions map!"));
@@ -83,9 +88,11 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         &protocol_message.protocol_id,
         debug_opcode
     );
+    let mut device = device.lock().unwrap();
+
     let mut builder = match protocol_message.protocol_id {
         ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session),
-        ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message, session),
+        ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message, session, &mut device),
         ProtocolID::ProtocolBdx => todo!("Not yet implemented"),
         ProtocolID::ProtocolUserDirectedCommissioning => todo!("Not yet implemented"),
         ProtocolID::ProtocolForTesting => todo!("Not yet implemented"),

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     log_debug,
+    mdns::device_information::DeviceInformation,
     session::protocol::interaction::{
         enums::{GlobalStatusCode, QueryParameter},
         information_blocks::{
@@ -22,12 +23,14 @@ use super::{
 
 pub struct Device {
     pub endpoints_map: HashMap<u16, HashMap<u32, Box<dyn ClusterImplementation + Send>>>,
+    pub information: DeviceInformation,
 }
 
 impl Device {
-    pub fn new() -> Self {
+    pub fn new(device_information: DeviceInformation) -> Self {
         Self {
             endpoints_map: Default::default(),
+            information: device_information,
         }
     }
 
