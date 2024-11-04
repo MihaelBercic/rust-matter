@@ -7,8 +7,31 @@
 
 # Matter protocol implementation in Rust
 
-<div style="text-align:center; text-transform:uppercase; font-size: 11px; font-weight: bold"> Documentation is a work in progress...</div>
 
+## Simple example (preview)
+```rust
+let device_information = DeviceInformation {
+    ip,
+    mac,
+    device_name: "thermostat".to_string(),
+    device_type: DeviceType::Light,
+    vendor_id: 0xFFF1,
+    product_id: 0x8000,
+};
+
+let mut device = Device::new(device_information);
+device.insert(1, OnOff, cluster::on_off::OnOffCluster::new());
+let receiver = matter::start(interface, device);
+loop {
+    let event = receiver.recv();
+    match event {
+        OnOff::On => led_pin.enable(),
+        OnOff::Off => led_pin.disable()
+        _ => log_info!("We're ignoring the rest for now")
+    }
+}
+
+```
 
 ## Progress
 _Not all TODOs are listed due to the nature, size and complexity of the protocol._
