@@ -1,4 +1,5 @@
 use crate::log_info;
+use crate::mdns::device_information::DeviceInformation;
 use crate::session::protocol::interaction::cluster::network_info::NetworkInfo;
 use crate::session::protocol::interaction::cluster::{ClusterImplementation, NetworkCommissioningStatus};
 use crate::session::protocol::interaction::enums::QueryParameter;
@@ -30,13 +31,22 @@ impl NetworkCommissioningCluster {
             max_networks: Attribute { id: 0x0000, value: 1 },
             networks: Attribute {
                 id: 0x0001,
-                value: vec![NetworkInfo { network_id: vec![0, 2, 3, 1, 1, 3, 5, 53, 3, 201, 3, 3, 2, 19], connected: true }],
+                value: vec![NetworkInfo {
+                    network_id: vec![0, 2, 3, 1, 1, 3, 5, 53, 3, 201, 3, 3, 2, 19],
+                    connected: true,
+                }],
             },
             scan_max_seconds: Attribute { id: 0x0002, value: 60 },
             connect_max_seconds: Attribute { id: 0x0003, value: 60 },
             interface_enabled: Attribute { id: 0, value: true },
-            last_networking_status: Attribute { id: 0, value: NetworkCommissioningStatus::Success },
-            last_network_id: Attribute { id: 0, value: vec![12, 12, 3, 120, 0, 03, 0, 01, 20, 3] },
+            last_networking_status: Attribute {
+                id: 0,
+                value: NetworkCommissioningStatus::Success,
+            },
+            last_network_id: Attribute {
+                id: 0,
+                value: vec![12, 12, 3, 120, 0, 03, 0, 01, 20, 3],
+            },
             last_connect_error: Attribute { id: 0, value: 0 },
         }
     }
@@ -71,7 +81,7 @@ impl ClusterImplementation for NetworkCommissioningCluster {
                     0x0005 => self.last_networking_status.clone().into(),
                     0x0006 => self.last_network_id.clone().into(),
                     0x0007 => self.last_connect_error.clone().into(),
-                    _ => Attribute { id: 65532, value: 1 }.into()
+                    _ => Attribute { id: 65532, value: 1 }.into(),
                 }]
             }
         }
@@ -81,8 +91,7 @@ impl ClusterImplementation for NetworkCommissioningCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut DeviceInformation) -> Vec<InvokeResponse> {
         todo!()
     }
 }
-

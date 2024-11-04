@@ -1,7 +1,8 @@
+#[derive(Debug)]
 pub struct FabricDescriptor {
-    root_public_key: Vec<u8>,
-    vendor_id: u16,
-    fabric_id: u64,
-    node_id: u64,
-    label: String,
+    pub root_public_key: Vec<u8>,
+    pub vendor_id: u16,
+    pub fabric_id: u64,
+    pub node_id: u64,
+    pub label: String,
 }

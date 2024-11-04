@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem::take};
 
 use crate::{
     log_debug,
@@ -116,8 +116,15 @@ impl Device {
         match command_path.endpoint_id {
             QueryParameter::Wildcard => {
                 let mut vec = vec![];
+
                 for (endpoint_id, cluster_map) in &mut self.endpoints_map {
-                    vec.extend(Self::invoke_cluster(cluster_map, *endpoint_id, command.clone(), session))
+                    vec.extend(Self::invoke_cluster(
+                        cluster_map,
+                        *endpoint_id,
+                        command.clone(),
+                        session,
+                        &mut self.information,
+                    ))
                 }
                 vec
             }
@@ -125,7 +132,7 @@ impl Device {
                 let mut cluster_map = self.endpoints_map.get_mut(&endpoint_id);
                 let mut vec = vec![];
                 if let Some(cluster_map) = cluster_map {
-                    vec.extend(Self::invoke_cluster(cluster_map, endpoint_id, command, session))
+                    vec.extend(Self::invoke_cluster(cluster_map, endpoint_id, command, session, &mut self.information))
                 } else {
                     vec.push(InvokeResponse {
                         status: Some(CommandStatus {
@@ -189,13 +196,14 @@ impl Device {
         endpoint_id: u16,
         command: CommandData,
         session: &mut Session,
+        information: &mut DeviceInformation,
     ) -> Vec<InvokeResponse> {
         let mut vec = vec![];
         let command_path = command.path.clone();
         match command_path.cluster_id {
             QueryParameter::Wildcard => {
                 for (cluster_id, cluster) in cluster_map {
-                    let mut to_add = cluster.invoke_command(command.clone(), session);
+                    let mut to_add = cluster.invoke_command(command.clone(), session, information);
                     for a_r in &mut to_add {
                         a_r.set_cluster_id(*cluster_id);
                         a_r.set_endpoint_id(endpoint_id);
@@ -205,7 +213,7 @@ impl Device {
             }
             QueryParameter::Specific(cluster_id) => {
                 if let Some(cluster) = cluster_map.get_mut(&cluster_id) {
-                    let mut to_add = cluster.invoke_command(command.clone(), session);
+                    let mut to_add = cluster.invoke_command(command.clone(), session, information);
                     for a_r in &mut to_add {
                         a_r.set_cluster_id(cluster_id);
                         a_r.set_endpoint_id(endpoint_id);

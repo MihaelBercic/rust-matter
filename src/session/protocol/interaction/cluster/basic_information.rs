@@ -1,3 +1,4 @@
+use crate::mdns::device_information::DeviceInformation;
 use crate::session::protocol::interaction::cluster::capability_minima::CapabilityMinima;
 use crate::session::protocol::interaction::cluster::{BasicInformationAttributes, ClusterImplementation, ProductAppearance};
 use crate::session::protocol::interaction::enums::QueryParameter;
@@ -5,6 +6,7 @@ use crate::session::protocol::interaction::information_blocks::attribute::report
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, InvokeResponse};
 use crate::session::session::Session;
+use crate::session::Device;
 use std::any::Any;
 
 ///
@@ -39,16 +41,34 @@ impl BasicInformationCluster {
     pub fn new() -> Self {
         Self {
             data_model_revision: Attribute { id: 0x0000, value: 1 },
-            vendor_name: Attribute { id: 0x0001, value: "Mihael Berčič".to_string() },
+            vendor_name: Attribute {
+                id: 0x0001,
+                value: "Mihael Berčič".to_string(),
+            },
             vendor_id: Attribute { id: 0x0002, value: 0xFFF1 },
-            product_name: Attribute { id: 0x0003, value: "New Thermo".to_string() },
+            product_name: Attribute {
+                id: 0x0003,
+                value: "New Thermo".to_string(),
+            },
             product_id: Attribute { id: 0x0004, value: 0x8000 },
-            node_label: Attribute { id: 0x0005, value: "New Thermo".to_string() },
-            location: Attribute { id: 0x0006, value: "Living Room".to_string() },
+            node_label: Attribute {
+                id: 0x0005,
+                value: "New Thermo".to_string(),
+            },
+            location: Attribute {
+                id: 0x0006,
+                value: "Living Room".to_string(),
+            },
             hardware_version: Attribute { id: 0x0007, value: 1 },
-            hardware_version_string: Attribute { id: 0x0008, value: "1".to_string() },
+            hardware_version_string: Attribute {
+                id: 0x0008,
+                value: "1".to_string(),
+            },
             software_version: Attribute { id: 0x0009, value: 1 },
-            software_version_string: Attribute { id: 0x000A, value: "1".to_string() },
+            software_version_string: Attribute {
+                id: 0x000A,
+                value: "1".to_string(),
+            },
             manufacturing_date: None,
             part_number: None,
             product_url: None,
@@ -58,7 +78,10 @@ impl BasicInformationCluster {
             reachable: None,
             unique_id: None,
             product_appearance: None,
-            capability_minima: Attribute { id: 0x0013, value: Default::default() },
+            capability_minima: Attribute {
+                id: 0x0013,
+                value: Default::default(),
+            },
         }
     }
 }
@@ -94,31 +117,29 @@ impl ClusterImplementation for BasicInformationCluster {
             }
             QueryParameter::Specific(id) => {
                 let attribute = BasicInformationAttributes::try_from(id).unwrap();
-                let mut vec: Vec<AttributeReport> = vec![
-                    match attribute {
-                        BasicInformationAttributes::DataModelRevision => self.data_model_revision.clone().into(),
-                        BasicInformationAttributes::VendorName => self.vendor_name.clone().into(),
-                        BasicInformationAttributes::VendorID => self.vendor_id.clone().into(),
-                        BasicInformationAttributes::ProductName => self.product_name.clone().into(),
-                        BasicInformationAttributes::ProductID => self.product_id.clone().into(),
-                        BasicInformationAttributes::NodeLabel => self.node_label.clone().into(),
-                        BasicInformationAttributes::Location => self.location.clone().into(),
-                        BasicInformationAttributes::HardwareVersion => self.hardware_version.clone().into(),
-                        BasicInformationAttributes::HardwareVersionString => self.hardware_version_string.clone().into(),
-                        BasicInformationAttributes::SoftwareVersion => self.software_version.clone().into(),
-                        BasicInformationAttributes::SoftwareVersionString => self.software_version_string.clone().into(),
-                        BasicInformationAttributes::ManufacturingDate => self.manufacturing_date.clone().into(),
-                        BasicInformationAttributes::PartNumber => self.part_number.clone().into(),
-                        BasicInformationAttributes::ProductURL => self.product_url.clone().into(),
-                        BasicInformationAttributes::ProductLabel => self.product_label.clone().into(),
-                        BasicInformationAttributes::SerialNumber => self.serial_number.clone().into(),
-                        BasicInformationAttributes::LocalConfigDisabled => self.local_config_disabled.clone().into(),
-                        BasicInformationAttributes::Reachable => self.reachable.clone().into(),
-                        BasicInformationAttributes::UniqueID => self.unique_id.clone().into(),
-                        BasicInformationAttributes::CapabilityMinima => self.capability_minima.clone().into(),
-                        BasicInformationAttributes::ProductAppearance => panic!("Product Appearnce not yet implemented")
-                    }
-                ];
+                let mut vec: Vec<AttributeReport> = vec![match attribute {
+                    BasicInformationAttributes::DataModelRevision => self.data_model_revision.clone().into(),
+                    BasicInformationAttributes::VendorName => self.vendor_name.clone().into(),
+                    BasicInformationAttributes::VendorID => self.vendor_id.clone().into(),
+                    BasicInformationAttributes::ProductName => self.product_name.clone().into(),
+                    BasicInformationAttributes::ProductID => self.product_id.clone().into(),
+                    BasicInformationAttributes::NodeLabel => self.node_label.clone().into(),
+                    BasicInformationAttributes::Location => self.location.clone().into(),
+                    BasicInformationAttributes::HardwareVersion => self.hardware_version.clone().into(),
+                    BasicInformationAttributes::HardwareVersionString => self.hardware_version_string.clone().into(),
+                    BasicInformationAttributes::SoftwareVersion => self.software_version.clone().into(),
+                    BasicInformationAttributes::SoftwareVersionString => self.software_version_string.clone().into(),
+                    BasicInformationAttributes::ManufacturingDate => self.manufacturing_date.clone().into(),
+                    BasicInformationAttributes::PartNumber => self.part_number.clone().into(),
+                    BasicInformationAttributes::ProductURL => self.product_url.clone().into(),
+                    BasicInformationAttributes::ProductLabel => self.product_label.clone().into(),
+                    BasicInformationAttributes::SerialNumber => self.serial_number.clone().into(),
+                    BasicInformationAttributes::LocalConfigDisabled => self.local_config_disabled.clone().into(),
+                    BasicInformationAttributes::Reachable => self.reachable.clone().into(),
+                    BasicInformationAttributes::UniqueID => self.unique_id.clone().into(),
+                    BasicInformationAttributes::CapabilityMinima => self.capability_minima.clone().into(),
+                    BasicInformationAttributes::ProductAppearance => panic!("Product Appearnce not yet implemented"),
+                }];
                 for x in &mut vec {
                     x.set_attribute_id(id);
                 }
@@ -131,8 +152,7 @@ impl ClusterImplementation for BasicInformationCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut DeviceInformation) -> Vec<InvokeResponse> {
         todo!()
     }
 }
-

@@ -9,47 +9,78 @@
 
 <div style="text-align:center; text-transform:uppercase; font-size: 11px; font-weight: bold"> Documentation is a work in progress...</div>
 
-## Active Development
 
-### Interaction Protocol [Currently in development]
-- [x] Attribute Read & Response
-- [x] Command Invoke & Response
-- [x] p256 encryption
-- [x] ASN.1 Encoding
-- [x] x509 Certification request
-- [x] Commissioning
-- [ ] MDNS advertisement change after commissioning
-- [ ] Efficient rewrite `Currently working on`
+## Progress
+_Not all TODOs are listed due to the nature, size and complexity of the protocol._
 
-### Session initialisation
-- [x] Insecure session computation (PASE)
-- [x] Secure session encryption
 
-### TLV
-- [x] Encoding
-- [x] Decoding
-- [x] Compression
+```rust
+✅ - Fully implemented
+🏗️ - Currently working on
+```
 
-### Message Protocol
-- [x] Matter message builder
-- [x] Protocol message builder
+ **_🏗️ Interaction Protocol_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Attribute Read & Response |
+| ✅ | Command Invoke & Response |
+| ✅ | p256 encryption |
+| ✅ | ASN.1 Encoding |
+| ✅ | x509 Certification request |
+| ✅ | Commissioning |
+| ✅ | MDNS advertisement change after commissioning |
+| 🏗️ | MDNS efficiency improvements
+| 🏗️ | Efficiency oriented rewrite
 
-### Discovery
-- [x] MulticastSocket
-- [x] mDNS Packet Header
-- [x] mDNS Packet Label compression
-- [x] mDNS Packet Records
-- [x] mDNS Packet building
-- [x] mDNS Service advertising
+---
 
-### Cryptographic Primitives
-- [x] Deterministic Random Bit Generator (DRBG)
-- [x] True Random Number Generator (TRNG)
-- [x] Keyed hash - HMAC
-- [x] SHA 256 hashing
-- [x] Public Key cryptography (NIST P256)
-- [x] Message signing
-- [x] Message signature verification
-- [x] ECDH
-- [x] Certificate validation
-- [x] **SPAKE2+** `complex`
+**_✅ Session initialisation_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Insecure session computation (PASE) |
+| ✅ | Secure session encryption |
+
+---
+
+**_✅ TLV_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Encoding |
+| ✅ | Decoding |
+| ✅ | Compression |
+
+---
+
+**_✅ Message Protocol_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Matter message builder |
+| ✅ | Protocol message builder |
+
+---
+
+**_✅ Discovery_**
+| Status ||
+| --- | ---------------------|
+| ✅ | MulticastSocket |
+| ✅ | mDNS Packet Header |
+| ✅ | mDNS Packet Label compression |
+| ✅ | mDNS Packet Records |
+| ✅ | mDNS Packet building |
+| ✅ | mDNS Service advertising |
+
+---
+
+**_✅ Cryptographic Primitives_**
+| Status ||
+| --- | ---------------------|
+| ✅ | **SPAKE2+** _this was time consuming_ |
+| ✅ | Deterministic Random Bit Generator (DRBG) |
+| ✅ | True Random Number Generator (TRNG) |
+| ✅ | Keyed hash - HMAC |
+| ✅ | SHA 256 hashing |
+| ✅ | Public Key cryptography (NIST P256) |
+| ✅ | Message signing |
+| ✅ | Message signature verification |
+| ✅ | ECDH |
+| ✅ | Certificate validation |

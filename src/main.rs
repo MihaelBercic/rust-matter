@@ -23,7 +23,7 @@ fn main() {
             index: 0x10,
             do_custom: true,
         }; // Eth   en7
-        ip = Ipv6Addr::from_str("fe80::8f8:f223:d1c0:5e05").unwrap();
+        ip = Ipv6Addr::from_str("fe80::4a7:ebae:b5b1:519b").unwrap();
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];

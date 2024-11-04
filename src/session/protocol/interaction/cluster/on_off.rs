@@ -1,8 +1,10 @@
+use crate::mdns::device_information::DeviceInformation;
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, InvokeResponse};
 use crate::session::session::Session;
+use crate::session::Device;
 use std::any::Any;
 
 ///
@@ -16,10 +18,7 @@ pub struct OnOffCluster {
 impl OnOffCluster {
     pub fn new() -> Self {
         Self {
-            is_on: Attribute {
-                id: 0,
-                value: false,
-            },
+            is_on: Attribute { id: 0, value: false },
         }
     }
 }
@@ -33,7 +32,7 @@ impl ClusterImplementation for OnOffCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut DeviceInformation) -> Vec<InvokeResponse> {
         todo!("Invoking OnOff command!")
     }
 }
