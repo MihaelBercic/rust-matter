@@ -13,7 +13,7 @@
 let device_information = DeviceInformation {
     ip,
     mac,
-    device_name: "thermostat".to_string(),
+    device_name: "Matter Bulb".to_string(),
     device_type: DeviceType::Light,
     vendor_id: 0xFFF1,
     product_id: 0x8000,
