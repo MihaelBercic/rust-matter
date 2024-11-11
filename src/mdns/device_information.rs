@@ -14,4 +14,5 @@ pub struct DeviceInformation {
     pub commission_state: CommissionState,
     pub vendor_id: u16,
     pub product_id: u16,
+    // pub advertise: bool,
 }

@@ -190,7 +190,7 @@ impl OperationalCredentialsCluster {
         responses
     }
 
-    fn add_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+    fn add_noc(&mut self, data: Option<Tlv>, information: &mut DeviceInformation) -> Vec<InvokeResponse> {
         // check if valid key
         // check if can save fabric
         // store NOC
@@ -228,6 +228,8 @@ impl OperationalCredentialsCluster {
             let node_id = hex::encode_upper(new_fabric.node_id.to_be_bytes());
             let instance_name = format!("{}-{}", compressed_as_hex, node_id);
             log_info!("Will start advertising _matterc._tcp with name {}", instance_name);
+            information.commission_state = CommissionState::Commissioned;
+
             responses.push(InvokeResponse {
                 command: Some(CommandData {
                     path: CommandPath::new(Specific(0x08)),
@@ -300,7 +302,7 @@ impl ClusterImplementation for OperationalCredentialsCluster {
                 0x00 => self.attestation_request(data, session),
                 0x02 => self.certificate_chain_request(data),
                 0x04 => self.csr_request(data, session),
-                0x06 => self.add_noc(data),
+                0x06 => self.add_noc(data, information),
                 0x07 => self.update_noc(data),
                 0x09 => self.update_fabric_label(data),
                 0x0A => self.remove_fabric(data),
