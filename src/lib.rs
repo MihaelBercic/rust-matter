@@ -54,6 +54,7 @@ pub fn start(interface: NetworkInterface, device: Device) {
     start_processing_thread(processing_receiver, outgoing_sender, shared_device.clone())
         .join()
         .expect("Unable to start the thread for processing messages...");
+    // TODO: remove join, return channel for cluster modification.
 }
 
 fn perform_validity_checks(message: &MatterMessage) -> bool {

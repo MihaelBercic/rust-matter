@@ -228,6 +228,7 @@ impl OperationalCredentialsCluster {
             let node_id = hex::encode_upper(new_fabric.node_id.to_be_bytes());
             let instance_name = format!("{}-{}", compressed_as_hex, node_id);
             log_info!("Will start advertising _matterc._tcp with name {}", instance_name);
+            information.instance_name = instance_name;
             information.commission_state = CommissionState::Commissioned;
 
             responses.push(InvokeResponse {

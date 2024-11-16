@@ -29,13 +29,16 @@ fn main() {
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
     let device_information = DeviceInformation {
         ip,
-        mac,
+        mac: mac.clone(),
         device_name: "thermostat".to_string(),
         device_type: DeviceType::Light,
         discriminator: DeviceType::Thermostat as u16,
         commission_state: CommissionState::NotCommissioned,
         vendor_id: 0xFFF1,
         product_id: 0x8000,
+        advertise: true,
+        instance_name: format!("{}", hex::encode(mac)),
+        host_name: "".to_string(),
     };
 
     let mut device = Device::new(device_information);

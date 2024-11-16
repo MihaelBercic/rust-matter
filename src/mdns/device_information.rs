@@ -10,9 +10,11 @@ pub struct DeviceInformation {
     pub mac: [u8; 6],
     pub device_name: String,
     pub device_type: DeviceType,
-    pub discriminator: u16, // Still don't know how this is supposed to be computed.
+    pub discriminator: u16,
     pub commission_state: CommissionState,
     pub vendor_id: u16,
     pub product_id: u16,
-    // pub advertise: bool,
+    pub advertise: bool,
+    pub instance_name: String,
+    pub host_name: String,
 }

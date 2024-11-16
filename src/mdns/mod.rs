@@ -111,10 +111,10 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
     };
 
     let mac = hex::encode_upper(&device.mac);
-    let host_name = format!("{}.{}", mac, LOCAL_DOMAIN);
+    let host_name = format!("{}.{}", device.instance_name.clone(), LOCAL_DOMAIN);
 
-    let random: u64 = 0x705E698FD7D59D90;
-    let instance_name = format!("{}.{}.{}", hex::encode_upper(random.to_le_bytes()), protocol, LOCAL_DOMAIN);
+    // let random: u64 = 0x705E698FD7D59D90;
+    let instance_name = format!("{}.{}.{}", device.instance_name, protocol, LOCAL_DOMAIN);
     log_debug!("Instance name: {}", &instance_name);
 
     let domain_bytes: Vec<u8> = PTRRecord { domain: &instance_name }.into();
