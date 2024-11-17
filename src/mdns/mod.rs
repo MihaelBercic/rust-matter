@@ -1,6 +1,6 @@
 use crate::crypto::random_bits;
 use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, LOCAL_DOMAIN, MDNS_PORT};
-use crate::mdns::device_information::DeviceInformation;
+use crate::mdns::device_information::Details;
 use crate::mdns::multicast_socket::MulticastSocket;
 use crate::mdns::packet::MDNSPacket;
 use crate::mdns::packet_header::MDNSPacketHeader;
@@ -45,7 +45,7 @@ pub fn start_advertising(udp: &UdpSocket, shared_device: SharedDevice, interface
     let mdns_dst = format!("[{}%{}]:{}", IPV6_MULTICAST_ADDRESS, interface.index, MDNS_PORT);
 
     let device = shared_device.lock().unwrap();
-    let information = &device.information;
+    let information = &device.details;
     let mac = hex::encode_upper(&information.mac);
     let host_name = format!("{}.{}", mac, LOCAL_DOMAIN);
     let udp_port = udp.local_addr().unwrap().port();
@@ -102,7 +102,7 @@ pub fn start_advertising(udp: &UdpSocket, shared_device: SharedDevice, interface
 }
 
 fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_port: u16) -> (bool, Vec<u8>) {
-    let device = &device.information;
+    let device = &device.details;
 
     let protocol = if device.commission_state == CommissionState::NotCommissioned {
         NON_COMMISSIONED_PROTOCOL

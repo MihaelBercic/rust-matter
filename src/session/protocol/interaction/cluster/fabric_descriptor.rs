@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FabricDescriptor {
     pub root_public_key: Vec<u8>,
     pub vendor_id: u16,

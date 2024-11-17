@@ -1,6 +1,6 @@
 #![allow(unused)]
 #![allow(dead_code)]
-use crate::mdns::device_information::DeviceInformation;
+use crate::mdns::device_information::Details;
 use crate::network::network_message::NetworkMessage;
 use crate::network::{start_listening_thread, start_outgoing_thread};
 use crate::session::counters::increase_counter;
@@ -93,7 +93,7 @@ pub struct NetworkInterface {
 }
 
 fn compute_pairing_code(device: &Device) {
-    let device = &device.information;
+    let device = &device.details;
     let passcode: [u8; 4] = random_bits(27).try_into().unwrap();
     let passcode = u32::from_be_bytes(passcode.clone());
 

@@ -2,7 +2,7 @@ use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
 use crate::crypto::constants::CRYPTO_PUBLIC_KEY_SIZE_BYTES;
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::{self, kdf, sign_message_with_signature};
-use crate::mdns::device_information::DeviceInformation;
+use crate::mdns::device_information::{Details, GroupKey, GroupKeySecurityPolicy};
 use crate::mdns::enums::CommissionState;
 use crate::mdns::enums::DeviceType::Thermostat;
 use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
@@ -190,7 +190,7 @@ impl OperationalCredentialsCluster {
         responses
     }
 
-    fn add_noc(&mut self, data: Option<Tlv>, information: &mut DeviceInformation) -> Vec<InvokeResponse> {
+    fn add_noc(&mut self, data: Option<Tlv>, information: &mut Details) -> Vec<InvokeResponse> {
         // check if valid key
         // check if can save fabric
         // store NOC
@@ -226,10 +226,22 @@ impl OperationalCredentialsCluster {
             let compressed_fabric_id = key_derivation(&root_cert.ec_public_key[1..], Some(&fabric_id), b"CompressedFabric", 64);
             let compressed_as_hex = hex::encode_upper(&compressed_fabric_id);
             let node_id = hex::encode_upper(new_fabric.node_id.to_be_bytes());
-            let instance_name = format!("{}-{}", compressed_as_hex, node_id);
-            log_info!("Will start advertising _matterc._tcp with name {}", instance_name);
+            let instance_name = format!("{}-{}", compressed_as_hex.clone(), node_id);
             information.instance_name = instance_name;
             information.commission_state = CommissionState::Commissioned;
+            information.nocs.push(private_key.clone());
+            information.trusted_root_certificates.push(self.pending_root_cert.clone());
+            self.fabrics.value.push(new_fabric.clone());
+
+            let group_key = GroupKey {
+                id: 0,
+                security_policy: GroupKeySecurityPolicy::TrustFirst,
+                epoch_key: parameters.ipk_value,
+                epoch_start_time: 0,
+            };
+            information.group_keys.push(group_key);
+            information.compressed_fabric_ids.push(compressed_fabric_id.clone());
+            information.fabrics.push(new_fabric);
 
             responses.push(InvokeResponse {
                 command: Some(CommandData {
@@ -251,7 +263,7 @@ impl OperationalCredentialsCluster {
     fn remove_fabric(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn add_trustexd_root_certificate(&mut self, data: Option<Tlv>, information: &mut DeviceInformation) -> Vec<InvokeResponse> {
+    fn add_trustexd_root_certificate(&mut self, data: Option<Tlv>, information: &mut Details) -> Vec<InvokeResponse> {
         if let Some(data) = data {
             if let Structure(children) = data.control.element_type {
                 for child in children {
@@ -293,7 +305,7 @@ impl ClusterImplementation for OperationalCredentialsCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session, information: &mut DeviceInformation) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, information: &mut Details) -> Vec<InvokeResponse> {
         let data = command.fields;
         match command.path.command_id {
             QueryParameter::Wildcard => {

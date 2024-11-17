@@ -91,7 +91,7 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
     let mut device = device.lock().unwrap();
 
     let mut builder = match protocol_message.protocol_id {
-        ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session),
+        ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session, &mut device),
         ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message, session, &mut device),
         ProtocolID::ProtocolBdx => todo!("Not yet implemented"),
         ProtocolID::ProtocolUserDirectedCommissioning => todo!("Not yet implemented"),

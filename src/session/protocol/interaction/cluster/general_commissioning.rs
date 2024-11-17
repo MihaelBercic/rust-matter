@@ -1,5 +1,5 @@
 use crate::log_info;
-use crate::mdns::device_information::DeviceInformation;
+use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::{BasicCommissioningInfo, ClusterImplementation, RegulatoryLocationType};
 use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::enums::QueryParameter::Specific;
@@ -119,7 +119,7 @@ impl ClusterImplementation for GeneralCommissioningCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device_information: &mut DeviceInformation) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device_information: &mut Details) -> Vec<InvokeResponse> {
         let command_path = command.path;
         let command_id = command_path.command_id;
         let mut vec = vec![];

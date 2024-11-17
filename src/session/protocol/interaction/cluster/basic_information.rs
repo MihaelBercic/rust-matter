@@ -1,4 +1,4 @@
-use crate::mdns::device_information::DeviceInformation;
+use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::capability_minima::CapabilityMinima;
 use crate::session::protocol::interaction::cluster::{BasicInformationAttributes, ClusterImplementation, ProductAppearance};
 use crate::session::protocol::interaction::enums::QueryParameter;
@@ -152,7 +152,7 @@ impl ClusterImplementation for BasicInformationCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut DeviceInformation) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut Details) -> Vec<InvokeResponse> {
         todo!()
     }
 }

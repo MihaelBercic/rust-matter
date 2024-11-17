@@ -2,7 +2,7 @@ use std::{collections::HashMap, mem::take};
 
 use crate::{
     log_debug,
-    mdns::device_information::DeviceInformation,
+    mdns::device_information::Details,
     session::protocol::interaction::{
         enums::{GlobalStatusCode, QueryParameter},
         information_blocks::{
@@ -23,14 +23,14 @@ use super::{
 
 pub struct Device {
     pub endpoints_map: HashMap<u16, HashMap<u32, Box<dyn ClusterImplementation + Send>>>,
-    pub information: DeviceInformation,
+    pub details: Details,
 }
 
 impl Device {
-    pub fn new(device_information: DeviceInformation) -> Self {
+    pub fn new(device_information: Details) -> Self {
         Self {
             endpoints_map: Default::default(),
-            information: device_information,
+            details: device_information,
         }
     }
 
@@ -123,7 +123,7 @@ impl Device {
                         *endpoint_id,
                         command.clone(),
                         session,
-                        &mut self.information,
+                        &mut self.details,
                     ))
                 }
                 vec
@@ -132,7 +132,7 @@ impl Device {
                 let mut cluster_map = self.endpoints_map.get_mut(&endpoint_id);
                 let mut vec = vec![];
                 if let Some(cluster_map) = cluster_map {
-                    vec.extend(Self::invoke_cluster(cluster_map, endpoint_id, command, session, &mut self.information))
+                    vec.extend(Self::invoke_cluster(cluster_map, endpoint_id, command, session, &mut self.details))
                 } else {
                     vec.push(InvokeResponse {
                         status: Some(CommandStatus {
@@ -196,7 +196,7 @@ impl Device {
         endpoint_id: u16,
         command: CommandData,
         session: &mut Session,
-        information: &mut DeviceInformation,
+        information: &mut Details,
     ) -> Vec<InvokeResponse> {
         let mut vec = vec![];
         let command_path = command.path.clone();

@@ -1,4 +1,4 @@
-use matter::mdns::device_information::DeviceInformation;
+use matter::mdns::device_information::Details;
 use matter::mdns::enums::{CommissionState, DeviceType};
 use matter::session::protocol::interaction;
 use matter::session::protocol::interaction::cluster;
@@ -27,7 +27,7 @@ fn main() {
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
-    let device_information = DeviceInformation {
+    let device_information = Details {
         ip,
         mac: mac.clone(),
         device_name: "thermostat".to_string(),
@@ -39,6 +39,11 @@ fn main() {
         advertise: true,
         instance_name: format!("{}", hex::encode(mac)),
         host_name: "".to_string(),
+        nocs: vec![],
+        trusted_root_certificates: vec![],
+        group_keys: vec![],
+        compressed_fabric_ids: vec![],
+        fabrics: vec![],
     };
 
     let mut device = Device::new(device_information);
