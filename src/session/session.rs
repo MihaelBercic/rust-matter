@@ -28,6 +28,7 @@ pub struct Session {
     pub message_reception_state: MessageReceptionState,
     pub fabric_index: u64,
     pub peer_node_id: MatterDestinationID,
+    pub local_node_id: u64,
     pub resumption_id: u32,
     pub active_timestamp: u128,
     pub session_idle_interval: u16,
@@ -57,6 +58,7 @@ impl Default for Session {
             },
             fabric_index: 0,
             peer_node_id: MatterDestinationID::Node(0),
+            local_node_id: 0,
             resumption_id: 0,
             active_timestamp: 0,
             session_idle_interval: 500,
@@ -69,7 +71,9 @@ impl Default for Session {
 }
 impl Session {
     pub fn decode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
-        if matter_message.header.is_insecure_unicast_session() { return Ok(()); }
+        if matter_message.header.is_insecure_unicast_session() {
+            return Ok(());
+        }
         let encrypted = &matter_message.payload;
         let header = &matter_message.header;
         let mut nonce = vec![];
@@ -79,17 +83,22 @@ impl Session {
         nonce.write_u64::<LE>(source_node_id)?;
 
         let additional = &header.to_bytes();
-        let payload = Payload { msg: encrypted, aad: &header.to_bytes() };
+        let payload = Payload {
+            msg: encrypted,
+            aad: &header.to_bytes(),
+        };
         let decrypted = decrypt(&self.prover_key, payload, &nonce.try_into()?);
         let Ok(decrypted) = decrypted else {
-            return Err(crypto_error("Unable to decrypt the message."))
+            return Err(crypto_error("Unable to decrypt the message."));
         };
         matter_message.payload = decrypted;
         Ok(())
     }
 
     pub fn encode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
-        if matter_message.header.is_insecure_unicast_session() { return Ok(()); }
+        if matter_message.header.is_insecure_unicast_session() {
+            return Ok(());
+        }
         let encrypted = &matter_message.payload;
         let header = &matter_message.header;
         let mut nonce = vec![];
@@ -99,10 +108,13 @@ impl Session {
         nonce.write_u64::<LE>(source_node_id)?;
 
         let additional = &header.to_bytes();
-        let payload = Payload { msg: encrypted, aad: &header.to_bytes() };
+        let payload = Payload {
+            msg: encrypted,
+            aad: &header.to_bytes(),
+        };
         let encrypted = encrypt(&self.verifier_key, payload, &nonce.try_into()?);
         let Ok(encrypted) = encrypted else {
-            return Err(crypto_error("Unable to encrypt the message."))
+            return Err(crypto_error("Unable to encrypt the message."));
         };
         matter_message.payload = encrypted;
         Ok(())
@@ -123,7 +135,6 @@ b. SESSION_ACTIVE_INTERVAL          | SESSION_PARAM_SET
 c. SESSION_ACTIVE_THRESHOLD         | SESSION_PARAM_SET
 PeerActiveMode = bool <=> (now() - ActiveTimestamp) < SESSION_ACTIVE_THRESHOLD
  */
-
 
 #[derive(Debug, Clone)]
 pub struct SessionSetup {

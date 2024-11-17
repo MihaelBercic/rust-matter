@@ -1,9 +1,11 @@
+use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
 use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, InvokeResponse};
 use crate::session::session::Session;
+use crate::session::Device;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::{Array, Structure};
 use crate::tlv::tag::Tag;
@@ -70,7 +72,7 @@ impl ClusterImplementation for DescriptorCluster {
         todo!()
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut Details) -> Vec<InvokeResponse> {
         todo!()
     }
 }

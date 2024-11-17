@@ -1,5 +1,5 @@
+use matter::mdns::device_information::Details;
 use matter::mdns::enums::{CommissionState, DeviceType};
-use matter::mdns::mdns_device_information::MDNSDeviceInformation;
 use matter::session::protocol::interaction;
 use matter::session::protocol::interaction::cluster;
 use matter::session::protocol::interaction::cluster::basic_information::BasicInformationCluster;
@@ -23,22 +23,30 @@ fn main() {
             index: 0x10,
             do_custom: true,
         }; // Eth   en7
-        ip = Ipv6Addr::from_str("fe80::457:b3cc:da39:9caf").unwrap();
+        ip = Ipv6Addr::from_str("fe80::4a7:ebae:b5b1:519b").unwrap();
     }
 
     let mac: [u8; 6] = [0xFF, 0x32, 0x11, 0x4, 0x2, 0x99];
-    let device_information = MDNSDeviceInformation {
+    let device_information = Details {
         ip,
-        mac,
+        mac: mac.clone(),
         device_name: "thermostat".to_string(),
         device_type: DeviceType::Light,
         discriminator: DeviceType::Thermostat as u16,
         commission_state: CommissionState::NotCommissioned,
         vendor_id: 0xFFF1,
         product_id: 0x8000,
+        advertise: true,
+        instance_name: format!("{}", hex::encode(mac)),
+        host_name: "".to_string(),
+        nocs: vec![],
+        trusted_root_certificates: vec![],
+        group_keys: vec![],
+        compressed_fabric_ids: vec![],
+        fabrics: vec![],
     };
 
-    let mut device = Device::new();
+    let mut device = Device::new(device_information);
     device.insert(0, BasicInformation, BasicInformationCluster::new());
     device.insert(0, GeneralCommissioning, GeneralCommissioningCluster::new());
     device.insert(0, NetworkCommissioning, NetworkCommissioningCluster::new());
@@ -50,5 +58,5 @@ fn main() {
     device.modify_cluster::<NetworkCommissioningCluster>(0, NetworkCommissioning, |cluster| {
         cluster.connect(); // sample function call of [NetworkCommissioningCluster].
     });
-    matter::start(device_information, interface, device); // TODO: return a sender for modifications.
+    matter::start(interface, device); // TODO: return a sender for modifications.
 }

@@ -1,5 +1,9 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
-use crate::crypto::sign_message_with_signature;
+use crate::crypto::constants::CRYPTO_PUBLIC_KEY_SIZE_BYTES;
+use crate::crypto::kdf::key_derivation;
+use crate::crypto::{self, kdf, sign_message_with_signature};
+use crate::mdns::device_information::{Details, GroupKey, GroupKeySecurityPolicy};
+use crate::mdns::enums::CommissionState;
 use crate::mdns::enums::DeviceType::Thermostat;
 use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
@@ -14,13 +18,14 @@ use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::{Array, OctetString16, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
+use crate::tlv::tag_number;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
-use crate::utils::{bail_tlv, MatterError};
+use crate::utils::{bail_generic, bail_tlv, MatterError};
 use crate::{log_debug, log_info};
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
 use der::oid::AssociatedOid;
-use der::{Encode, FixedTag, Sequence, ValueOrd};
+use der::{Decode, Encode, FixedTag, Sequence, ValueOrd};
 use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
 use p256::NistP256;
 use sec1::DecodeEcPrivateKey;
@@ -58,7 +63,7 @@ pub struct OperationalCredentialsCluster {
     pub commissioned_fabrics: Attribute<u8>,
     pub trusted_root_certificates: Attribute<Vec<Vec<u8>>>,
     pub current_fabric_index: Attribute<u8>,
-    pub temporary_key_pair: Option<SigningKey>,
+    pub pending_key_pair: Option<SigningKey>,
     pub working_on: CertificateChainType,
     pub pending_root_cert: Vec<u8>,
 }
@@ -72,7 +77,7 @@ impl OperationalCredentialsCluster {
             commissioned_fabrics: Default::default(),
             trusted_root_certificates: Default::default(),
             current_fabric_index: Default::default(),
-            temporary_key_pair: None,
+            pending_key_pair: None,
             working_on: CertificateChainType::DAC,
             pending_root_cert: vec![],
         }
@@ -157,7 +162,7 @@ impl OperationalCredentialsCluster {
             let mut builder = RequestBuilder::new(subject, &key_pair).expect("Create CSR.");
             let csr = builder.build::<DerSignature>().unwrap().to_der().unwrap();
 
-            self.temporary_key_pair = Some(key_pair.clone());
+            self.pending_key_pair = Some(key_pair.clone());
             println!("Signature: {}", hex::encode(&csr));
             let elements = Tlv::simple(Structure(vec![
                 Tlv::new(csr.into(), ContextSpecific8, Tag::short(1)),
@@ -184,10 +189,60 @@ impl OperationalCredentialsCluster {
         }
         responses
     }
-    fn add_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+
+    fn add_noc(&mut self, data: Option<Tlv>, information: &mut Details) -> Vec<InvokeResponse> {
+        // check if valid key
+        // check if can save fabric
+        // store NOC
+        // store the fabric
+        // generate the group key
         let mut responses = vec![];
         if let Some(tlv) = data {
             let parameters = AddNocParameters::try_from(tlv).expect("Yeah should've parsed.");
+
+            let noc = MatterCertificate::try_from(&parameters.noc_value[..]).unwrap();
+            let Some(private_key) = &self.pending_key_pair else {
+                panic!("Missing key pair");
+            };
+
+            let public_key = private_key.verifying_key();
+            let pbk_bytes = public_key.to_sec1_bytes().to_vec();
+
+            if pbk_bytes != noc.ec_public_key {
+                panic!("Invalid public key... {} vs {}", hex::encode(pbk_bytes), hex::encode(noc.ec_public_key))
+            }
+
+            let root_cert = MatterCertificate::try_from(&self.pending_root_cert[..]).unwrap();
+
+            let new_fabric = FabricDescriptor {
+                root_public_key: root_cert.ec_public_key.clone().into(),
+                vendor_id: parameters.admin_vendor_id,
+                fabric_id: noc.subject.matter_fabric_id,
+                node_id: noc.subject.matter_node_id,
+                label: "Not sure".to_string(),
+            };
+            log_info!("Adding fabric {} with node id {}", new_fabric.fabric_id, new_fabric.node_id);
+            let fabric_id = noc.subject.matter_fabric_id.to_be_bytes();
+            let compressed_fabric_id = key_derivation(&root_cert.ec_public_key[1..], Some(&fabric_id), b"CompressedFabric", 64);
+            let compressed_as_hex = hex::encode_upper(&compressed_fabric_id);
+            let node_id = hex::encode_upper(new_fabric.node_id.to_be_bytes());
+            let instance_name = format!("{}-{}", compressed_as_hex.clone(), node_id);
+            information.instance_name = instance_name;
+            information.commission_state = CommissionState::Commissioned;
+            information.nocs.push(private_key.clone());
+            information.trusted_root_certificates.push(self.pending_root_cert.clone());
+            self.fabrics.value.push(new_fabric.clone());
+
+            let group_key = GroupKey {
+                id: 0,
+                security_policy: GroupKeySecurityPolicy::TrustFirst,
+                epoch_key: parameters.ipk_value,
+                epoch_start_time: 0,
+            };
+            information.group_keys.push(group_key);
+            information.compressed_fabric_ids.push(compressed_fabric_id.clone());
+            information.fabrics.push(new_fabric);
+
             responses.push(InvokeResponse {
                 command: Some(CommandData {
                     path: CommandPath::new(Specific(0x08)),
@@ -198,6 +253,7 @@ impl OperationalCredentialsCluster {
         }
         responses
     }
+
     fn update_noc(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
@@ -207,12 +263,16 @@ impl OperationalCredentialsCluster {
     fn remove_fabric(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn add_trusted_root_certificate(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+    fn add_trustexd_root_certificate(&mut self, data: Option<Tlv>, information: &mut Details) -> Vec<InvokeResponse> {
         if let Some(data) = data {
-            if let Some(Short(tag_number)) = data.tag.tag_number {
-                match tag_number {
-                    0 => self.pending_root_cert = data.control.element_type.into_octet_string().unwrap(),
-                    _ => log_debug!("Tag number received: {}", tag_number),
+            if let Structure(children) = data.control.element_type {
+                for child in children {
+                    if let Some(Short(tag_number)) = child.tag.tag_number {
+                        match tag_number {
+                            0 => self.pending_root_cert = child.control.element_type.into_octet_string().unwrap(),
+                            _ => log_debug!("Tag number received: {}", tag_number),
+                        }
+                    }
                 }
             }
         }
@@ -245,7 +305,7 @@ impl ClusterImplementation for OperationalCredentialsCluster {
         self
     }
 
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse> {
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, information: &mut Details) -> Vec<InvokeResponse> {
         let data = command.fields;
         match command.path.command_id {
             QueryParameter::Wildcard => {
@@ -255,11 +315,11 @@ impl ClusterImplementation for OperationalCredentialsCluster {
                 0x00 => self.attestation_request(data, session),
                 0x02 => self.certificate_chain_request(data),
                 0x04 => self.csr_request(data, session),
-                0x06 => self.add_noc(data),
+                0x06 => self.add_noc(data, information),
                 0x07 => self.update_noc(data),
                 0x09 => self.update_fabric_label(data),
                 0x0A => self.remove_fabric(data),
-                0x0B => self.add_trusted_root_certificate(data),
+                0x0B => self.add_trustexd_root_certificate(data, information),
                 _ => todo!("Not implemented command!"),
             },
         }
@@ -336,5 +396,79 @@ impl TryFrom<Tlv> for AddNocParameters {
         }
 
         Ok(parameters)
+    }
+}
+
+/// Core spec v1.2 - Page 317 - 6.5.2
+pub struct MatterCertificate {
+    pub serial_number: Vec<u8>,
+    pub ec_public_key: Vec<u8>,
+    pub subject: DnAttribute,
+}
+
+impl TryFrom<&[u8]> for MatterCertificate {
+    type Error = MatterError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let tlv = Tlv::try_from(value)?;
+        let mut certificate = Self {
+            serial_number: vec![],
+            ec_public_key: vec![],
+            subject: DnAttribute {
+                matter_fabric_id: 0,
+                matter_node_id: 0,
+            },
+        };
+
+        let Structure(children) = tlv.control.element_type else {
+            bail_tlv!("Incorrect certificate tlv structure.")
+        };
+
+        for child in children {
+            let element_type = child.control.element_type;
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                bail_tlv!("Missing tag number")
+            };
+            match tag_number {
+                1 => certificate.serial_number = element_type.into_octet_string()?,
+                6 => certificate.subject = DnAttribute::try_from(element_type)?,
+                9 => certificate.ec_public_key = element_type.into_octet_string()?,
+                _ => log_info!("Tag {} not implemented yet.", tag_number),
+            }
+        }
+
+        Ok(certificate)
+    }
+}
+
+pub struct DnAttribute {
+    pub matter_fabric_id: u64,
+    pub matter_node_id: u64,
+}
+
+impl TryFrom<ElementType> for DnAttribute {
+    type Error = MatterError;
+
+    fn try_from(value: ElementType) -> Result<Self, Self::Error> {
+        let ElementType::List(children) = value else {
+            bail_tlv!("Incorrect data structure.");
+        };
+        let mut dn = Self {
+            matter_fabric_id: 0,
+            matter_node_id: 0,
+        };
+
+        for child in children {
+            let element = child.control.element_type;
+            let Some(Short(tag_number)) = child.tag.tag_number else {
+                bail_tlv!("Missing tag number...");
+            };
+            match tag_number {
+                17 => dn.matter_node_id = element.into_u64()?,
+                21 => dn.matter_fabric_id = element.into_u64()?,
+                _ => log_debug!("Tag number {} Not implemented.", tag_number),
+            }
+        }
+        Ok(dn)
     }
 }

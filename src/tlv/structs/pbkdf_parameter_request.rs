@@ -94,9 +94,9 @@ impl From<PBKDFParamRequest> for Tlv {
 
 #[derive(Debug, Clone)]
 pub struct SessionParameter {
-    session_idle_interval: Option<u32>,
-    session_active_interval: Option<u32>,
-    session_active_threshold: Option<u16>,
+    pub session_idle_interval: Option<u32>,
+    pub session_active_interval: Option<u32>,
+    pub session_active_threshold: Option<u16>,
 }
 
 impl SessionParameter {

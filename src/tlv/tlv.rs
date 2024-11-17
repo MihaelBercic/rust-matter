@@ -89,6 +89,15 @@ impl Tlv {
     }
 }
 
+impl TryFrom<&[u8]> for Tlv {
+    type Error = MatterError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let mut cursor = Cursor::new(value);
+        Tlv::try_from_cursor(&mut cursor)
+    }
+}
+
 impl From<Tlv> for Vec<u8> {
     fn from(tlv: Tlv) -> Self {
         let mut data = vec![];

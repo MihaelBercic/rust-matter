@@ -7,49 +7,103 @@
 
 # Matter protocol implementation in Rust
 
-<div style="text-align:center; text-transform:uppercase; font-size: 11px; font-weight: bold"> Documentation is a work in progress...</div>
 
-## Active Development
+## Simple example (preview)
+```rust
+let device_information = DeviceInformation {
+    ip,
+    mac,
+    device_name: "Matter Bulb".to_string(),
+    device_type: DeviceType::Light,
+    vendor_id: 0xFFF1,
+    product_id: 0x8000,
+};
 
-### Interaction Protocol [Currently in development]
-- [x] Attribute Read & Response
-- [x] Command Invoke & Response
-- [x] p256 encryption
-- [x] ASN.1 Encoding
-- [x] x509 Certification request
-- [x] Commissioning
-- [ ] MDNS advertisement change after commissioning
-- [ ] Efficient rewrite `Currently working on`
+let mut device = Device::new(device_information);
+device.insert(1, OnOff, cluster::on_off::OnOffCluster::new());
+let receiver = matter::start(interface, device);
+loop {
+    let event = receiver.recv();
+    match event {
+        OnOff::On => led_pin.enable(),
+        OnOff::Off => led_pin.disable()
+        _ => log_info!("We're ignoring the rest for now")
+    }
+}
 
-### Session initialisation
-- [x] Insecure session computation (PASE)
-- [x] Secure session encryption
+```
 
-### TLV
-- [x] Encoding
-- [x] Decoding
-- [x] Compression
+## Progress
+_Not all TODOs are listed due to the nature, size and complexity of the protocol._
 
-### Message Protocol
-- [x] Matter message builder
-- [x] Protocol message builder
 
-### Discovery
-- [x] MulticastSocket
-- [x] mDNS Packet Header
-- [x] mDNS Packet Label compression
-- [x] mDNS Packet Records
-- [x] mDNS Packet building
-- [x] mDNS Service advertising
+```rust
+✅ - Fully implemented
+🏗️ - Currently working on
+```
 
-### Cryptographic Primitives
-- [x] Deterministic Random Bit Generator (DRBG)
-- [x] True Random Number Generator (TRNG)
-- [x] Keyed hash - HMAC
-- [x] SHA 256 hashing
-- [x] Public Key cryptography (NIST P256)
-- [x] Message signing
-- [x] Message signature verification
-- [x] ECDH
-- [x] Certificate validation
-- [x] **SPAKE2+** `complex`
+ **_🏗️ Interaction Protocol_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Attribute Read & Response |
+| ✅ | Command Invoke & Response |
+| ✅ | p256 encryption |
+| ✅ | ASN.1 Encoding |
+| ✅ | x509 Certification request |
+| ✅ | Commissioning |
+| ✅ | MDNS advertisement change after commissioning |
+| 🏗️ | MDNS efficiency improvements
+| 🏗️ | Efficiency oriented rewrite
+
+---
+
+**_✅ Session initialisation_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Insecure session computation (PASE) |
+| ✅ | Secure session encryption |
+
+---
+
+**_✅ TLV_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Encoding |
+| ✅ | Decoding |
+| ✅ | Compression |
+
+---
+
+**_✅ Message Protocol_**
+| Status ||
+| --- | ---------------------|
+| ✅ | Matter message builder |
+| ✅ | Protocol message builder |
+
+---
+
+**_✅ Discovery_**
+| Status ||
+| --- | ---------------------|
+| ✅ | MulticastSocket |
+| ✅ | mDNS Packet Header |
+| ✅ | mDNS Packet Label compression |
+| ✅ | mDNS Packet Records |
+| ✅ | mDNS Packet building |
+| ✅ | mDNS Service advertising |
+
+---
+
+**_✅ Cryptographic Primitives_**
+| Status ||
+| --- | ---------------------|
+| ✅ | **SPAKE2+** _this was time consuming_ |
+| ✅ | Deterministic Random Bit Generator (DRBG) |
+| ✅ | True Random Number Generator (TRNG) |
+| ✅ | Keyed hash - HMAC |
+| ✅ | SHA 256 hashing |
+| ✅ | Public Key cryptography (NIST P256) |
+| ✅ | Message signing |
+| ✅ | Message signature verification |
+| ✅ | ECDH |
+| ✅ | Certificate validation |

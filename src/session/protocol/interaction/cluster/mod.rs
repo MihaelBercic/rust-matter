@@ -22,6 +22,7 @@ mod certification_declaration;
 pub use certification_declaration::CertificationDeclaration;
 
 use crate::log_debug;
+use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::basic_commissioning_info::BasicCommissioningInfo;
 use crate::session::protocol::interaction::cluster::enums::{NetworkCommissioningStatus, ProductColor, ProductFinish, RegulatoryLocationType};
 use crate::session::protocol::interaction::enums::GlobalStatusCode::{UnsupportedCluster, UnsupportedEndpoint};
@@ -31,6 +32,7 @@ use crate::session::protocol::interaction::information_blocks::attribute::report
 use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandStatus, InvokeResponse};
 use crate::session::session::Session;
+use crate::session::Device;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Unsigned8;
 use crate::utils::{generic_error, MatterError};
@@ -104,7 +106,7 @@ pub trait ClusterImplementation: Any {
     fn as_any(&mut self) -> &mut dyn Any;
 
     // fn write_attribute(attribute_path: AttributePath, value: TLV);
-    fn invoke_command(&mut self, command: CommandData, session: &mut Session) -> Vec<InvokeResponse>;
+    fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut Details) -> Vec<InvokeResponse>;
 }
 
 impl From<RegulatoryLocationType> for ElementType {
