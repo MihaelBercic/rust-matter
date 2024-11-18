@@ -29,11 +29,6 @@ pub mod symmetric;
 
 type HmacSha256 = Hmac<Sha256>;
 
-pub struct EccKeyPair {
-    pub private_key: EphemeralSecret,
-    pub public_key: PublicKey,
-}
-
 /// Uses SHA-256 to hash the provided message.
 pub fn hash_message(message: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();
@@ -65,10 +60,8 @@ pub fn generate_key_pair() -> ecdsa::SigningKey<NistP256> {
 }
 
 /// ECDH - Generates a Public - Private key pair using NIST-P256
-pub fn ecc_generate_key_pair() -> EccKeyPair {
-    let private_key = EphemeralSecret::random(&mut OsRng);
-    let public_key = private_key.public_key();
-    EccKeyPair { private_key, public_key }
+pub fn generate_ephemeral_pair() -> EphemeralSecret {
+    EphemeralSecret::random(&mut OsRng)
 }
 
 /// Signs a message using the [key] into signature which is of length [2 * CRYPTO_GROUP_SIZE_BYTES]

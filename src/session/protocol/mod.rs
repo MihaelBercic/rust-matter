@@ -29,6 +29,7 @@ use crate::{log_debug, log_info, tlv};
 use byteorder::{WriteBytesExt, LE};
 use interaction::cluster::operational_credentials::MatterCertificate;
 use libc::LOG_INFO;
+use p256::ecdh::EphemeralSecret;
 use p256::ecdsa::SigningKey;
 use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::io::Cursor;
@@ -196,9 +197,10 @@ pub(crate) fn process_secure_channel(
                 }
             }
 
-            let ephemeral_key_pair = crypto::generate_key_pair();
-            let eph_public_key = ephemeral_key_pair.verifying_key();
+            let ephemeral_key_pair = crypto::generate_ephemeral_pair();
+            let eph_public_key = ephemeral_key_pair.public_key();
             // https://github.com/adafruit/CircuitMatter/blob/main/circuitmatter/session.py#L611C5-L613C10
+            let shared_secret = crypto::ecdh(ephemeral_key_pair, &sigma.initiator_eph_public_key);
             todo!("Finish CASE Sigma 1 implementation.")
         }
         _ => todo!("Received OPCODE: {:?}", protocol_message.opcode),

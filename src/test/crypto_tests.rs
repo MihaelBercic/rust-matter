@@ -87,14 +87,14 @@ mod cryptography_tests {
 
     #[test]
     fn ecdh_shared_secret() {
-        let bob = crypto::ecc_generate_key_pair();
-        let alice = crypto::ecc_generate_key_pair();
+        let bob = crypto::generate_ephemeral_pair();
+        let alice = crypto::generate_ephemeral_pair();
 
-        let bob_public_encoded = EncodedPoint::from(bob.public_key);
-        let alice_public_encoded = EncodedPoint::from(alice.public_key);
+        let bob_public_encoded = EncodedPoint::from(bob.public_key());
+        let alice_public_encoded = EncodedPoint::from(alice.public_key());
 
-        let shared_bob = crypto::ecdh(bob.private_key, alice_public_encoded.as_ref());
-        let shared_alice = crypto::ecdh(alice.private_key, bob_public_encoded.as_ref());
+        let shared_bob = crypto::ecdh(bob, alice_public_encoded.as_ref());
+        let shared_alice = crypto::ecdh(alice, bob_public_encoded.as_ref());
         assert_eq!(shared_bob, shared_alice);
     }
 
