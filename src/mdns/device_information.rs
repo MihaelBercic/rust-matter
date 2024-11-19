@@ -1,8 +1,9 @@
 use p256::ecdsa::SigningKey;
 
 use crate::{
+    crypto::constants::CERTIFICATE_SIZE,
     mdns::enums::{CommissionState, DeviceType},
-    session::protocol::interaction::cluster::FabricDescriptor,
+    session::protocol::interaction::cluster::{FabricDescriptor, NOC},
 };
 use std::net::Ipv6Addr;
 
@@ -22,7 +23,7 @@ pub struct Details {
     pub advertise: bool,
     pub instance_name: String,
     pub host_name: String,
-    pub nocs: Vec<SigningKey>,
+    pub nocs: Vec<NOC>,
     pub trusted_root_certificates: Vec<Vec<u8>>,
     pub group_keys: Vec<GroupKey>,
     pub compressed_fabric_ids: Vec<Vec<u8>>,

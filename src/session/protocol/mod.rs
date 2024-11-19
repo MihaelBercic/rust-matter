@@ -1,11 +1,12 @@
 use crate::crypto::constants::{
-    CRYPTO_AEAD_MIC_LENGTH_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
-    CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES,
+    CERTIFICATE_SIZE, CRYPTO_AEAD_MIC_LENGTH_BYTES, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES,
+    CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES,
 };
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values::Values::SpakeVerifier;
 use crate::crypto::spake::Spake2P;
-use crate::crypto::{self, hash_message, kdf};
+use crate::crypto::symmetric::encrypt;
+use crate::crypto::{self, hash_message, kdf, random_bytes, sign_message};
 use crate::mdns::device_information::Details;
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::SessionOrigin::Pase;
@@ -17,16 +18,20 @@ use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolSecureChannel;
 use crate::session::protocol_message::ProtocolMessage;
 use crate::session::session::Session;
+use crate::tlv::element_type::ElementType;
 use crate::tlv::structs::PBKDFParamResponse;
 use crate::tlv::structs::Pake1;
 use crate::tlv::structs::Pake2;
 use crate::tlv::structs::Pake3;
 use crate::tlv::structs::StatusReport;
 use crate::tlv::structs::{PBKDFParamRequest, SessionParameter};
+use crate::tlv::tag::Tag;
+use crate::tlv::tag_control::TagControl;
 use crate::tlv::tlv::Tlv;
 use crate::utils::{bail_tlv, generic_error, transport_error, MatterError};
 use crate::{log_debug, log_info, tlv};
 use byteorder::{WriteBytesExt, LE};
+use ccm::aead::Payload;
 use interaction::cluster::operational_credentials::MatterCertificate;
 use libc::LOG_INFO;
 use p256::ecdh::EphemeralSecret;
@@ -160,8 +165,8 @@ pub(crate) fn process_secure_channel(
             Ok(builder)
         }
         SecureChannelProtocolOpcode::CASESigma1 => {
+            let sigma_bytes = tlv.clone().to_bytes();
             let sigma = Sigma1::try_from(tlv).unwrap();
-            let mut matching_index: u64 = 0u64;
             log_info!("We have sigma: {:?}", sigma);
             for (index, noc) in details.nocs.clone().iter().enumerate() {
                 let fabric = details.fabrics.get(index).unwrap();
@@ -181,26 +186,85 @@ pub(crate) fn process_secure_channel(
 
                 if candidate_destination_id == sigma.destination_id {
                     log_debug!("Found our destination Candidate ID! {}", hex::encode(candidate_destination_id));
-                    matching_index = index as u64;
-                    break;
+                    let noc = details.nocs.get(index).unwrap();
+                    session.peer_session_id = sigma.initiator_session_id;
+                    session.fabric_index = index as u64;
+                    session.resumption_id = 6969; // TODO: make random?
+                    session.local_node_id = fabric.node_id;
+
+                    if let Some(params) = sigma.initiator_session_params {
+                        if let Some(idle) = params.session_idle_interval {
+                            session.session_idle_interval = (idle / 1000) as u16;
+                        }
+                        if let Some(active) = params.session_active_interval {
+                            session.session_active_interval = (active / 1000) as u16;
+                        }
+                        if let Some(active) = params.session_active_threshold {
+                            session.session_active_threshold = (active / 1000) as u16;
+                        }
+                    }
+
+                    let ephemeral_key_pair = crypto::generate_ephemeral_pair();
+                    let eph_public_key = ephemeral_key_pair.public_key();
+                    // https://github.com/adafruit/CircuitMatter/blob/main/circuitmatter/session.py#L611C5-L613C10
+                    let shared_secret = crypto::ecdh(ephemeral_key_pair, &sigma.initiator_eph_public_key);
+                    session.shared_secret = Some(shared_secret);
+
+                    let tbs = Sigma2TbsData {
+                        responder_noc: noc.noc.clone(),
+                        responder_icac: noc.icac.clone(),
+                        responder_eph_public_key: eph_public_key.to_sec1_bytes().to_vec().try_into().unwrap(),
+                        initiator_eph_public_key: sigma.initiator_eph_public_key,
+                    };
+
+                    let tbe = Sigma2TbeData {
+                        responder_noc: noc.noc.clone(),
+                        responder_icac: noc.icac.clone(),
+                        resumption_id: session.resumption_id,
+                        signature: sign_message(&noc.key_pair, &Tlv::try_from(tbs).unwrap().to_bytes()),
+                    };
+
+                    let mut salt: Vec<u8> = vec![];
+                    let random = random_bytes::<32>();
+                    let transcript_hash = hash_message(&sigma_bytes);
+                    salt.extend_from_slice(&ipk);
+                    salt.extend_from_slice(&random);
+                    salt.extend_from_slice(&eph_public_key.to_sec1_bytes());
+                    salt.extend_from_slice(&transcript_hash);
+
+                    let s2k = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"Sigma2", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
+
+                    let tbe_tlv = Tlv::try_from(tbe).unwrap();
+                    let encrypted = encrypt(
+                        &s2k,
+                        Payload {
+                            msg: &tbe_tlv.to_bytes(),
+                            aad: &[],
+                        },
+                        b"NCASE_Sigma2N",
+                    )
+                    .unwrap();
+
+                    let sigma2 = Sigma2 {
+                        responder_random: random.to_vec(),
+                        responder_session_id: session.session_id,
+                        responder_eph_public_key: eph_public_key.to_sec1_bytes().to_vec().try_into().unwrap(),
+                        encrypted_2: encrypted,
+                        responder_session_params: None,
+                    };
+
+                    let sigma2 = Tlv::try_from(sigma2).unwrap();
+
+                    let builder = ProtocolMessageBuilder::new()
+                        .set_protocol(ProtocolSecureChannel)
+                        .set_acknowledged_message_counter(message.header.message_counter)
+                        .set_exchange_id(exchange_id)
+                        .set_opcode(SecureChannelProtocolOpcode::CASESigma2 as u8)
+                        .set_payload(&sigma2.to_bytes());
+                    return Ok(builder);
                 }
             }
-            let fabric = details.fabrics.get(matching_index as usize).unwrap();
-            session.peer_session_id = sigma.initiator_session_id;
-            session.fabric_index = matching_index;
-            session.resumption_id = 6969; // TODO: make random?
-            session.local_node_id = fabric.node_id;
 
-            if let Some(params) = sigma.initiator_session_params {
-                if let Some(idle) = params.session_idle_interval {
-                    // TODO: idk why.
-                }
-            }
-
-            let ephemeral_key_pair = crypto::generate_ephemeral_pair();
-            let eph_public_key = ephemeral_key_pair.public_key();
-            // https://github.com/adafruit/CircuitMatter/blob/main/circuitmatter/session.py#L611C5-L613C10
-            let shared_secret = crypto::ecdh(ephemeral_key_pair, &sigma.initiator_eph_public_key);
             todo!("Finish CASE Sigma 1 implementation.")
         }
         _ => todo!("Received OPCODE: {:?}", protocol_message.opcode),
@@ -263,5 +327,79 @@ impl TryFrom<Tlv> for Sigma1 {
             }
         }
         Ok(sigma)
+    }
+}
+
+#[derive(Debug)]
+struct Sigma2TbsData {
+    pub responder_noc: Vec<u8>,
+    pub responder_icac: Option<Vec<u8>>,
+    pub responder_eph_public_key: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
+    pub initiator_eph_public_key: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
+}
+
+#[derive(Debug)]
+struct Sigma2TbeData {
+    pub responder_noc: Vec<u8>,
+    pub responder_icac: Option<Vec<u8>>,
+    pub signature: [u8; CRYPTO_GROUP_SIZE_BYTES * 2],
+    pub resumption_id: u16,
+}
+
+#[derive(Debug)]
+struct Sigma2 {
+    pub responder_random: Vec<u8>,
+    pub responder_session_id: u16,
+    pub responder_eph_public_key: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES],
+    pub encrypted_2: Vec<u8>,
+    pub responder_session_params: Option<SessionParameter>,
+}
+
+impl TryFrom<Sigma2TbeData> for Tlv {
+    type Error = MatterError;
+
+    fn try_from(value: Sigma2TbeData) -> Result<Self, Self::Error> {
+        let mut children = vec![
+            Tlv::new(value.responder_noc.into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.signature.into(), TagControl::ContextSpecific8, Tag::short(3)),
+            Tlv::new(value.resumption_id.into(), TagControl::ContextSpecific8, Tag::short(4)),
+        ];
+        if let Some(icac) = value.responder_icac {
+            children.push(Tlv::new(icac.into(), TagControl::ContextSpecific8, Tag::short(2)));
+        }
+        Ok(Tlv::simple(ElementType::Structure(children)))
+    }
+}
+
+impl TryFrom<Sigma2> for Tlv {
+    type Error = MatterError;
+
+    fn try_from(value: Sigma2) -> Result<Self, Self::Error> {
+        let mut children = vec![
+            Tlv::new(value.responder_random.into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.responder_session_id.into(), TagControl::ContextSpecific8, Tag::short(2)),
+            Tlv::new(value.responder_eph_public_key.into(), TagControl::ContextSpecific8, Tag::short(3)),
+            Tlv::new(value.encrypted_2.into(), TagControl::ContextSpecific8, Tag::short(4)),
+        ];
+        if let Some(params) = value.responder_session_params {
+            children.push(Tlv::new(Tlv::from(params).to_bytes().into(), TagControl::ContextSpecific8, Tag::short(5)));
+        }
+        Ok(Tlv::simple(ElementType::Structure(children)))
+    }
+}
+
+impl TryFrom<Sigma2TbsData> for Tlv {
+    type Error = MatterError;
+
+    fn try_from(value: Sigma2TbsData) -> Result<Self, Self::Error> {
+        let mut children = vec![
+            Tlv::new(value.responder_noc.into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.responder_eph_public_key.into(), TagControl::ContextSpecific8, Tag::short(3)),
+            Tlv::new(value.initiator_eph_public_key.into(), TagControl::ContextSpecific8, Tag::short(4)),
+        ];
+        if let Some(icac) = value.responder_icac {
+            children.push(Tlv::new(icac.into(), TagControl::ContextSpecific8, Tag::short(2)));
+        }
+        Ok(Tlv::simple(ElementType::Structure(children)))
     }
 }

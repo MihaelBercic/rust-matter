@@ -1,5 +1,5 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
-use crate::crypto::constants::CRYPTO_PUBLIC_KEY_SIZE_BYTES;
+use crate::crypto::constants::{CERTIFICATE_SIZE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::{self, kdf, sign_message_with_signature};
 use crate::mdns::device_information::{Details, GroupKey, GroupKeySecurityPolicy};
@@ -25,7 +25,7 @@ use crate::utils::{bail_generic, bail_tlv, MatterError};
 use crate::{log_debug, log_info};
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
 use der::oid::AssociatedOid;
-use der::{Decode, Encode, FixedTag, Sequence, ValueOrd};
+use der::{Decode, DecodePem, Encode, FixedTag, Sequence, ValueOrd};
 use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
 use p256::NistP256;
 use sec1::DecodeEcPrivateKey;
@@ -36,6 +36,8 @@ use std::str::FromStr;
 use x509_cert::builder::{Builder, RequestBuilder};
 use x509_cert::name::{Name, RdnSequence};
 use x509_cert::spki::{AlgorithmIdentifierOwned, AlgorithmIdentifierWithOid, DynSignatureAlgorithmIdentifier};
+use x509_cert::time::Validity;
+use x509_cert::Certificate;
 
 use super::{FabricDescriptor, NOC};
 
@@ -89,19 +91,40 @@ impl OperationalCredentialsCluster {
             panic!("Yeah incorrect data...");
         };
         let nonce = children.first().unwrap().to_owned().control.element_type.into_octet_string().unwrap();
-        let certificate = fs::read("certification_declaration.der").expect("Missing file.");
 
+        let certification_elements = Tlv::simple(Structure(vec![
+            Tlv::new(1u16.into(), ContextSpecific8, Tag::short(0)),      // format_version
+            Tlv::new(0xFFF2u16.into(), ContextSpecific8, Tag::short(1)), // vendor_id
+            Tlv::new(Array(vec![Tlv::simple(8001u16.into())]), ContextSpecific8, Tag::short(2)), // produce_id
+            Tlv::new(22u32.into(), ContextSpecific8, Tag::short(3)),     // device_type_id
+            Tlv::new(String::from_str("CSA00000SWC00000-00").unwrap().into(), ContextSpecific8, Tag::short(4)), // certificate_id
+            Tlv::new(0u8.into(), ContextSpecific8, Tag::short(5)),       // security_level
+            Tlv::new(0u16.into(), ContextSpecific8, Tag::short(6)),      // security_information
+            Tlv::new(1u16.into(), ContextSpecific8, Tag::short(7)),      // version_number
+            Tlv::new(0u16.into(), ContextSpecific8, Tag::short(8)),      // certification_type
+                                                                         // Tlv::new(0u16.into(), ContextSpecific8, Tag::short(9)), // dac_origin_vendor_id
+                                                                         // Tlv::new(0u16.into(), ContextSpecific8, Tag::short(10)), // dac_origin_product_id
+                                                                         // Tlv::new(0u16.into(), ContextSpecific8, Tag::short(11)), // authorized_paa_list
+        ]));
+        let elements_bytes = certification_elements.to_bytes();
+
+        let certificate = fs::read("certification_declaration.der").expect("Missing file.");
+        //      let certificate = fs::read("certification-declaration/Chip-Test-CD-FFF2-8001.der").expect("Missing file.");
+
+        // let cd = Certificate::from_pem(&certificate).unwrap();
+        // let x = cd.to_der().unwrap();
+        let x = certificate;
         let attestation_elements = Tlv::simple(Structure(vec![
-            Tlv::new(OctetString16(certificate.clone()), ContextSpecific8, Tag::short(1)),
+            Tlv::new(x.into(), ContextSpecific8, Tag::short(1)),
             Tlv::new(nonce.into(), ContextSpecific8, Tag::short(2)),
-            Tlv::new((677103357u32).into(), ContextSpecific8, Tag::short(3)),
+            Tlv::new((80357235u32).into(), ContextSpecific8, Tag::short(3)),
         ]))
         .to_bytes();
 
         let mut tbs = attestation_elements.clone();
         tbs.extend_from_slice(&session.attestation_challenge);
 
-        let path = fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Key.der").expect("Missing file");
+        let path = fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Key.der").expect("Missing file");
         let key: SigningKey = SigningKey::from_sec1_der(&path).expect("Unable to create key");
         let signature = sign_message_with_signature(&key, &tbs);
         println!("Signature length: {}", signature.clone().to_vec().len());
@@ -131,11 +154,13 @@ impl OperationalCredentialsCluster {
         }
         let certificate = if chain == CertificateChainType::DAC {
             self.working_on = DAC;
-            fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Cert.der").unwrap()
+            fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.der").unwrap()
         } else {
             self.working_on = PAI;
-            fs::read("attestation/Chip-Test-PAI-FFF1-8000-Cert.der").unwrap()
+            fs::read("attestation/Chip-Test-PAI-FFF2-8001-Cert.der").unwrap()
         };
+
+        log_debug!("ASN {:?} dump: {}", self.working_on, hex::encode(certificate.clone()));
         vec![InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(0x03)),
@@ -199,11 +224,22 @@ impl OperationalCredentialsCluster {
         let mut responses = vec![];
         if let Some(tlv) = data {
             let parameters = AddNocParameters::try_from(tlv).expect("Yeah should've parsed.");
-
             let noc = MatterCertificate::try_from(&parameters.noc_value[..]).unwrap();
             let Some(private_key) = &self.pending_key_pair else {
                 panic!("Missing key pair");
             };
+
+            let mut noc_struct = NOC {
+                noc: parameters.noc_value.try_into().unwrap(),
+                icac: None,
+                key_pair: private_key.clone(),
+            };
+
+            if let Some(icac) = parameters.icac_value {
+                noc_struct.icac = Some(icac.try_into().unwrap());
+            }
+
+            noc_struct.key_pair = private_key.clone();
 
             let public_key = private_key.verifying_key();
             let pbk_bytes = public_key.to_sec1_bytes().to_vec();
@@ -229,7 +265,7 @@ impl OperationalCredentialsCluster {
             let instance_name = format!("{}-{}", compressed_as_hex.clone(), node_id);
             information.instance_name = instance_name;
             information.commission_state = CommissionState::Commissioned;
-            information.nocs.push(private_key.clone());
+            information.nocs.push(noc_struct);
             information.trusted_root_certificates.push(self.pending_root_cert.clone());
             self.fabrics.value.push(new_fabric.clone());
 
@@ -263,7 +299,7 @@ impl OperationalCredentialsCluster {
     fn remove_fabric(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
         todo!()
     }
-    fn add_trustexd_root_certificate(&mut self, data: Option<Tlv>, information: &mut Details) -> Vec<InvokeResponse> {
+    fn add_trusted_root_certificate(&mut self, data: Option<Tlv>, information: &mut Details) -> Vec<InvokeResponse> {
         if let Some(data) = data {
             if let Structure(children) = data.control.element_type {
                 for child in children {
@@ -319,7 +355,7 @@ impl ClusterImplementation for OperationalCredentialsCluster {
                 0x07 => self.update_noc(data),
                 0x09 => self.update_fabric_label(data),
                 0x0A => self.remove_fabric(data),
-                0x0B => self.add_trustexd_root_certificate(data, information),
+                0x0B => self.add_trusted_root_certificate(data, information),
                 _ => todo!("Not implemented command!"),
             },
         }

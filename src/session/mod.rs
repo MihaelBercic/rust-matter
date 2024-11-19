@@ -42,7 +42,7 @@ pub(crate) fn start_processing_thread(
 ) -> JoinHandle<()> {
     thread::Builder::new()
         .name("Processing thread".to_string())
-        .stack_size(50 * 1024)
+        .stack_size(100 * 1024)
         .spawn(move || loop {
             let message_to_process = receiver.recv();
             match message_to_process {

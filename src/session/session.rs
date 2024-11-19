@@ -29,13 +29,14 @@ pub struct Session {
     pub fabric_index: u64,
     pub peer_node_id: MatterDestinationID,
     pub local_node_id: u64,
-    pub resumption_id: u32,
+    pub resumption_id: u16,
     pub active_timestamp: u128,
     pub session_idle_interval: u16,
     pub session_active_interval: u16,
     pub session_active_threshold: u16,
     pub peer_active_mode: bool, // < => (now() - activetimestamp) < session_active_threshold,
     pub session_setup: Option<SessionSetup>,
+    pub shared_secret: Option<[u8; 32]>,
 }
 
 impl Default for Session {
@@ -66,6 +67,7 @@ impl Default for Session {
             session_active_threshold: 4000,
             peer_active_mode: false,
             session_setup: Some(Default::default()),
+            shared_secret: None,
         }
     }
 }

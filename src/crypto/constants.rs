@@ -1,6 +1,7 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 use crypto_bigint::U256;
 
+pub const CERTIFICATE_SIZE: usize = 400;
 pub const CRYPTO_GROUP_SIZE_BITS: usize = 256;
 pub const CRYPTO_GROUP_SIZE_BYTES: usize = 32;
 pub const CRYPTO_PUBLIC_KEY_SIZE_BYTES: usize = 65;
