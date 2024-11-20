@@ -14,7 +14,7 @@ use crate::session::counters::{
 };
 use crate::session::Device;
 use crate::utils::StringExtensions;
-use crate::{log_debug, log_error, log_info, NetworkInterface, SharedDevice};
+use crate::{compute_pairing_code, log_debug, log_error, log_info, NetworkInterface, SharedDevice};
 use constants::{COMMISSIONED_PROTOCOL, NON_COMMISSIONED_PROTOCOL};
 use enums::CommissionState;
 use rand::Rng;
@@ -45,13 +45,14 @@ pub fn start_advertising(udp: &UdpSocket, shared_device: SharedDevice, interface
     let mdns_dst = format!("[{}%{}]:{}", IPV6_MULTICAST_ADDRESS, interface.index, MDNS_PORT);
 
     let device = shared_device.lock().unwrap();
+    compute_pairing_code(&device);
     let information = &device.details;
     let mac = hex::encode_upper(&information.mac);
     let host_name = format!("{}.{}", mac, LOCAL_DOMAIN);
     let udp_port = udp.local_addr().unwrap().port();
     let mut socket = MulticastSocket::new(&interface, MDNS_PORT);
 
-    log_debug!("Spawning a new multicast listening thread...");
+    // log_debug!("Spawning a new multicast listening thread...");
     let shared_clone = shared_device.clone();
     thread::Builder::new()
         .name("Multicast listening".to_string())
@@ -115,7 +116,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
 
     // let random: u64 = 0x705E698FD7D59D90;
     let instance_name = format!("{}.{}.{}", device.instance_name, protocol, LOCAL_DOMAIN);
-    log_debug!("Instance name: {}", &instance_name);
+    // log_debug!("Instance name: {}", &instance_name);
 
     let domain_bytes: Vec<u8> = PTRRecord { domain: &instance_name }.into();
 
@@ -207,7 +208,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
         data: domain_bytes.clone(),
     };
 
-    log_debug!("IPv6: {}", device.ip.to_string());
+    // log_debug!("IPv6: {}", device.ip.to_string());
 
     let txt_record = CompleteRecord {
         record_information: RecordInformation {

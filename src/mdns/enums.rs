@@ -7,7 +7,7 @@ pub enum CommissionState {
 }
 
 #[repr(u16)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum DeviceType {
     Light = 0x0100,
     DimmableLight = 0x0101,

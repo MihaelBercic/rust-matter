@@ -52,7 +52,7 @@ pub(crate) fn start_processing_thread(
                         continue;
                     }
                     if let Err(error) = process_message(network_message, &outgoing_sender, device.clone()) {
-                        log_error!("Unable to process message: {:?}", error);
+                        // log_error!("Unable to process message: {:?}", error);
                     }
                 }
                 Err(error) => log_error!("Unable to receive the message {:?}", error),
@@ -84,7 +84,7 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
     };
 
     log_info!(
-        "{color_red}|{:?}|{color_yellow}{}|{color_reset}",
+        "{color_red}{:?} \u{27F6} {color_yellow}{}{color_reset}",
         &protocol_message.protocol_id,
         debug_opcode
     );

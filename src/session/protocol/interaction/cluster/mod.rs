@@ -19,7 +19,6 @@ mod fabric_descriptor;
 pub use fabric_descriptor::*;
 
 mod certification_declaration;
-pub use certification_declaration::CertificationDeclaration;
 
 use crate::log_debug;
 use crate::mdns::device_information::Details;

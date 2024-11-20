@@ -167,7 +167,7 @@ pub(crate) fn process_secure_channel(
         SecureChannelProtocolOpcode::CASESigma1 => {
             let sigma_bytes = tlv.clone().to_bytes();
             let sigma = Sigma1::try_from(tlv).unwrap();
-            log_info!("We have sigma: {:?}", sigma);
+            // log_info!("We have sigma: {:?}", sigma);
             for (index, noc) in details.nocs.clone().iter().enumerate() {
                 let fabric = details.fabrics.get(index).unwrap();
                 let cert = details.trusted_root_certificates.get(index).unwrap();

@@ -43,7 +43,7 @@ pub fn process_interaction_model(
             for path in read_request.attribute_paths {
                 reports.extend(device.read_attributes(path))
             }
-            log_debug!("We have {} reports to send!", reports.len());
+            // log_debug!("We have {} reports to send!", reports.len());
             let mut to_send = vec![];
             for report in reports {
                 to_send.push(Tlv::simple(report.into()));

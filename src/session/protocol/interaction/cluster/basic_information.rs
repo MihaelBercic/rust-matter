@@ -45,12 +45,12 @@ impl BasicInformationCluster {
                 id: 0x0001,
                 value: "Mihael Berčič".to_string(),
             },
-            vendor_id: Attribute { id: 0x0002, value: 0xFFF1 },
+            vendor_id: Attribute { id: 0x0002, value: 0xFFF2 },
             product_name: Attribute {
                 id: 0x0003,
                 value: "New Thermo".to_string(),
             },
-            product_id: Attribute { id: 0x0004, value: 0x8000 },
+            product_id: Attribute { id: 0x0004, value: 0x8001 },
             node_label: Attribute {
                 id: 0x0005,
                 value: "New Thermo".to_string(),

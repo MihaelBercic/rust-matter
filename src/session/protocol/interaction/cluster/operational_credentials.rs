@@ -1,7 +1,7 @@
 use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
 use crate::crypto::constants::{CERTIFICATE_SIZE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::kdf::key_derivation;
-use crate::crypto::{self, kdf, sign_message_with_signature};
+use crate::crypto::{self, kdf, sign_message, sign_message_with_signature};
 use crate::mdns::device_information::{Details, GroupKey, GroupKeySecurityPolicy};
 use crate::mdns::enums::CommissionState;
 use crate::mdns::enums::DeviceType::Thermostat;
@@ -26,6 +26,7 @@ use crate::{log_debug, log_info};
 use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
 use der::oid::AssociatedOid;
 use der::{Decode, DecodePem, Encode, FixedTag, Sequence, ValueOrd};
+use libc::LOG_INFO;
 use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
 use p256::NistP256;
 use sec1::DecodeEcPrivateKey;
@@ -33,6 +34,7 @@ use signature::Signer;
 use std::any::Any;
 use std::fs;
 use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
 use x509_cert::builder::{Builder, RequestBuilder};
 use x509_cert::name::{Name, RdnSequence};
 use x509_cert::spki::{AlgorithmIdentifierOwned, AlgorithmIdentifierWithOid, DynSignatureAlgorithmIdentifier};
@@ -92,43 +94,50 @@ impl OperationalCredentialsCluster {
         };
         let nonce = children.first().unwrap().to_owned().control.element_type.into_octet_string().unwrap();
 
-        let certification_elements = Tlv::simple(Structure(vec![
-            Tlv::new(1u16.into(), ContextSpecific8, Tag::short(0)),      // format_version
-            Tlv::new(0xFFF2u16.into(), ContextSpecific8, Tag::short(1)), // vendor_id
-            Tlv::new(Array(vec![Tlv::simple(8001u16.into())]), ContextSpecific8, Tag::short(2)), // produce_id
-            Tlv::new(22u32.into(), ContextSpecific8, Tag::short(3)),     // device_type_id
-            Tlv::new(String::from_str("CSA00000SWC00000-00").unwrap().into(), ContextSpecific8, Tag::short(4)), // certificate_id
-            Tlv::new(0u8.into(), ContextSpecific8, Tag::short(5)),       // security_level
-            Tlv::new(0u16.into(), ContextSpecific8, Tag::short(6)),      // security_information
-            Tlv::new(1u16.into(), ContextSpecific8, Tag::short(7)),      // version_number
-            Tlv::new(0u16.into(), ContextSpecific8, Tag::short(8)),      // certification_type
-                                                                         // Tlv::new(0u16.into(), ContextSpecific8, Tag::short(9)), // dac_origin_vendor_id
-                                                                         // Tlv::new(0u16.into(), ContextSpecific8, Tag::short(10)), // dac_origin_product_id
-                                                                         // Tlv::new(0u16.into(), ContextSpecific8, Tag::short(11)), // authorized_paa_list
-        ]));
-        let elements_bytes = certification_elements.to_bytes();
-
         let certificate = fs::read("certification_declaration.der").expect("Missing file.");
-        //      let certificate = fs::read("certification-declaration/Chip-Test-CD-FFF2-8001.der").expect("Missing file.");
+        let certificate = fs::read("Chip-Test-CD-0xFFF2-0x8001.der").expect("Missing file.");
+        let certificate = fs::read("certification-declaration/Chip-Test-CD-FFF2-8001.der").expect("Missing file.");
 
+        log_debug!("Invoking AttestationRequest command on OperationalCredentials cluster.");
+        log_info!("Responding using certification-declaration/Chip-Test-CD-FFF2-8001.der as the certificate.");
         // let cd = Certificate::from_pem(&certificate).unwrap();
         // let x = cd.to_der().unwrap();
         let x = certificate;
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() - 946684800;
         let attestation_elements = Tlv::simple(Structure(vec![
             Tlv::new(x.into(), ContextSpecific8, Tag::short(1)),
             Tlv::new(nonce.into(), ContextSpecific8, Tag::short(2)),
-            Tlv::new((80357235u32).into(), ContextSpecific8, Tag::short(3)),
+            Tlv::new(timestamp.into(), ContextSpecific8, Tag::short(3)),
         ]))
         .to_bytes();
 
+        // log_info!(
+        //     "TLV attestation elements before attestation challenge: {}",
+        //     hex::encode(&attestation_elements)
+        // );
+
         let mut tbs = attestation_elements.clone();
         tbs.extend_from_slice(&session.attestation_challenge);
+        // log_info!("TLV attestation elements WITH attestation challenge (ToBeSigned): {}", hex::encode(&tbs));
 
-        let path = fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Key.der").expect("Missing file");
-        let key: SigningKey = SigningKey::from_sec1_der(&path).expect("Unable to create key");
-        let signature = sign_message_with_signature(&key, &tbs);
-        println!("Signature length: {}", signature.clone().to_vec().len());
+        let path = fs::read("test-DAC-0xFFF2-0x8001-key.pem").expect("Missing file");
+        let path = fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Key.pem").expect("Missing file");
+        let key: SigningKey = SigningKey::from_sec1_pem(&String::from_utf8(path).unwrap()).expect("Unable to create key");
 
+        // log_info!("Signing TBS elements using key: attestation/Chip-Test-DAC-FFF2-8001-0008-Key.pem");
+        let signature = sign_message(&key, &tbs);
+        // log_info!("Signature of TBS {}", hex::encode(&signature));
+
+        // log_info!(
+        //     "TLV response AttestationResponse command data: {}",
+        //     hex::encode(
+        //         Tlv::simple(Structure(vec![
+        //             Tlv::new(attestation_elements.clone().into(), ContextSpecific8, Tag::short(0)),
+        //             Tlv::new(signature.clone().to_vec().into(), ContextSpecific8, Tag::short(1)),
+        //         ]))
+        //         .to_bytes()
+        //     )
+        // );
         vec![InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(0x01)),
@@ -141,26 +150,30 @@ impl OperationalCredentialsCluster {
         }]
     }
     fn certificate_chain_request(&mut self, data: Option<Tlv>) -> Vec<InvokeResponse> {
+        log_debug!("Invoking CertificateChainRequest command on OperationalCredentials cluster.");
+
         let mut chain: CertificateChainType = CertificateChainType::DAC;
         if let Some(tlv) = data {
             if let Structure(data) = tlv.control.element_type {
                 for child in data {
                     let chain_type = child.control.element_type.into_u8().unwrap();
                     let chain_type = if chain_type == 1 { CertificateChainType::DAC } else { PAI };
-                    log_info!("Working with certificate type: {:?}", chain_type);
+                    // log_info!("Working with certificate type: {:?}", chain_type);
                     chain = chain_type;
                 }
             }
         }
         let certificate = if chain == CertificateChainType::DAC {
             self.working_on = DAC;
-            fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.der").unwrap()
+            log_info!("Responding using attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.pem (converted to DER) for DAC.");
+            fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.pem").unwrap()
         } else {
             self.working_on = PAI;
-            fs::read("attestation/Chip-Test-PAI-FFF2-8001-Cert.der").unwrap()
+            log_info!("Responding using attestation/Chip-Test-PAI-FFF2-8001-Cert.pem (converted to DER) for PAI.");
+            fs::read("attestation/Chip-Test-PAI-FFF2-8001-Cert.pem").unwrap()
         };
+        let certificate = Certificate::from_pem(&certificate).unwrap().to_der().unwrap();
 
-        log_debug!("ASN {:?} dump: {}", self.working_on, hex::encode(certificate.clone()));
         vec![InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(0x03)),
@@ -178,6 +191,8 @@ impl OperationalCredentialsCluster {
     /// Execute the Node Operational CSR Procedure
     /// Return NOCSR Information in the form of [CSRResponseCommand]
     fn csr_request(&mut self, data: Option<Tlv>, session: &mut Session) -> Vec<InvokeResponse> {
+        log_debug!("Invoking CSRRequest command on OperationalCredentials cluster.");
+
         let mut responses = vec![];
         if let Some(data) = data {
             let request = CsrRequest::from(data);
@@ -188,17 +203,24 @@ impl OperationalCredentialsCluster {
             let csr = builder.build::<DerSignature>().unwrap().to_der().unwrap();
 
             self.pending_key_pair = Some(key_pair.clone());
-            println!("Signature: {}", hex::encode(&csr));
+            // log_info!("CSR der hex: {}", hex::encode(&csr));
+
             let elements = Tlv::simple(Structure(vec![
                 Tlv::new(csr.into(), ContextSpecific8, Tag::short(1)),
                 Tlv::new(request.csr_nonce.into(), ContextSpecific8, Tag::short(2)),
             ]));
+
             let mut tbs = elements.clone().to_bytes();
             tbs.extend_from_slice(&session.attestation_challenge);
+            // log_info!("TBS with attestation challenge: {}", hex::encode(&tbs));
 
-            let path = fs::read("attestation/Chip-Test-DAC-FFF1-8000-0000-Key.der").expect("Missing file");
-            let key: SigningKey = SigningKey::from_sec1_der(&path).expect("Unable to create key");
+            let path = fs::read("test-DAC-0xFFF2-0x8001-key.pem").expect("Missing file");
+            let path = fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Key.pem").expect("Missing file");
+            let key: SigningKey = SigningKey::from_sec1_pem(&String::from_utf8(path).unwrap()).expect("Unable to create key");
             let signature = sign_message_with_signature(&key, &tbs);
+
+            // log_info!("Signing the TBS using attestation/Chip-Test-DAC-FFF2-8001-0008-Key.pem");
+            // log_info!("Signature: {}", hex::encode(&signature.clone().to_vec()));
 
             let response = InvokeResponse {
                 command: Some(CommandData {
@@ -257,7 +279,7 @@ impl OperationalCredentialsCluster {
                 node_id: noc.subject.matter_node_id,
                 label: "Not sure".to_string(),
             };
-            log_info!("Adding fabric {} with node id {}", new_fabric.fabric_id, new_fabric.node_id);
+            // log_info!("Adding fabric {} with node id {}", new_fabric.fabric_id, new_fabric.node_id);
             let fabric_id = noc.subject.matter_fabric_id.to_be_bytes();
             let compressed_fabric_id = key_derivation(&root_cert.ec_public_key[1..], Some(&fabric_id), b"CompressedFabric", 64);
             let compressed_as_hex = hex::encode_upper(&compressed_fabric_id);
@@ -469,7 +491,7 @@ impl TryFrom<&[u8]> for MatterCertificate {
                 1 => certificate.serial_number = element_type.into_octet_string()?,
                 6 => certificate.subject = DnAttribute::try_from(element_type)?,
                 9 => certificate.ec_public_key = element_type.into_octet_string()?,
-                _ => log_info!("Tag {} not implemented yet.", tag_number),
+                _ => (), // log_info!("Tag {} not implemented yet.", tag_number)),
             }
         }
 
@@ -502,7 +524,7 @@ impl TryFrom<ElementType> for DnAttribute {
             match tag_number {
                 17 => dn.matter_node_id = element.into_u64()?,
                 21 => dn.matter_fabric_id = element.into_u64()?,
-                _ => log_debug!("Tag number {} Not implemented.", tag_number),
+                _ => (), // log_debug!("Tag number {} Not implemented.", tag_number)),
             }
         }
         Ok(dn)

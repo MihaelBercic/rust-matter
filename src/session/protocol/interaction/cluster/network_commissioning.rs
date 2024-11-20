@@ -51,9 +51,7 @@ impl NetworkCommissioningCluster {
         }
     }
 
-    pub fn connect(&self) {
-        log_info!("Connect function called!")
-    }
+    pub fn connect(&self) {}
 }
 
 impl ClusterImplementation for NetworkCommissioningCluster {

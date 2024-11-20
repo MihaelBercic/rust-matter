@@ -15,8 +15,8 @@ let device_information = DeviceInformation {
     mac,
     device_name: "Matter Bulb".to_string(),
     device_type: DeviceType::Light,
-    vendor_id: 0xFFF1,
-    product_id: 0x8000,
+    vendor_id: 0xFFF2,
+    product_id: 0x8001,
 };
 
 let mut device = Device::new(device_information);

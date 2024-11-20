@@ -10,7 +10,7 @@ use matter::session::protocol::interaction::enums::ClusterID::{
     BasicInformation, Descriptor, GeneralCommissioning, NetworkCommissioning, OnOff, OperationalCredentials,
 };
 use matter::session::Device;
-use matter::NetworkInterface;
+use matter::{log_info, NetworkInterface};
 use std::net::Ipv6Addr;
 use std::str::FromStr;
 
@@ -30,12 +30,12 @@ fn main() {
     let device_information = Details {
         ip,
         mac: mac.clone(),
-        device_name: "thermostat".to_string(),
+        device_name: "Matter Device".to_string(),
         device_type: DeviceType::Light,
         discriminator: DeviceType::Thermostat as u16,
         commission_state: CommissionState::NotCommissioned,
-        vendor_id: 0xFFF1,
-        product_id: 0x8000,
+        vendor_id: 0xFFF2,
+        product_id: 0x8001,
         advertise: true,
         instance_name: format!("{}", hex::encode(mac)),
         host_name: "".to_string(),
@@ -45,6 +45,18 @@ fn main() {
         compressed_fabric_ids: vec![],
         fabrics: vec![],
     };
+
+    log_info!(
+        "Starting matter with the following information:
+        \t\t\t\t\tDevice Type: {:x?}
+        \t\t\t\t\tVendor ID: 0x{:x}
+        \t\t\t\t\tProduct ID: 0x{:x}
+        \t\t\t\t\tDevice Name: {}\n",
+        &device_information.device_type,
+        &device_information.vendor_id,
+        &device_information.product_id,
+        &device_information.device_name
+    );
 
     let mut device = Device::new(device_information);
     device.insert(0, BasicInformation, BasicInformationCluster::new());
@@ -58,5 +70,6 @@ fn main() {
     device.modify_cluster::<NetworkCommissioningCluster>(0, NetworkCommissioning, |cluster| {
         cluster.connect(); // sample function call of [NetworkCommissioningCluster].
     });
+
     matter::start(interface, device); // TODO: return a sender for modifications.
 }
