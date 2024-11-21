@@ -29,7 +29,7 @@ use der::{Decode, DecodePem, Encode, FixedTag, Sequence, ValueOrd};
 use libc::LOG_INFO;
 use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
 use p256::NistP256;
-use sec1::DecodeEcPrivateKey;
+use sec1::{DecodeEcPrivateKey, EncodeEcPrivateKey};
 use signature::Signer;
 use std::any::Any;
 use std::fs;
@@ -251,17 +251,16 @@ impl OperationalCredentialsCluster {
                 panic!("Missing key pair");
             };
 
-            let mut noc_struct = NOC {
+            let noc_struct = NOC {
                 noc: parameters.noc_value.try_into().unwrap(),
-                icac: None,
-                key_pair: private_key.clone(),
+                icac: parameters.icac_value.clone(),
+                private_key: private_key.clone(),
             };
 
-            if let Some(icac) = parameters.icac_value {
-                noc_struct.icac = Some(icac.try_into().unwrap());
-            }
-
-            noc_struct.key_pair = private_key.clone();
+            // log_info!("NOC: {}", hex::encode(&noc_struct.noc));
+            // if let Some(icac) = &noc_struct.icac {
+            //     log_info!("ICAC: {}", hex::encode(icac));
+            // }
 
             let public_key = private_key.verifying_key();
             let pbk_bytes = public_key.to_sec1_bytes().to_vec();
@@ -285,6 +284,7 @@ impl OperationalCredentialsCluster {
             let compressed_as_hex = hex::encode_upper(&compressed_fabric_id);
             let node_id = hex::encode_upper(new_fabric.node_id.to_be_bytes());
             let instance_name = format!("{}-{}", compressed_as_hex.clone(), node_id);
+            log_info!("Advertising ourselves as {}", instance_name);
             information.instance_name = instance_name;
             information.commission_state = CommissionState::Commissioned;
             information.nocs.push(noc_struct);
@@ -294,9 +294,10 @@ impl OperationalCredentialsCluster {
             let group_key = GroupKey {
                 id: 0,
                 security_policy: GroupKeySecurityPolicy::TrustFirst,
-                epoch_key: parameters.ipk_value,
+                epoch_key: parameters.ipk_value.clone(),
                 epoch_start_time: 0,
             };
+            log_info!("First ipk value: {}", hex::encode(parameters.ipk_value));
             information.group_keys.push(group_key);
             information.compressed_fabric_ids.push(compressed_fabric_id.clone());
             information.fabrics.push(new_fabric);

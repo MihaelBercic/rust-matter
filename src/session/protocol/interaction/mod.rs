@@ -7,8 +7,6 @@ pub mod der;
 pub mod enums;
 pub mod information_blocks;
 
-use libc::PT_READ_D;
-
 use crate::mdns::enums::DeviceType;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;

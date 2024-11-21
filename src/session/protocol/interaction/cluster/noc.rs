@@ -9,5 +9,5 @@ use crate::crypto::constants::CERTIFICATE_SIZE;
 pub struct NOC {
     pub icac: Option<Vec<u8>>,
     pub noc: Vec<u8>,
-    pub key_pair: SigningKey,
+    pub private_key: SigningKey,
 }
