@@ -109,13 +109,20 @@ impl Session {
     }
 
     pub fn encode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
+        log_info!("Encoding the message...");
         if matter_message.header.is_insecure_unicast_session() {
             return Ok(());
         }
         let encrypted = &matter_message.payload;
         let header = &matter_message.header;
         let mut nonce = vec![];
-        let source_node_id = header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
+        let mut source_node_id = header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
+
+        if self.session_id == 6969 {
+            source_node_id = self.local_node_id;
+            log_info!("Setting the source node id to {}", source_node_id);
+        }
+
         nonce.push(header.security_flags.flags);
         nonce.write_u32::<LE>(header.message_counter)?;
         nonce.write_u64::<LE>(source_node_id)?;
@@ -130,6 +137,7 @@ impl Session {
             return Err(crypto_error("Unable to encrypt the message."));
         };
         matter_message.payload = encrypted;
+        log_info!("Encoded the message...");
         Ok(())
     }
 }
