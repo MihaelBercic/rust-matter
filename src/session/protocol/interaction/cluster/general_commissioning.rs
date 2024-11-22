@@ -77,6 +77,7 @@ impl GeneralCommissioningCluster {
     }
 
     fn commissioning_complete(&mut self, input: Option<Tlv>) -> InvokeResponse {
+        log_info!("Commissioning complete!");
         InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(5)),

@@ -17,7 +17,7 @@ use crate::session::protocol::enums::SecureStatusProtocolCode::{InvalidParameter
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID::ProtocolSecureChannel;
 use crate::session::protocol_message::ProtocolMessage;
-use crate::session::session::Session;
+use crate::session::session::{CaseSessionSetup, Session};
 use crate::tlv::element_type::ElementType;
 use crate::tlv::structs::PBKDFParamResponse;
 use crate::tlv::structs::Pake1;
@@ -30,7 +30,7 @@ use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber;
 use crate::tlv::tlv::Tlv;
 use crate::utils::{bail_tlv, generic_error, transport_error, MatterError};
-use crate::{log_debug, log_error, log_info, tlv};
+use crate::{log_debug, log_error, log_info, tlv, SESSIONS, START_TIME};
 use byteorder::{WriteBytesExt, LE};
 use ccm::aead::Payload;
 use interaction::cluster::operational_credentials::MatterCertificate;
@@ -223,11 +223,11 @@ pub(crate) fn process_secure_channel(
 
                     let mut salt: Vec<u8> = vec![];
                     let random = random_bytes::<32>();
-                    let transcript_hash = hash_message(&sigma_bytes);
+                    let mut case_context = sigma_bytes.clone();
                     salt.extend_from_slice(&ipk);
                     salt.extend_from_slice(&random);
                     salt.extend_from_slice(&eph_public_key.to_sec1_bytes());
-                    salt.extend_from_slice(&transcript_hash);
+                    salt.extend_from_slice(&hash_message(&case_context));
 
                     log_info!("My salt: {}", hex::encode(&salt));
 
@@ -262,6 +262,8 @@ pub(crate) fn process_secure_channel(
                     let sigma2 = Tlv::try_from(sigma2).unwrap();
                     // log_error!("Sigma 2 as hex: {}", hex::encode(sigma2.clone().to_bytes()));
 
+                    case_context.extend_from_slice(&sigma2.clone().to_bytes());
+                    session.case_setup = Some(CaseSessionSetup { context: case_context, ipk });
                     let builder = ProtocolMessageBuilder::new()
                         .set_protocol(ProtocolSecureChannel)
                         .set_acknowledged_message_counter(message.header.message_counter)
@@ -271,8 +273,81 @@ pub(crate) fn process_secure_channel(
                     return Ok(builder);
                 }
             }
-
+            log_error!("Have to fix how we send back Status Reports to make it neater.");
             todo!("Finish CASE Sigma 1 implementation.")
+        }
+        SecureChannelProtocolOpcode::CASESigma3 => {
+            if let Some(case_setup) = &mut session.case_setup {
+                let bytes = tlv.clone().to_bytes();
+                let mut sigma3 = Sigma3::try_from(tlv).unwrap();
+                let mut salt = case_setup.ipk.clone();
+                salt.extend_from_slice(&hash_message(&case_setup.context));
+                let mut s3k = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"Sigma3", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
+                let mut decrypted = decrypt(
+                    &s3k,
+                    Payload {
+                        msg: &sigma3.encrypted,
+                        aad: &[],
+                    },
+                    b"NCASE_Sigma3N",
+                )
+                .unwrap();
+
+                // TODO verify...
+                let tlv = Tlv::try_from_cursor(&mut Cursor::new(&decrypted)).unwrap();
+                let tbe = Sigma3Tbe::try_from(tlv).unwrap();
+
+                let peer_noc = tbe.initiator_noc;
+                let peer_noc = MatterCertificate::try_from(&peer_noc[..]).unwrap();
+                session.peer_node_id = MatterDestinationID::Node(peer_noc.subject.matter_node_id);
+
+                case_setup.context.extend_from_slice(&bytes);
+
+                let mut salt = vec![];
+                salt.extend_from_slice(&case_setup.ipk);
+                salt.extend_from_slice(&hash_message(&case_setup.context));
+
+                log_info!("Salt: {}", hex::encode(&salt));
+                log_info!("Shared Secret: {}", hex::encode(&session.shared_secret.unwrap()));
+
+                let kdf = key_derivation(
+                    &session.shared_secret.unwrap(),
+                    Some(&salt),
+                    b"SessionKeys",
+                    3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
+                );
+
+                log_debug!("kdf: {}", hex::encode(&kdf));
+
+                let length = CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
+                let prover_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES] = kdf[..length].try_into().unwrap();
+                let verifier_key: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES] = kdf[length..2 * length].try_into().unwrap();
+                let attestation_challenge: [u8; CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES] = kdf[2 * length..].try_into().unwrap();
+                session.prover_key = prover_key;
+                session.verifier_key = verifier_key;
+                session.attestation_challenge = attestation_challenge;
+                session.timestamp = START_TIME.elapsed().unwrap().as_secs();
+                // secure_session_context.r2i = AESCCM(
+                //     secure_session_context.r2i_key,
+                //     tag_length=crypto.AEAD_MIC_LENGTH_BYTES,
+                // )
+                //
+                let status_report = StatusReport::new(
+                    enums::SecureChannelGeneralCode::Success,
+                    ProtocolSecureChannel,
+                    SessionEstablishmentSuccess,
+                );
+                session.session_id = 6969;
+
+                let builder = ProtocolMessageBuilder::new()
+                    .set_protocol(ProtocolSecureChannel)
+                    .set_acknowledged_message_counter(message.header.message_counter)
+                    .set_exchange_id(exchange_id)
+                    .set_opcode(SecureChannelProtocolOpcode::StatusReport as u8)
+                    .set_payload(&status_report.to_bytes());
+                return Ok(builder);
+            };
+            todo!("Have to implement Case Sigma 3...");
         }
         _ => todo!("Received OPCODE: {:?}", protocol_message.opcode),
     }
@@ -414,5 +489,70 @@ impl TryFrom<Sigma2TbsData> for Tlv {
         ]);
 
         Ok(Tlv::simple(ElementType::Structure(children)))
+    }
+}
+
+pub struct Sigma3Tbs {
+    pub initiator_noc: Vec<u8>,
+    pub initiator_icac: Option<Vec<u8>>,
+    pub initiator_eph_public_key: Vec<u8>,
+    pub responder_eph_public_key: Vec<u8>,
+}
+
+pub struct Sigma3Tbe {
+    pub initiator_noc: Vec<u8>,
+    pub initiator_icac: Option<Vec<u8>>,
+    pub signature: Vec<u8>,
+}
+
+impl TryFrom<Tlv> for Sigma3Tbe {
+    type Error = MatterError;
+
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
+        let mut tbe = Self {
+            initiator_noc: vec![],
+            initiator_icac: None,
+            signature: vec![],
+        };
+
+        if let ElementType::Structure(children) = value.control.element_type {
+            for child in children {
+                let element_type = child.control.element_type;
+                if let Some(TagNumber::Short(tag)) = child.tag.tag_number {
+                    match tag {
+                        1 => tbe.initiator_noc = element_type.into_octet_string()?,
+                        2 => tbe.initiator_icac = Some(element_type.into_octet_string()?),
+                        3 => tbe.signature = element_type.into_octet_string()?,
+                        _ => bail_tlv!("Incorrect tag"),
+                    }
+                }
+            }
+        }
+
+        Ok(tbe)
+    }
+}
+
+pub struct Sigma3 {
+    pub encrypted: Vec<u8>,
+}
+
+impl TryFrom<Tlv> for Sigma3 {
+    type Error = MatterError;
+
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
+        let mut sigma3 = Self { encrypted: vec![] };
+        if let ElementType::Structure(children) = value.control.element_type {
+            for child in children {
+                let element = child.control.element_type;
+                if let Some(TagNumber::Short(tag)) = child.tag.tag_number {
+                    match tag {
+                        1 => sigma3.encrypted = element.into_octet_string()?,
+                        _ => log_error!("Tag {} should not happen.", tag),
+                    }
+                };
+            }
+        }
+        Ok(sigma3)
     }
 }

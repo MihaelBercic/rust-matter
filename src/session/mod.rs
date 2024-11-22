@@ -1,4 +1,5 @@
 use crate::constants::UNSPECIFIED_NODE_ID;
+use crate::log_debug;
 use crate::logging::color_red;
 use crate::logging::color_reset;
 use crate::logging::color_yellow;
@@ -52,7 +53,7 @@ pub(crate) fn start_processing_thread(
                         continue;
                     }
                     if let Err(error) = process_message(network_message, &outgoing_sender, device.clone()) {
-                        // log_error!("Unable to process message: {:?}", error);
+                        log_error!("Unable to process message: {:?}", error);
                     }
                 }
                 Err(error) => log_error!("Unable to receive the message {:?}", error),
@@ -73,54 +74,67 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         }
     }
 
-    let mut session = session_map.entry(matter_message.header.session_id).or_insert(Default::default());
-    session.decode(&mut matter_message)?;
-    let source_node_id = matter_message.header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
-    let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..])?;
-    let debug_opcode = match protocol_message.protocol_id {
-        ProtocolID::ProtocolSecureChannel => format!("{:?}", SecureChannelProtocolOpcode::from(protocol_message.opcode)),
-        ProtocolID::ProtocolInteractionModel => format!("{:?}", InteractionProtocolOpcode::from(protocol_message.opcode)),
-        _ => todo!("Not implemented protocol yet..."),
-    };
+    log_info!("Attempting to find a session with the id: {}", matter_message.header.session_id);
+    let old_session_id = matter_message.header.session_id;
+    let new_session_id = {
+        log_debug!("Did we find session? {}", session_map.contains_key(&6969));
+        let mut session = session_map.entry(matter_message.header.session_id).or_insert(Default::default());
+        log_debug!("Decoding!");
+        session.decode(&mut matter_message)?;
+        log_debug!("Decoded!");
+        let source_node_id = matter_message.header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
+        let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..])?;
+        let debug_opcode = match protocol_message.protocol_id {
+            ProtocolID::ProtocolSecureChannel => format!("{:?}", SecureChannelProtocolOpcode::from(protocol_message.opcode)),
+            ProtocolID::ProtocolInteractionModel => format!("{:?}", InteractionProtocolOpcode::from(protocol_message.opcode)),
+            _ => todo!("Not implemented protocol yet..."),
+        };
 
-    log_info!(
-        "{color_red}{:?} \u{27F6} {color_yellow}{}{color_reset}",
-        &protocol_message.protocol_id,
-        debug_opcode
-    );
-    let mut device = device.lock().unwrap();
+        log_info!(
+            "{color_red}{:?} \u{27F6} {color_yellow}{}{color_reset}",
+            &protocol_message.protocol_id,
+            debug_opcode
+        );
+        let mut device = device.lock().unwrap();
 
-    let mut builder = match protocol_message.protocol_id {
-        ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session, &mut device),
-        ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message, session, &mut device),
-        ProtocolID::ProtocolBdx => todo!("Not yet implemented"),
-        ProtocolID::ProtocolUserDirectedCommissioning => todo!("Not yet implemented"),
-        ProtocolID::ProtocolForTesting => todo!("Not yet implemented"),
-    }?;
+        let mut builder = match protocol_message.protocol_id {
+            ProtocolID::ProtocolSecureChannel => process_secure_channel(&matter_message, protocol_message, source_node_id, &mut session, &mut device),
+            ProtocolID::ProtocolInteractionModel => process_interaction_model(&matter_message, protocol_message, session, &mut device),
+            ProtocolID::ProtocolBdx => todo!("Not yet implemented"),
+            ProtocolID::ProtocolUserDirectedCommissioning => todo!("Not yet implemented"),
+            ProtocolID::ProtocolForTesting => todo!("Not yet implemented"),
+        }?;
 
-    session.message_counter = if matter_message.header.is_insecure_unicast_session() {
-        increase_counter(&GLOBAL_UNENCRYPTED_COUNTER)
-    } else {
-        matter_message.header.message_counter + 1
-    };
-    let payload: Vec<u8> = builder.build().into();
-    let mut message = MatterMessageBuilder::new()
-        .set_session_id(if matter_message.header.is_insecure_unicast_session() {
-            0
+        session.message_counter = if matter_message.header.is_insecure_unicast_session() {
+            increase_counter(&GLOBAL_UNENCRYPTED_COUNTER)
         } else {
-            session.peer_session_id
-        })
-        .set_destination(MatterDestinationID::Node(source_node_id))
-        .set_counter(session.message_counter)
-        .set_payload(&payload)
-        .build();
-    session.encode(&mut message);
-    let message = NetworkMessage {
-        address: network_message.address,
-        message,
-        retry_counter: 0,
+            matter_message.header.message_counter + 1
+        };
+        let payload: Vec<u8> = builder.build().into();
+        let mut message = MatterMessageBuilder::new()
+            .set_session_id(if matter_message.header.is_insecure_unicast_session() {
+                0
+            } else {
+                session.peer_session_id
+            })
+            .set_destination(MatterDestinationID::Node(source_node_id))
+            .set_counter(session.message_counter)
+            .set_payload(&payload)
+            .build();
+        session.encode(&mut message);
+        let message = NetworkMessage {
+            address: network_message.address,
+            message,
+            retry_counter: 0,
+        };
+        outgoing_sender.send(message);
+        session.session_id
     };
-    outgoing_sender.send(message);
+    log_info!("Should we replace the session map: {}", new_session_id != old_session_id);
+    if new_session_id != old_session_id {
+        let removed = session_map.remove(&old_session_id).unwrap();
+        session_map.insert(new_session_id, removed);
+    }
     Ok(())
 }
 

@@ -106,12 +106,12 @@ impl Device {
         } else {
             format!("{:?}", command_path.cluster_id)
         };
-        // log_debug!(
-        //     "[INVOKE] Endpoint: {:?}, Cluster: {:?}, Command: {:?}",
-        //     command_path.endpoint_id,
-        //     cluster_information,
-        //     command_path.command_id
-        // );
+        log_debug!(
+            "[INVOKE] Endpoint: {:?}, Cluster: {:?}, Command: {:?}",
+            command_path.endpoint_id,
+            cluster_information,
+            command_path.command_id
+        );
 
         match command_path.endpoint_id {
             QueryParameter::Wildcard => {

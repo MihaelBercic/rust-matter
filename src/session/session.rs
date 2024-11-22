@@ -7,6 +7,7 @@ use crate::session::matter_message::MatterMessage;
 use crate::session::message_reception::MessageReceptionState;
 use crate::session::SessionRole;
 use crate::utils::{crypto_error, MatterError};
+use crate::{log_debug, log_info};
 use byteorder::{WriteBytesExt, LE};
 use ccm::aead::Payload;
 
@@ -37,6 +38,7 @@ pub struct Session {
     pub peer_active_mode: bool, // < => (now() - activetimestamp) < session_active_threshold,
     pub session_setup: Option<SessionSetup>,
     pub shared_secret: Option<[u8; 32]>,
+    pub case_setup: Option<CaseSessionSetup>,
 }
 
 impl Default for Session {
@@ -68,6 +70,7 @@ impl Default for Session {
             peer_active_mode: false,
             session_setup: Some(Default::default()),
             shared_secret: None,
+            case_setup: None,
         }
     }
 }
@@ -79,7 +82,15 @@ impl Session {
         let encrypted = &matter_message.payload;
         let header = &matter_message.header;
         let mut nonce = vec![];
-        let source_node_id = header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
+        let mut source_node_id = header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
+
+        if let MatterDestinationID::Node(id) = self.peer_node_id {
+            if self.session_id == 6969 {
+                source_node_id = id;
+                log_info!("Setting the source node id to {}", id);
+            }
+        }
+
         nonce.push(header.security_flags.flags);
         nonce.write_u32::<LE>(header.message_counter)?;
         nonce.write_u64::<LE>(source_node_id)?;
@@ -169,4 +180,10 @@ impl Default for SessionSetup {
             confirmation: None,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct CaseSessionSetup {
+    pub context: Vec<u8>,
+    pub ipk: Vec<u8>,
 }
