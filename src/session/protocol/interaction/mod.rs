@@ -9,7 +9,9 @@ pub mod information_blocks;
 
 use information_blocks::attribute::data::AttributeData;
 use information_blocks::attribute::status::{AttributeStatus, Status};
+use information_blocks::{CommandPath, InvokeResponse};
 
+use crate::crypto::random_bytes;
 use crate::mdns::enums::DeviceType;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
@@ -120,6 +122,24 @@ pub fn process_interaction_model(matter_message: &MatterMessage, protocol_messag
                 .set_needs_acknowledgement(false)
                 .set_exchange_id(protocol_message.exchange_id)
                 .set_opcode(InteractionProtocolOpcode::WriteResponse as u8)
+                .set_acknowledged_message_counter(matter_message.header.message_counter)
+                .set_payload(&response);
+            Ok(builder)
+        }
+
+        InteractionProtocolOpcode::SubscribeRequest => {
+            log_debug!("Executing SubscribeRequest!");
+            let response = Structure(vec![
+                Tlv::new(BooleanTrue, ContextSpecific8, Tag::short(0)),
+                Tlv::new(9039828u32.into(), ContextSpecific8, Tag::short(1)),
+            ]);
+
+            let response: Vec<u8> = Tlv::simple(response).into();
+            let builder = ProtocolMessageBuilder::new()
+                .set_protocol(ProtocolInteractionModel)
+                .set_needs_acknowledgement(false)
+                .set_exchange_id(protocol_message.exchange_id)
+                .set_opcode(InteractionProtocolOpcode::ReportData as u8)
                 .set_acknowledged_message_counter(matter_message.header.message_counter)
                 .set_payload(&response);
             Ok(builder)
