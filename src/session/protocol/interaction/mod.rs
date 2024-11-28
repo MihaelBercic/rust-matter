@@ -7,6 +7,9 @@ pub mod der;
 pub mod enums;
 pub mod information_blocks;
 
+use information_blocks::attribute::data::AttributeData;
+use information_blocks::attribute::status::{AttributeStatus, Status};
+
 use crate::mdns::enums::DeviceType;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
@@ -26,12 +29,7 @@ use crate::utils::{bail_tlv, generic_error, tlv_error, MatterError};
 use crate::{log_debug, log_info, SharedDevice};
 use std::io::Cursor;
 
-pub fn process_interaction_model(
-    matter_message: &MatterMessage,
-    protocol_message: ProtocolMessage,
-    session: &mut Session,
-    device: &mut Device,
-) -> Result<ProtocolMessageBuilder, MatterError> {
+pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage, session: &mut Session, device: &mut Device) -> Result<ProtocolMessageBuilder, MatterError> {
     let opcode = InteractionProtocolOpcode::from(protocol_message.opcode);
     let tlv = Tlv::try_from_cursor(&mut Cursor::new(&protocol_message.payload))?;
     match opcode {
@@ -41,15 +39,12 @@ pub fn process_interaction_model(
             for path in read_request.attribute_paths {
                 reports.extend(device.read_attributes(path))
             }
-            // log_debug!("We have {} reports to send!", reports.len());
+            log_debug!("We have {} reports to send!", reports.len());
             let mut to_send = vec![];
             for report in reports {
                 to_send.push(Tlv::simple(report.into()));
             }
-            let response = Structure(vec![
-                Tlv::new(Array(to_send), ContextSpecific8, Tag::short(1)),
-                Tlv::new(BooleanTrue, ContextSpecific8, Tag::short(4)),
-            ]);
+            let response = Structure(vec![Tlv::new(Array(to_send), ContextSpecific8, Tag::short(1)), Tlv::new(BooleanTrue, ContextSpecific8, Tag::short(4))]);
             let response: Vec<u8> = Tlv::simple(response).into();
             let builder = ProtocolMessageBuilder::new()
                 .set_protocol(ProtocolInteractionModel)
@@ -102,6 +97,33 @@ pub fn process_interaction_model(
                 .set_protocol(ProtocolInteractionModel);
             Ok(builder)
         }
+        InteractionProtocolOpcode::WriteRequest => {
+            log_debug!("Executing WriteRequest!");
+            let request = WriteRequest::try_from(tlv)?;
+            log_debug!("We have our write request: {:?}", &request);
+            let mut reports: Vec<AttributeStatus> = vec![];
+            for data in request.data {
+                reports.push(AttributeStatus {
+                    path: data.path,
+                    status: Status { status: 0, cluster_status: 0 },
+                });
+                log_info!("Pushed a report!");
+            }
+            let mut to_send = vec![];
+            for report in reports {
+                to_send.push(Tlv::simple(report.into()));
+            }
+            let response = Structure(vec![Tlv::new(Array(to_send), ContextSpecific8, Tag::short(1)), Tlv::new(BooleanTrue, ContextSpecific8, Tag::short(4))]);
+            let response: Vec<u8> = Tlv::simple(response).into();
+            let builder = ProtocolMessageBuilder::new()
+                .set_protocol(ProtocolInteractionModel)
+                .set_needs_acknowledgement(false)
+                .set_exchange_id(protocol_message.exchange_id)
+                .set_opcode(InteractionProtocolOpcode::WriteResponse as u8)
+                .set_acknowledged_message_counter(matter_message.header.message_counter)
+                .set_payload(&response);
+            Ok(builder)
+        }
         _ => Err(generic_error(&format!("OPCODE: {:?}", opcode))),
     }
 }
@@ -115,14 +137,10 @@ impl TryFrom<Tlv> for ReadRequest {
 
     fn try_from(value: Tlv) -> Result<Self, Self::Error> {
         let mut attribute_paths: Vec<AttributePath> = vec![];
-        let Structure(children) = value.control.element_type else {
-            bail_tlv!("Incorrect TLV type")
-        };
+        let Structure(children) = value.control.element_type else { bail_tlv!("Incorrect TLV type") };
 
         for child in children {
-            let Some(Short(tag_number)) = child.tag.tag_number else {
-                bail_tlv!("Incorrect tag number")
-            };
+            let Some(Short(tag_number)) = child.tag.tag_number else { bail_tlv!("Incorrect tag number") };
             // 0 = Attribute Read
             match tag_number {
                 0 => {
@@ -130,12 +148,47 @@ impl TryFrom<Tlv> for ReadRequest {
                         bail_tlv!("Incorrect Array of Attribute...")
                     };
                     for child in children {
-                        attribute_paths.push(AttributePath::try_from(child)?);
+                        attribute_paths.push(AttributePath::try_from(child.control.element_type)?);
                     }
                 }
                 _ => {}
             }
         }
         Ok(ReadRequest { attribute_paths })
+    }
+}
+
+#[derive(Debug)]
+pub struct WriteRequest {
+    pub surprsess_response: bool,
+    pub data: Vec<AttributeData>,
+}
+
+impl TryFrom<Tlv> for WriteRequest {
+    type Error = MatterError;
+
+    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
+        let mut request = Self {
+            surprsess_response: false,
+            data: vec![],
+        };
+        if let Structure(children) = value.control.element_type {
+            for child in children {
+                let Some(Short(tag_number)) = child.tag.tag_number else { bail_tlv!("Incorrect tag number") };
+                // 0 = Attribute Read
+                match tag_number {
+                    2 => {
+                        let Array(children) = child.control.element_type else {
+                            bail_tlv!("Incorrect Array of Attribute...")
+                        };
+                        for child in children {
+                            request.data.push(AttributeData::try_from(child.control.element_type)?);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        Ok(request)
     }
 }

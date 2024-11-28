@@ -36,11 +36,7 @@ pub mod session;
 pub use device::*;
 
 /// Message processing thread
-pub(crate) fn start_processing_thread(
-    receiver: Receiver<NetworkMessage>,
-    outgoing_sender: Sender<NetworkMessage>,
-    device: SharedDevice,
-) -> JoinHandle<()> {
+pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>, device: SharedDevice) -> JoinHandle<()> {
     thread::Builder::new()
         .name("Processing thread".to_string())
         .stack_size(100 * 1024)
@@ -74,14 +70,13 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         }
     }
 
-    log_info!("Attempting to find a session with the id: {}", matter_message.header.session_id);
+    // log_info!("Attempting to find a session with the id: {}", matter_message.header.session_id);
     let old_session_id = matter_message.header.session_id;
     let new_session_id = {
-        log_debug!("Did we find session? {}", session_map.contains_key(&6969));
+        log_debug!("Did we find session? {}", session_map.contains_key(&matter_message.header.session_id));
         let mut session = session_map.entry(matter_message.header.session_id).or_insert(Default::default());
-        log_debug!("Decoding!");
         session.decode(&mut matter_message)?;
-        log_debug!("Decoded!");
+
         let source_node_id = matter_message.header.source_node_id.unwrap_or(UNSPECIFIED_NODE_ID);
         let protocol_message = ProtocolMessage::try_from(&matter_message.payload[..])?;
         let debug_opcode = match protocol_message.protocol_id {
@@ -90,11 +85,7 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
             _ => todo!("Not implemented protocol yet..."),
         };
 
-        log_info!(
-            "{color_red}{:?} \u{27F6} {color_yellow}{}{color_reset}",
-            &protocol_message.protocol_id,
-            debug_opcode
-        );
+        log_info!("{color_red}{:?} \u{27F6} {color_yellow}{}{color_reset}", &protocol_message.protocol_id, debug_opcode);
         let mut device = device.lock().unwrap();
 
         let mut builder = match protocol_message.protocol_id {
@@ -112,11 +103,7 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         };
         let payload: Vec<u8> = builder.build().into();
         let mut message = MatterMessageBuilder::new()
-            .set_session_id(if matter_message.header.is_insecure_unicast_session() {
-                0
-            } else {
-                session.peer_session_id
-            })
+            .set_session_id(if matter_message.header.is_insecure_unicast_session() { 0 } else { session.peer_session_id })
             .set_destination(MatterDestinationID::Node(source_node_id))
             .set_counter(session.message_counter)
             .set_payload(&payload)
@@ -130,7 +117,7 @@ fn process_message(network_message: NetworkMessage, outgoing_sender: &Sender<Net
         outgoing_sender.send(message);
         session.session_id
     };
-    log_info!("Should we replace the session map: {}", new_session_id != old_session_id);
+    // log_info!("Should we replace the session map: {}", new_session_id != old_session_id);
     if new_session_id != old_session_id {
         let removed = session_map.remove(&old_session_id).unwrap();
         session_map.insert(new_session_id, removed);

@@ -1,6 +1,6 @@
 use crate::crypto::constants::{
-    CERTIFICATE_SIZE, CRYPTO_AEAD_MIC_LENGTH_BYTES, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES,
-    CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS, CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES,
+    CERTIFICATE_SIZE, CRYPTO_AEAD_MIC_LENGTH_BYTES, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
+    CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES,
 };
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values::Values::SpakeVerifier;
@@ -105,12 +105,7 @@ pub(crate) fn process_secure_channel(
             let s2p = Spake2P::new();
             let prover = Spake2P::compute_prover(20202021, salt, iterations);
             let verifier = Spake2P::compute_verifier(20202021, salt, iterations);
-            let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = s2p
-                .compute_public_verifier(&verifier.w0)?
-                .to_encoded_point(false)
-                .as_bytes()
-                .try_into()
-                .unwrap();
+            let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = s2p.compute_public_verifier(&verifier.w0)?.to_encoded_point(false).as_bytes().try_into().unwrap();
             let context = hash_message(&session_setup.context);
             let mut transcript = s2p.compute_transcript(&context, &[], &[], SpakeVerifier(verifier), &pake_1.p_a, &p_b);
             let confirmation = s2p.compute_confirmation_values(&transcript, &pake_1.p_a, &p_b, 256);
@@ -134,11 +129,7 @@ pub(crate) fn process_secure_channel(
                 return Err(transport_error("No confirmation present..."));
             };
             let is_okay = confirmation.c_a == pake_3.c_a;
-            let (general_code, protocol_code) = if is_okay {
-                (Success, SessionEstablishmentSuccess)
-            } else {
-                (Failure, InvalidParameter)
-            };
+            let (general_code, protocol_code) = if is_okay { (Success, SessionEstablishmentSuccess) } else { (Failure, InvalidParameter) };
             let status_report = StatusReport::new(general_code, ProtocolSecureChannel, protocol_code);
             if is_okay {
                 let kdf = key_derivation(&confirmation.k_e, None, &CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS * 3);
@@ -176,23 +167,17 @@ pub(crate) fn process_secure_channel(
                 let root_public_key = cert.ec_public_key;
                 let key_set = details.group_keys.get(index).unwrap();
                 let compressed_fabric = details.compressed_fabric_ids.get(index).unwrap();
-                let ipk = key_derivation(
-                    &key_set.epoch_key,
-                    Some(&compressed_fabric[..]),
-                    b"GroupKey v1.0",
-                    CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
-                );
-                let candidate_destination_id =
-                    compute_destination_id(&root_public_key, fabric.fabric_id, fabric.node_id, &sigma.initiator_random, &ipk);
+                let ipk = key_derivation(&key_set.epoch_key, Some(&compressed_fabric[..]), b"GroupKey v1.0", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
+                let candidate_destination_id = compute_destination_id(&root_public_key, fabric.fabric_id, fabric.node_id, &sigma.initiator_random, &ipk);
 
                 if candidate_destination_id == sigma.destination_id {
                     log_debug!("IPK: {}", hex::encode(&ipk));
 
-                    log_debug!("Found our destination Candidate ID! {}", hex::encode(candidate_destination_id));
+                    //log_debug!("Found our destination Candidate ID! {}", hex::encode(candidate_destination_id));
                     let noc = details.nocs.get(index).unwrap();
-                    log_info!("NOC: {}", hex::encode(&noc.noc));
+                    //log_info!("NOC: {}", hex::encode(&noc.noc));
                     if let Some(icac) = &noc.icac {
-                        log_info!("ICAC: {}", hex::encode(icac));
+                        //log_info!("ICAC: {}", hex::encode(icac));
                     }
 
                     session.peer_session_id = sigma.initiator_session_id;
@@ -229,28 +214,20 @@ pub(crate) fn process_secure_channel(
                     salt.extend_from_slice(&eph_public_key.to_sec1_bytes());
                     salt.extend_from_slice(&hash_message(&case_context));
 
-                    log_info!("My salt: {}", hex::encode(&salt));
+                    //log_info!("My salt: {}", hex::encode(&salt));
 
                     let s2k = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"Sigma2", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
                     log_debug!("SR2K: {}", hex::encode(&s2k));
 
                     let tbe_tlv = Tlv::try_from(tbe).unwrap();
-                    log_info!("Not yet encrypted: {}", hex::encode(&tbe_tlv.clone().to_bytes()));
+                    //log_info!("Not yet encrypted: {}", hex::encode(&tbe_tlv.clone().to_bytes()));
 
-                    let encrypted = encrypt(
-                        &s2k,
-                        Payload {
-                            msg: &tbe_tlv.to_bytes(),
-                            aad: &[],
-                        },
-                        b"NCASE_Sigma2N",
-                    )
-                    .unwrap();
-                    log_info!("Encrypted: {}", hex::encode(&encrypted.clone()));
-                    log_info!(
-                        "Decrypted: {}",
-                        hex::encode(decrypt(&s2k, Payload { msg: &encrypted, aad: &[] }, b"NCASE_Sigma2N").unwrap())
-                    );
+                    let encrypted = encrypt(&s2k, Payload { msg: &tbe_tlv.to_bytes(), aad: &[] }, b"NCASE_Sigma2N").unwrap();
+                    //log_info!("Encrypted: {}", hex::encode(&encrypted.clone()));
+                    //log_info!(
+                    //    "Decrypted: {}",
+                    //    hex::encode(decrypt(&s2k, Payload { msg: &encrypted, aad: &[] }, b"NCASE_Sigma2N").unwrap())
+                    //);
                     let sigma2 = Sigma2 {
                         responder_random: random.to_vec(),
                         responder_session_id: 6969, //session.session_id,
@@ -273,7 +250,7 @@ pub(crate) fn process_secure_channel(
                     return Ok(builder);
                 }
             }
-            log_error!("Have to fix how we send back Status Reports to make it neater.");
+            // TODO: log_error!("Have to fix how we send back Status Reports to make it neater.");
             todo!("Finish CASE Sigma 1 implementation.")
         }
         SecureChannelProtocolOpcode::CASESigma3 => {
@@ -283,15 +260,7 @@ pub(crate) fn process_secure_channel(
                 let mut salt = case_setup.ipk.clone();
                 salt.extend_from_slice(&hash_message(&case_setup.context));
                 let mut s3k = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"Sigma3", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
-                let mut decrypted = decrypt(
-                    &s3k,
-                    Payload {
-                        msg: &sigma3.encrypted,
-                        aad: &[],
-                    },
-                    b"NCASE_Sigma3N",
-                )
-                .unwrap();
+                let mut decrypted = decrypt(&s3k, Payload { msg: &sigma3.encrypted, aad: &[] }, b"NCASE_Sigma3N").unwrap();
 
                 // TODO verify...
                 let tlv = Tlv::try_from_cursor(&mut Cursor::new(&decrypted)).unwrap();
@@ -307,15 +276,10 @@ pub(crate) fn process_secure_channel(
                 salt.extend_from_slice(&case_setup.ipk);
                 salt.extend_from_slice(&hash_message(&case_setup.context));
 
-                log_info!("Salt: {}", hex::encode(&salt));
-                log_info!("Shared Secret: {}", hex::encode(&session.shared_secret.unwrap()));
+                //log_info!("Salt: {}", hex::encode(&salt));
+                //log_info!("Shared Secret: {}", hex::encode(&session.shared_secret.unwrap()));
 
-                let kdf = key_derivation(
-                    &session.shared_secret.unwrap(),
-                    Some(&salt),
-                    b"SessionKeys",
-                    3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
-                );
+                let kdf = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"SessionKeys", 3 * CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
 
                 log_debug!("kdf: {}", hex::encode(&kdf));
 
@@ -332,11 +296,7 @@ pub(crate) fn process_secure_channel(
                 //     tag_length=crypto.AEAD_MIC_LENGTH_BYTES,
                 // )
                 //
-                let status_report = StatusReport::new(
-                    enums::SecureChannelGeneralCode::Success,
-                    ProtocolSecureChannel,
-                    SessionEstablishmentSuccess,
-                );
+                let status_report = StatusReport::new(enums::SecureChannelGeneralCode::Success, ProtocolSecureChannel, SessionEstablishmentSuccess);
                 session.session_id = 6969;
 
                 let builder = ProtocolMessageBuilder::new()
@@ -480,7 +440,7 @@ impl TryFrom<Sigma2TbsData> for Tlv {
     fn try_from(value: Sigma2TbsData) -> Result<Self, Self::Error> {
         let mut children = vec![Tlv::new(value.responder_noc.into(), TagControl::ContextSpecific8, Tag::short(1))];
         if let Some(icac) = value.responder_icac {
-            log_error!("PUSHING ICAC INTO TLV TBS!");
+            log_error!("PUSHING ICAC INTO TLV TBS! |{}|", hex::encode(&icac));
             children.push(Tlv::new(icac.into(), TagControl::ContextSpecific8, Tag::short(2)));
         };
         children.extend_from_slice(&[

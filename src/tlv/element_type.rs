@@ -98,11 +98,18 @@ impl ElementType {
         }
     }
 
+    pub(crate) fn into_u16_optional(self) -> Result<Option<u16>, MatterError> {
+        Ok(match self {
+            Null => None,
+            _ => Some(self.into_u16()?),
+        })
+    }
+
     pub(crate) fn into_boolean(self) -> Result<bool, MatterError> {
         match self {
             BooleanFalse => Ok(false),
             BooleanTrue => Ok(true),
-            _ => Err(MatterError::new(Application, "Not possible to be matched into u16...")),
+            _ => Err(MatterError::new(Application, "Not possible to be matched into boolean...")),
         }
     }
 

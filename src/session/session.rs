@@ -87,7 +87,7 @@ impl Session {
         if let MatterDestinationID::Node(id) = self.peer_node_id {
             if self.session_id == 6969 {
                 source_node_id = id;
-                log_info!("Setting the source node id to {}", id);
+                //log_info!("Setting the source node id to {}", id);
             }
         }
 
@@ -109,7 +109,6 @@ impl Session {
     }
 
     pub fn encode(&self, matter_message: &mut MatterMessage) -> Result<(), MatterError> {
-        log_info!("Encoding the message...");
         if matter_message.header.is_insecure_unicast_session() {
             return Ok(());
         }
@@ -120,7 +119,7 @@ impl Session {
 
         if self.session_id == 6969 {
             source_node_id = self.local_node_id;
-            log_info!("Setting the source node id to {}", source_node_id);
+            //log_info!("Setting the source node id to {}", source_node_id);
         }
 
         nonce.push(header.security_flags.flags);
@@ -137,7 +136,6 @@ impl Session {
             return Err(crypto_error("Unable to encrypt the message."));
         };
         matter_message.payload = encrypted;
-        log_info!("Encoded the message...");
         Ok(())
     }
 }

@@ -51,12 +51,12 @@ impl Device {
         } else {
             format!("{:?}", attribute_path.cluster_id)
         };
-        // log_debug!(
-        //     "[READ] Endpoint: {:?}, Cluster: {:?}, Attribute: {:?}",
-        //     attribute_path.endpoint_id,
-        //     cluster_information,
-        //     attribute_path.attribute_id
-        // );
+        log_debug!(
+            "[READ] Endpoint: {:?}, Cluster: {:?}, Attribute: {:?}",
+            attribute_path.endpoint_id,
+            cluster_information,
+            attribute_path.attribute_id
+        );
         match attribute_path.endpoint_id {
             QueryParameter::Wildcard => {
                 let mut vec = vec![];

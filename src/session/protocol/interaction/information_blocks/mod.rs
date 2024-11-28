@@ -1,5 +1,6 @@
 pub mod attribute;
 
+use crate::log_error;
 use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::enums::QueryParameter::{Specific, Wildcard};
 use crate::session::protocol::interaction::information_blocks::attribute::status::Status;
@@ -9,7 +10,7 @@ use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
-use crate::utils::{tlv_error, MatterError};
+use crate::utils::{bail_tlv, tlv_error, MatterError};
 
 ///
 /// @author Mihael Berčič
@@ -47,10 +48,10 @@ impl Default for AttributePath {
     }
 }
 
-impl TryFrom<Tlv> for AttributePath {
+impl TryFrom<ElementType> for AttributePath {
     type Error = MatterError;
 
-    fn try_from(value: Tlv) -> Result<Self, Self::Error> {
+    fn try_from(value: ElementType) -> Result<Self, Self::Error> {
         let mut attribute_path = Self {
             enable_tag_compression: false,
             node_id: Wildcard,
@@ -60,9 +61,7 @@ impl TryFrom<Tlv> for AttributePath {
             list_index: None,
         };
 
-        let List(children) = value.control.element_type else {
-            return Err(tlv_error("Incorrect TLV element type..."));
-        };
+        let List(children) = value else { bail_tlv!("Incorrect container.") };
 
         for child in children {
             let element_type = child.control.element_type;
@@ -71,11 +70,31 @@ impl TryFrom<Tlv> for AttributePath {
             };
             match tag_number {
                 0 => attribute_path.enable_tag_compression = element_type.into_boolean()?,
-                1 => attribute_path.node_id = Specific(element_type.into_u64()?),
-                2 => attribute_path.endpoint_id = Specific(element_type.into_u16()?),
-                3 => attribute_path.cluster_id = Specific(element_type.into_u32()?),
-                4 => attribute_path.attribute_id = Specific(element_type.into_u32()?),
-                5 => attribute_path.list_index = Some(element_type.into_u16()?),
+                1 => {
+                    attribute_path.node_id = match element_type.into_u64() {
+                        Err(_) => Wildcard,
+                        Ok(id) => Specific(id),
+                    }
+                }
+                2 => {
+                    attribute_path.endpoint_id = match element_type.into_u16() {
+                        Err(_) => Wildcard,
+                        Ok(id) => Specific(id),
+                    }
+                }
+                3 => {
+                    attribute_path.cluster_id = match element_type.into_u32() {
+                        Err(_) => Wildcard,
+                        Ok(id) => Specific(id),
+                    }
+                }
+                4 => {
+                    attribute_path.attribute_id = match element_type.into_u32() {
+                        Err(_) => Wildcard,
+                        Ok(id) => Specific(id),
+                    }
+                }
+                5 => attribute_path.list_index = element_type.into_u16_optional()?,
                 _ => return Err(tlv_error("Incorrect TLV tag number!")),
             }
         }

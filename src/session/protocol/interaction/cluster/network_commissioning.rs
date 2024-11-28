@@ -38,16 +38,16 @@ impl NetworkCommissioningCluster {
             },
             scan_max_seconds: Attribute { id: 0x0002, value: 60 },
             connect_max_seconds: Attribute { id: 0x0003, value: 60 },
-            interface_enabled: Attribute { id: 0, value: true },
+            interface_enabled: Attribute { id: 0x0004, value: true },
             last_networking_status: Attribute {
-                id: 0,
+                id: 0x0005,
                 value: NetworkCommissioningStatus::Success,
             },
             last_network_id: Attribute {
-                id: 0,
+                id: 0x0006,
                 value: vec![12, 12, 3, 120, 0, 03, 0, 01, 20, 3],
             },
-            last_connect_error: Attribute { id: 0, value: 0 },
+            last_connect_error: Attribute { id: 0x0007, value: 0 },
         }
     }
 
@@ -79,7 +79,7 @@ impl ClusterImplementation for NetworkCommissioningCluster {
                     0x0005 => self.last_networking_status.clone().into(),
                     0x0006 => self.last_network_id.clone().into(),
                     0x0007 => self.last_connect_error.clone().into(),
-                    _ => Attribute { id: 65532, value: 1 }.into(),
+                    _ => Attribute { id: 65532, value: 0b001u8 }.into(),
                 }]
             }
         }

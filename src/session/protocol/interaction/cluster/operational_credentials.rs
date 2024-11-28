@@ -98,8 +98,8 @@ impl OperationalCredentialsCluster {
         let certificate = fs::read("Chip-Test-CD-0xFFF2-0x8001.der").expect("Missing file.");
         let certificate = fs::read("certification-declaration/Chip-Test-CD-FFF2-8001.der").expect("Missing file.");
 
-        log_debug!("Invoking AttestationRequest command on OperationalCredentials cluster.");
-        log_info!("Responding using certification-declaration/Chip-Test-CD-FFF2-8001.der as the certificate.");
+        // log_debug!("Invoking AttestationRequest command on OperationalCredentials cluster.");
+        // log_info!("Responding using certification-declaration/Chip-Test-CD-FFF2-8001.der as the certificate.");
         // let cd = Certificate::from_pem(&certificate).unwrap();
         // let x = cd.to_der().unwrap();
         let x = certificate;
@@ -165,11 +165,11 @@ impl OperationalCredentialsCluster {
         }
         let certificate = if chain == CertificateChainType::DAC {
             self.working_on = DAC;
-            log_info!("Responding using attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.pem (converted to DER) for DAC.");
+            //log_info!("Responding using attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.pem (converted to DER) for DAC.");
             fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Cert.pem").unwrap()
         } else {
             self.working_on = PAI;
-            log_info!("Responding using attestation/Chip-Test-PAI-FFF2-8001-Cert.pem (converted to DER) for PAI.");
+            //log_info!("Responding using attestation/Chip-Test-PAI-FFF2-8001-Cert.pem (converted to DER) for PAI.");
             fs::read("attestation/Chip-Test-PAI-FFF2-8001-Cert.pem").unwrap()
         };
         let certificate = Certificate::from_pem(&certificate).unwrap().to_der().unwrap();
@@ -177,11 +177,7 @@ impl OperationalCredentialsCluster {
         vec![InvokeResponse {
             command: Some(CommandData {
                 path: CommandPath::new(Specific(0x03)),
-                fields: Some(Tlv::simple(Structure(vec![Tlv::new(
-                    certificate.into(),
-                    ContextSpecific8,
-                    Tag::short(0),
-                )]))),
+                fields: Some(Tlv::simple(Structure(vec![Tlv::new(certificate.into(), ContextSpecific8, Tag::short(0))]))),
             }),
             status: None,
         }]
@@ -297,7 +293,7 @@ impl OperationalCredentialsCluster {
                 epoch_key: parameters.ipk_value.clone(),
                 epoch_start_time: 0,
             };
-            log_info!("First ipk value: {}", hex::encode(parameters.ipk_value));
+            //log_info!("First ipk value: {}", hex::encode(parameters.ipk_value));
             information.group_keys.push(group_key);
             information.compressed_fabric_ids.push(compressed_fabric_id.clone());
             information.fabrics.push(new_fabric);
@@ -354,9 +350,10 @@ impl ClusterImplementation for OperationalCredentialsCluster {
             QueryParameter::Wildcard => {
                 todo!("Reading of this cluster has not been implemented yet.")
             }
-            QueryParameter::Specific(id) => {
-                todo!("Reading of this cluster has not been implemented yet.")
-            }
+            QueryParameter::Specific(id) => match id {
+                1 => vec![self.fabrics.clone().into()],
+                _ => todo!("Reading of this cluster has not been implemented yet."),
+            },
         }
     }
 
@@ -452,6 +449,12 @@ impl TryFrom<Tlv> for AddNocParameters {
                 4 => parameters.admin_vendor_id = element.into_u16().unwrap(),
                 _ => log_debug!("Not covered TAG_NUMBER {}", tag_number),
             }
+            // TODO: Fix when optional can be empty!
+            if let Some(icac) = &parameters.icac_value {
+                if icac.is_empty() {
+                    parameters.icac_value = None;
+                }
+            }
         }
 
         Ok(parameters)
@@ -485,9 +488,7 @@ impl TryFrom<&[u8]> for MatterCertificate {
 
         for child in children {
             let element_type = child.control.element_type;
-            let Some(Short(tag_number)) = child.tag.tag_number else {
-                bail_tlv!("Missing tag number")
-            };
+            let Some(Short(tag_number)) = child.tag.tag_number else { bail_tlv!("Missing tag number") };
             match tag_number {
                 1 => certificate.serial_number = element_type.into_octet_string()?,
                 6 => certificate.subject = DnAttribute::try_from(element_type)?,

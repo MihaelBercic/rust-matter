@@ -35,9 +35,12 @@ impl DescriptorCluster {
                 id: 0,
                 value: vec![DeviceType { id: 0x0100, revision: 1 }],
             },
-            server_list: Default::default(),
+            server_list: Attribute {
+                id: 1,
+                value: vec![0x0006, 0x0028, 0x0030, 0x0031, 0x003E, 0x001D],
+            },
             client_list: Default::default(),
-            parts_list: Attribute { id: 3, value: vec![1] },
+            parts_list: Attribute { id: 3, value: vec![0, 1] },
             tag_list: Default::default(),
         }
     }
