@@ -10,19 +10,26 @@ use crate::{
             CommandStatus,
         },
     },
+    tlv::structs::StatusReport,
 };
 
 use super::{
-    protocol::interaction::{
-        cluster::ClusterImplementation,
-        enums::ClusterID,
-        information_blocks::{attribute::report::AttributeReport, AttributePath, CommandData, InvokeResponse},
+    protocol::{
+        self,
+        enums::{self, SecureChannelGeneralCode, SecureStatusProtocolCode},
+        interaction::{
+            cluster::ClusterImplementation,
+            enums::ClusterID,
+            information_blocks::{attribute::report::AttributeReport, AttributePath, CommandData, InvokeResponse},
+        },
+        protocol_id::{self, ProtocolID},
     },
     session::Session,
 };
+pub type Endpoint = HashMap<u32, Box<dyn ClusterImplementation + Send>>;
 
 pub struct Device {
-    pub endpoints_map: HashMap<u16, HashMap<u32, Box<dyn ClusterImplementation + Send>>>,
+    pub endpoints_map: HashMap<u16, Endpoint>,
     pub details: Details,
 }
 
@@ -45,6 +52,7 @@ impl Device {
             .map(|cluster_map| cluster_map.get_mut(&(cluster_id as u32)).map(|cluster| cluster.as_any().downcast_mut())?)?
     }
 
+    #[deprecated]
     pub(crate) fn read_attributes(&mut self, attribute_path: AttributePath) -> Vec<AttributeReport> {
         let cluster_information = if let QueryParameter::Specific(id) = attribute_path.cluster_id {
             format!("{:?}", ClusterID::from(id))
@@ -118,13 +126,7 @@ impl Device {
                 let mut vec = vec![];
 
                 for (endpoint_id, cluster_map) in &mut self.endpoints_map {
-                    vec.extend(Self::invoke_cluster(
-                        cluster_map,
-                        *endpoint_id,
-                        command.clone(),
-                        session,
-                        &mut self.details,
-                    ))
+                    vec.extend(Self::invoke_cluster(cluster_map, *endpoint_id, command.clone(), session, &mut self.details))
                 }
                 vec
             }
@@ -150,11 +152,8 @@ impl Device {
         }
     }
 
-    fn read_cluster(
-        cluster_map: &mut HashMap<u32, Box<dyn ClusterImplementation + Send>>,
-        endpoint_id: u16,
-        attribute_path: AttributePath,
-    ) -> Vec<AttributeReport> {
+    #[deprecated]
+    fn read_cluster(cluster_map: &mut HashMap<u32, Box<dyn ClusterImplementation + Send>>, endpoint_id: u16, attribute_path: AttributePath) -> Vec<AttributeReport> {
         let mut vec = vec![];
         match attribute_path.cluster_id {
             QueryParameter::Wildcard => {
@@ -237,9 +236,32 @@ impl Device {
         vec
     }
 
-    pub fn modify_cluster<'a, T: ClusterImplementation>(&mut self, endpoint_id: u16, cluster_id: ClusterID, c: fn(&mut T)) {
+    pub fn modify_cluster<'a, T: ClusterImplementation>(&mut self, endpoint_id: u16, cluster_id: ClusterID, closure: fn(&mut T)) {
         if let Some(cluster) = self.get::<T>(endpoint_id, cluster_id) {
-            c(cluster);
+            closure(cluster);
         }
     }
+
+    fn read_attributes_new(&mut self, paths: &[AttributePath]) {
+        let mut responses: Vec<AttributeReport> = vec![];
+        for path in paths {
+            match path.endpoint_id {
+                QueryParameter::Wildcard => {
+                    let responses = self.endpoints_map.values().map(|x| read_cluster_new(x, path));
+                    for ele in responses {}
+                    todo!()
+                }
+                QueryParameter::Specific(endpoint_id) => {
+                    let endpoint = self.endpoints_map.get_mut(&endpoint_id);
+                    if let Some(endpoint) = endpoint {
+                        let x = read_cluster_new(endpoint, path);
+                    }
+                    todo!()
+                }
+            }
+        }
+    }
+}
+fn read_cluster_new(endpoint: &Endpoint, path: &AttributePath) -> Vec<AttributeReport> {
+    todo!()
 }

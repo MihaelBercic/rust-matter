@@ -1,14 +1,12 @@
 use matter::mdns::device_information::Details;
 use matter::mdns::enums::{CommissionState, DeviceType};
 use matter::session::protocol::interaction;
-use matter::session::protocol::interaction::cluster;
 use matter::session::protocol::interaction::cluster::basic_information::BasicInformationCluster;
 use matter::session::protocol::interaction::cluster::general_commissioning::GeneralCommissioningCluster;
 use matter::session::protocol::interaction::cluster::network_commissioning::NetworkCommissioningCluster;
 use matter::session::protocol::interaction::cluster::operational_credentials::OperationalCredentialsCluster;
-use matter::session::protocol::interaction::enums::ClusterID::{
-    BasicInformation, Descriptor, GeneralCommissioning, NetworkCommissioning, OnOff, OperationalCredentials,
-};
+use matter::session::protocol::interaction::cluster::{self};
+use matter::session::protocol::interaction::enums::ClusterID::{BasicInformation, Descriptor, GeneralCommissioning, NetworkCommissioning, OnOff, OperationalCredentials};
 use matter::session::Device;
 use matter::{log_info, NetworkInterface};
 use std::net::Ipv6Addr;
@@ -19,10 +17,7 @@ fn main() {
     let mut interface = NetworkInterface { index: 0xe, do_custom: true }; // WiFi
     let mut ip = Ipv6Addr::from_str("fe80::1828:f752:3892:a05b").unwrap();
     if is_eth {
-        interface = NetworkInterface {
-            index: 0x10,
-            do_custom: true,
-        }; // Eth   en7
+        interface = NetworkInterface { index: 0x10, do_custom: true }; // Eth   en7
         ip = Ipv6Addr::from_str("fe80::c78:54b3:694d:567f").unwrap();
     }
 

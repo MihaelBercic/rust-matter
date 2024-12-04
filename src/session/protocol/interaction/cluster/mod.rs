@@ -120,7 +120,7 @@ impl From<NetworkCommissioningStatus> for ElementType {
     }
 }
 
-pub mod wi_fi_security {
+pub mod wifi_security {
     pub const UNENCRYPTED: u8 = 0b1;
     pub const WEP: u8 = 0b10;
     pub const WPA_PERSONAL: u8 = 0b100;
