@@ -20,7 +20,6 @@ pub use fabric_descriptor::*;
 
 mod certification_declaration;
 
-use crate::log_debug;
 use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::basic_commissioning_info::BasicCommissioningInfo;
 use crate::session::protocol::interaction::cluster::enums::{NetworkCommissioningStatus, ProductColor, ProductFinish, RegulatoryLocationType};
@@ -34,7 +33,9 @@ use crate::session::session::Session;
 use crate::session::Device;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Unsigned8;
+use crate::tlv::structs::StatusReport;
 use crate::utils::{generic_error, MatterError};
+use crate::{log_debug, log_info};
 use std::any::Any;
 use std::collections::HashMap;
 
@@ -99,6 +100,7 @@ pub struct ProductAppearance {
     primary_color: ProductColor,
 }
 
+#[deprecated]
 pub trait ClusterImplementation: Any {
     fn read_attributes(&self, attribute_path: AttributePath) -> Vec<AttributeReport>;
 
@@ -106,6 +108,12 @@ pub trait ClusterImplementation: Any {
 
     // fn write_attribute(attribute_path: AttributePath, value: TLV);
     fn invoke_command(&mut self, command: CommandData, session: &mut Session, device: &mut Details) -> Vec<InvokeResponse>;
+}
+
+pub trait NewClusterImplementation: Any {
+    fn read_attributes(&self, attribute_path: &AttributePath) -> Result<Vec<AttributeReport>, StatusReport>;
+
+    fn as_any(&mut self) -> &mut dyn Any;
 }
 
 impl From<RegulatoryLocationType> for ElementType {

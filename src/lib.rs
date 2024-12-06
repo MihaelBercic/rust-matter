@@ -36,6 +36,8 @@ pub mod test;
 pub mod tlv;
 pub mod utils;
 
+pub mod rewrite;
+
 pub static START_TIME: LazyLock<SystemTime> = LazyLock::new(SystemTime::now);
 pub static SESSIONS: LazyLock<Mutex<HashMap<u16, Session>>> = LazyLock::new(Mutex::default);
 

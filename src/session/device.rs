@@ -241,26 +241,6 @@ impl Device {
             closure(cluster);
         }
     }
-
-    fn read_attributes_new(&mut self, paths: &[AttributePath]) {
-        let mut responses: Vec<AttributeReport> = vec![];
-        for path in paths {
-            match path.endpoint_id {
-                QueryParameter::Wildcard => {
-                    let responses = self.endpoints_map.values().map(|x| read_cluster_new(x, path));
-                    for ele in responses {}
-                    todo!()
-                }
-                QueryParameter::Specific(endpoint_id) => {
-                    let endpoint = self.endpoints_map.get_mut(&endpoint_id);
-                    if let Some(endpoint) = endpoint {
-                        let x = read_cluster_new(endpoint, path);
-                    }
-                    todo!()
-                }
-            }
-        }
-    }
 }
 fn read_cluster_new(endpoint: &Endpoint, path: &AttributePath) -> Vec<AttributeReport> {
     todo!()

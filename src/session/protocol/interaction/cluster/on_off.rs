@@ -7,6 +7,8 @@ use crate::session::session::Session;
 use crate::session::Device;
 use std::any::Any;
 
+use super::NewClusterImplementation;
+
 ///
 /// @author Mihael Berčič
 /// @date 10. 10. 24
