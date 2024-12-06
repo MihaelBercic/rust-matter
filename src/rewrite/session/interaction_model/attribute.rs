@@ -12,6 +12,7 @@ use crate::{
 
 use super::enums::{GlobalStatusCode, QueryParameter, QueryParameter::*};
 
+#[derive(Clone)]
 pub struct Attribute<const ID: u32, T: Into<ElementType>> {
     pub value: T,
 }
