@@ -1,6 +1,5 @@
 use std::io::Cursor;
 
-use crate::network::enums::Pet;
 use crate::tlv::control::Control;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::*;

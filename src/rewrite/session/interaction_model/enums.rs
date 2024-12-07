@@ -1,3 +1,5 @@
+use crate::tlv::element_type::ElementType;
+
 ///
 /// @author Mihael Berčič
 /// @date 24. 9. 24
@@ -32,7 +34,6 @@ pub enum GlobalStatusCode {
     FailsafeRequired = 0xCA,
     InvalidInState = 0xCB,
 }
-
 
 #[derive(Clone, Debug)]
 pub enum QueryParameter<T> {
@@ -301,5 +302,19 @@ impl From<u8> for InteractionProtocolOpcode {
             0x0A => InteractionProtocolOpcode::TimedRequest,
             _ => panic!("Unknown Interaction Opcode"),
         }
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone)]
+pub enum StartUpOnOffEnum {
+    Off = 0,
+    On = 1,
+    Toggle = 2,
+}
+
+impl From<StartUpOnOffEnum> for ElementType {
+    fn from(value: StartUpOnOffEnum) -> Self {
+        (value as u8).into()
     }
 }

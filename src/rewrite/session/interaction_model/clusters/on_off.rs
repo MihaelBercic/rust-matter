@@ -4,7 +4,7 @@ use crate::{
     rewrite::session::interaction_model::{
         attribute::{self, Attribute, AttributeReport},
         cluster_implementation::ClusterImplementation,
-        enums::QueryParameter::*,
+        enums::{QueryParameter::*, StartUpOnOffEnum},
     },
     tlv::{
         element_type::ElementType,
@@ -13,24 +13,32 @@ use crate::{
 };
 
 pub struct OnOffCluster {
-    pub(crate) is_on: Attribute<1, bool>,
-    pub(crate) brightness: Attribute<2, u8>,
+    pub(crate) is_on: Attribute<0, bool>,
+    pub(crate) global_scene_control: Attribute<0x4000, bool>,
+    pub(crate) on_time: Attribute<0x4001, u16>,
+    pub(crate) off_wait_time: Attribute<0x4002, u16>,
+    pub(crate) start_up_on_off: Attribute<0x4003, StartUpOnOffEnum>,
 }
 
 impl ClusterImplementation for OnOffCluster {
     fn read_attribute(&self, path: &attribute::AttributePath) -> Vec<AttributeReport> {
-        let mut reports: Vec<AttributeReport> = vec![];
         match path.attribute_id {
-            Wildcard => {
-                reports.extend([self.is_on.clone().into(), self.brightness.clone().into()]);
-            }
-            Specific(id) => match id {
-                1 => reports.push(self.is_on.clone().into()),
-                2 => reports.push(self.brightness.clone().into()),
+            Wildcard => vec![
+                self.is_on.clone().into(),
+                self.global_scene_control.clone().into(),
+                self.on_time.clone().into(),
+                self.off_wait_time.clone().into(),
+                self.start_up_on_off.clone().into(),
+            ],
+            Specific(id) => vec![match id {
+                0 => self.is_on.clone().into(),
+                0x4000 => self.global_scene_control.clone().into(),
+                0x4001 => self.on_time.clone().into(),
+                0x4002 => self.off_wait_time.clone().into(),
+                0x4003 => self.start_up_on_off.clone().into(),
                 _ => todo!(),
-            },
+            }],
         }
-        reports
     }
 
     fn as_any(&mut self) -> &mut dyn Any {
@@ -42,7 +50,10 @@ impl Default for OnOffCluster {
     fn default() -> Self {
         Self {
             is_on: false.into(),
-            brightness: 0.into(),
+            global_scene_control: true.into(),
+            on_time: 0.into(),
+            off_wait_time: 0.into(),
+            start_up_on_off: StartUpOnOffEnum::Off.into(),
         }
     }
 }

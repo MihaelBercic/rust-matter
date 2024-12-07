@@ -16,15 +16,10 @@ use std::thread::JoinHandle;
 /// @author Mihael Berčič
 /// @date 28. 7. 24
 ///
-pub mod enums;
 pub mod network_message;
 
 /// Thread that is listening on the UDP socket for any incoming messages...
-pub(crate) fn start_listening_thread(
-    processing_sender: Sender<NetworkMessage>,
-    udp_socket: Arc<UdpSocket>,
-    outgoing_sender: Sender<NetworkMessage>,
-) -> JoinHandle<()> {
+pub(crate) fn start_listening_thread(processing_sender: Sender<NetworkMessage>, udp_socket: Arc<UdpSocket>, outgoing_sender: Sender<NetworkMessage>) -> JoinHandle<()> {
     thread::Builder::new()
         .name("Listening thread".to_string())
         .stack_size(30_000)
