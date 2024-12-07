@@ -1,9 +1,6 @@
 use crate::constants::{TEST_CMS_SIGNER_PRIVATE_KEY, TEST_CMS_SIGNER_SUBJECT_KEY_IDENTIFIER};
 use crate::crypto::constants::{CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES};
 use crate::mdns::enums::DeviceType;
-use crate::session::protocol::interaction::der::{
-    DerCertificationDeclaration, DigestAlgorithmIdentifier, EncapsulatedContentInfo, Pkcs7SignedData, SignerInfo,
-};
 use crate::tlv::tlv::Tlv;
 use der::asn1::{ContextSpecific, Int, OctetString, SetOf};
 use der::TagMode::Implicit;

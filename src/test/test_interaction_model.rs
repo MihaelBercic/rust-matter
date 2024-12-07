@@ -1,7 +1,6 @@
 use crate::rewrite::session::interaction_model::{cluster_implementation::ClusterImplementation, clusters::on_off::OnOffCluster, enums::QueryParameter::*};
 
 #[test]
-
 fn test_on_off_cluster() {
     let on_off = OnOffCluster::default();
     assert_eq!(
