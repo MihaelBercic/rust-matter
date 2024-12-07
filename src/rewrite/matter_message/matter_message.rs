@@ -1,31 +1,13 @@
-use crate::session::matter::header::MatterMessageHeader;
 use crate::utils::MatterError;
 use std::io::{Cursor, Read};
+
+use super::header::MatterMessageHeader;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct MatterMessage {
     pub header: MatterMessageHeader,
     pub payload: Vec<u8>,
     pub integrity_check: Vec<u8>,
-}
-
-impl MatterMessage {
-    pub fn as_bytes(&self) -> Vec<u8> {
-        let mut data = vec![];
-        let header_as_bytes = &self.header.to_bytes();
-        data.extend_from_slice(header_as_bytes);
-        data.extend(&self.payload);
-        data.extend(&self.integrity_check);
-        data
-    }
-
-    // payload: Vec<u8>
-    pub fn to_bytes(self) -> Vec<u8> {
-        let mut data = self.header.to_bytes();
-        data.extend(self.payload); // Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }
-        data.extend(self.integrity_check);
-        data
-    }
 }
 
 impl TryFrom<&[u8]> for MatterMessage {
@@ -41,10 +23,15 @@ impl TryFrom<&[u8]> for MatterMessage {
         if contains_mic {
             reader.read_to_end(&mut integrity_check)?;
         }
-        Ok(Self {
-            header,
-            payload,
-            integrity_check,
-        })
+        Ok(Self { header, payload, integrity_check })
+    }
+}
+
+impl From<MatterMessage> for Vec<u8> {
+    fn from(value: MatterMessage) -> Self {
+        let mut data: Vec<u8> = value.header.into();
+        data.extend(&value.payload);
+        data.extend(&value.integrity_check);
+        data
     }
 }

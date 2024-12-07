@@ -20,9 +20,13 @@ impl MessageReceptionState {
             self.bitmap <<= difference;
         } else {
             let bit_index = self.max_counter - message_counter - 1;
-            if bit_index >= 32 { return true; } // If outside the window, mark as duplicate.
+            if bit_index >= 32 {
+                return true;
+            } // If outside the window, mark as duplicate.
             let is_duplicate = (self.bitmap >> bit_index) & 1 == 1;
-            if is_duplicate { return true; }
+            if is_duplicate {
+                return true;
+            }
             self.bitmap |= 2u32.pow(bit_index)
         }
         false
@@ -48,4 +52,3 @@ impl MessageReceptionState {
         }
     }
 }
-
