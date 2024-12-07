@@ -6,21 +6,15 @@ use crate::{
         cluster_implementation::ClusterImplementation,
         enums::QueryParameter::*,
     },
-    tlv::structs::{self, StatusReport},
+    tlv::{
+        element_type::ElementType,
+        structs::{self, StatusReport},
+    },
 };
 
 pub struct OnOffCluster {
     pub(crate) is_on: Attribute<1, bool>,
     pub(crate) brightness: Attribute<2, u8>,
-}
-
-impl Default for OnOffCluster {
-    fn default() -> Self {
-        Self {
-            is_on: Attribute { value: false },
-            brightness: Attribute { value: 0 },
-        }
-    }
 }
 
 impl ClusterImplementation for OnOffCluster {
@@ -41,5 +35,14 @@ impl ClusterImplementation for OnOffCluster {
 
     fn as_any(&mut self) -> &mut dyn Any {
         self
+    }
+}
+
+impl Default for OnOffCluster {
+    fn default() -> Self {
+        Self {
+            is_on: false.into(),
+            brightness: 0.into(),
+        }
     }
 }

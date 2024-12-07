@@ -94,8 +94,6 @@ impl OperationalCredentialsCluster {
         };
         let nonce = children.first().unwrap().to_owned().control.element_type.into_octet_string().unwrap();
 
-        let certificate = fs::read("certification_declaration.der").expect("Missing file.");
-        let certificate = fs::read("Chip-Test-CD-0xFFF2-0x8001.der").expect("Missing file.");
         let certificate = fs::read("certification-declaration/Chip-Test-CD-FFF2-8001.der").expect("Missing file.");
 
         // log_debug!("Invoking AttestationRequest command on OperationalCredentials cluster.");
@@ -120,7 +118,6 @@ impl OperationalCredentialsCluster {
         tbs.extend_from_slice(&session.attestation_challenge);
         // log_info!("TLV attestation elements WITH attestation challenge (ToBeSigned): {}", hex::encode(&tbs));
 
-        let path = fs::read("test-DAC-0xFFF2-0x8001-key.pem").expect("Missing file");
         let path = fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Key.pem").expect("Missing file");
         let key: SigningKey = SigningKey::from_sec1_pem(&String::from_utf8(path).unwrap()).expect("Unable to create key");
 
@@ -210,7 +207,6 @@ impl OperationalCredentialsCluster {
             tbs.extend_from_slice(&session.attestation_challenge);
             // log_info!("TBS with attestation challenge: {}", hex::encode(&tbs));
 
-            let path = fs::read("test-DAC-0xFFF2-0x8001-key.pem").expect("Missing file");
             let path = fs::read("attestation/Chip-Test-DAC-FFF2-8001-0008-Key.pem").expect("Missing file");
             let key: SigningKey = SigningKey::from_sec1_pem(&String::from_utf8(path).unwrap()).expect("Unable to create key");
             let signature = sign_message_with_signature(&key, &tbs);

@@ -17,6 +17,12 @@ pub struct Attribute<const ID: u32, T: Into<ElementType>> {
     pub value: T,
 }
 
+impl<const ID: u32, T: Into<ElementType>> From<T> for Attribute<ID, T> {
+    fn from(value: T) -> Self {
+        Self { value }
+    }
+}
+
 pub struct AttributeReport {
     pub status: Option<AttributeStatus>,
     pub data: Option<AttributeData>,
