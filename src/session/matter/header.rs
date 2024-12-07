@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use std::iter;
 
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 
 use crate::session::matter::enums::MatterSessionType::{Group, Unicast};
 use crate::session::matter::enums::{MatterDestinationID, MatterDestinationType};
@@ -41,25 +41,25 @@ impl MatterMessageHeader {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut data = vec![];
         data.write_u8(self.flags.flags).expect("Unable to write flags...");
-        data.write_u16::<LittleEndian>(self.session_id).expect("Unable to write session id...");
+        data.write_u16::<LE>(self.session_id).expect("Unable to write session id...");
         data.write_u8(self.security_flags.flags).expect("Unable to write security flags...");
-        data.write_u32::<LittleEndian>(self.message_counter).expect("Unable to write message counter...");
+        data.write_u32::<LE>(self.message_counter).expect("Unable to write message counter...");
         match self.source_node_id {
-            Some(id) => data.write_u64::<LittleEndian>(id).expect("Unable to write Source Node ID..."),
+            Some(id) => data.write_u64::<LE>(id).expect("Unable to write Source Node ID..."),
             None => {}
         }
         match self.destination_node_id {
-            Some(MatterDestinationID::Group(id)) => data.write_u16::<LittleEndian>(id).expect("Unable to write NodeID..."),
-            Some(MatterDestinationID::Node(id)) => data.write_u64::<LittleEndian>(id).expect("Unable to write NodeID..."),
-            _ => ()
+            Some(MatterDestinationID::Group(id)) => data.write_u16::<LE>(id).expect("Unable to write NodeID..."),
+            Some(MatterDestinationID::Node(id)) => data.write_u64::<LE>(id).expect("Unable to write NodeID..."),
+            _ => (),
         }
 
         match &self.message_extensions {
             Some(extensions) => {
-                data.write_u16::<LittleEndian>(extensions.data.len() as u16).expect("Unable to write message extensions length...");
+                data.write_u16::<LE>(extensions.data.len() as u16).expect("Unable to write message extensions length...");
                 data.extend_from_slice(&extensions.data);
             }
-            _ => ()
+            _ => (),
         }
         data
     }
@@ -70,27 +70,25 @@ impl TryFrom<&mut Cursor<&[u8]>> for MatterMessageHeader {
 
     fn try_from(value: &mut Cursor<&[u8]>) -> Result<Self, MatterError> {
         let flags = MatterMessageFlags { flags: value.read_u8()? };
-        let session_id = value.read_u16::<LittleEndian>()?;
+        let session_id = value.read_u16::<LE>()?;
         let security_flags = MatterSecurityFlags { flags: value.read_u8()? };
-        let message_counter = value.read_u32::<LittleEndian>()?;
+        let message_counter = value.read_u32::<LE>()?;
         let source_node_id = match flags.is_source_present() {
-            true => Some(value.read_u64::<LittleEndian>()?),
-            false => None
+            true => Some(value.read_u64::<LE>()?),
+            false => None,
         };
         let destination_node_id = match flags.type_of_destination() {
-            Some(destination_type) => {
-                match destination_type {
-                    MatterDestinationType::NodeID => Some(MatterDestinationID::Node(value.read_u64::<LittleEndian>()?)),
-                    MatterDestinationType::GroupID => Some(MatterDestinationID::Group(value.read_u16::<LittleEndian>()?)),
-                }
-            }
-            _ => None
+            Some(destination_type) => match destination_type {
+                MatterDestinationType::NodeID => Some(MatterDestinationID::Node(value.read_u64::<LE>()?)),
+                MatterDestinationType::GroupID => Some(MatterDestinationID::Group(value.read_u16::<LE>()?)),
+            },
+            _ => None,
         };
 
         let message_extensions = match security_flags.has_message_extensions() {
             false => None,
             true => {
-                let length = value.read_u16::<LittleEndian>()?;
+                let length = value.read_u16::<LE>()?;
                 let data: Vec<u8> = iter::repeat(0u8).take(length as usize).collect();
                 Some(MatterMessageExtension { data })
             }
@@ -107,4 +105,3 @@ impl TryFrom<&mut Cursor<&[u8]>> for MatterMessageHeader {
         })
     }
 }
-

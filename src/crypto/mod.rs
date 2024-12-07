@@ -56,7 +56,7 @@ pub fn generate_ephemeral_pair() -> EphemeralSecret {
 }
 
 /// Signs a message using the [key] into signature which is of length [2 * CRYPTO_GROUP_SIZE_BYTES]
-/// TODO: Check in case of BigEndian errors
+/// TODO: Check in case of BE errors
 pub fn sign_message(key: &SigningKey, message: &[u8]) -> [u8; 2 * CRYPTO_GROUP_SIZE_BYTES] {
     let signed: Signature = key.sign(message);
     let mut signature_bytes = [0u8; 2 * CRYPTO_GROUP_SIZE_BYTES];
@@ -65,7 +65,7 @@ pub fn sign_message(key: &SigningKey, message: &[u8]) -> [u8; 2 * CRYPTO_GROUP_S
 }
 
 /// Signs a message using the [key] into signature which is of length [2 * CRYPTO_GROUP_SIZE_BYTES]
-/// TODO: Check in case of BigEndian errors
+/// TODO: Check in case of BE errors
 pub fn sign_message_with_signature(key: &SigningKey, message: &[u8]) -> Signature {
     key.sign(message)
 }

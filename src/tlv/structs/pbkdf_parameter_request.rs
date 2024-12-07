@@ -8,7 +8,7 @@ use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 use crate::utils::MatterError;
 use crate::utils::MatterLayer::Application;
-use byteorder::{LittleEndian, WriteBytesExt, LE};
+use byteorder::{WriteBytesExt, LE};
 use p256::pkcs8::der::Writer;
 
 ///
@@ -28,8 +28,8 @@ impl PBKDFParamRequest {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut vec = vec![];
         vec.extend_from_slice(&self.initiator_random);
-        vec.write_u16::<LittleEndian>(self.initiator_session_id);
-        vec.write_u16::<LittleEndian>(self.passcode_id);
+        vec.write_u16::<LE>(self.initiator_session_id);
+        vec.write_u16::<LE>(self.passcode_id);
         vec.write_byte(self.has_params as u8);
         vec
     }

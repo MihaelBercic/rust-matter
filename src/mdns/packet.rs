@@ -1,7 +1,7 @@
 use std::io;
 use std::io::{Cursor, Read};
 
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt, BE};
 
 use crate::mdns::packet_header::MDNSPacketHeader;
 use crate::mdns::records::complete_record::CompleteRecord;
@@ -28,25 +28,19 @@ impl TryFrom<&[u8]> for MDNSPacket {
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let mut byte_reader = Cursor::new(value);
-        let id = byte_reader.read_u16::<BigEndian>()?;
-        let flags = byte_reader.read_u16::<BigEndian>()?;
+        let id = byte_reader.read_u16::<BE>()?;
+        let flags = byte_reader.read_u16::<BE>()?;
         let header = MDNSPacketHeader::new(id, flags);
 
-        let query_count = byte_reader.read_u16::<BigEndian>()?;
-        let answer_count = byte_reader.read_u16::<BigEndian>()?;
-        let authority_count = byte_reader.read_u16::<BigEndian>()?;
-        let additional_count = byte_reader.read_u16::<BigEndian>()?;
+        let query_count = byte_reader.read_u16::<BE>()?;
+        let answer_count = byte_reader.read_u16::<BE>()?;
+        let authority_count = byte_reader.read_u16::<BE>()?;
+        let additional_count = byte_reader.read_u16::<BE>()?;
 
         let query_records: Vec<RecordInformation> = (0..query_count).filter_map(|_| read_record_information(&mut byte_reader).ok()).collect();
-        let answer_records: Vec<CompleteRecord> = (0..answer_count)
-            .filter_map(|_| read_complete_record(&mut byte_reader, true).ok())
-            .collect();
-        let authority_records: Vec<CompleteRecord> = (0..authority_count)
-            .filter_map(|_| read_complete_record(&mut byte_reader, true).ok())
-            .collect();
-        let additional_records: Vec<CompleteRecord> = (0..additional_count)
-            .filter_map(|_| read_complete_record(&mut byte_reader, true).ok())
-            .collect();
+        let answer_records: Vec<CompleteRecord> = (0..answer_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
+        let authority_records: Vec<CompleteRecord> = (0..authority_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
+        let additional_records: Vec<CompleteRecord> = (0..additional_count).filter_map(|_| read_complete_record(&mut byte_reader, true).ok()).collect();
         return Ok(MDNSPacket {
             header,
             query_records,
@@ -62,10 +56,10 @@ impl From<MDNSPacket> for Vec<u8> {
         let mut buffer: Vec<u8> = vec![];
         let header: [u8; 4] = value.header.into();
         buffer.extend_from_slice(&header);
-        buffer.write_u16::<BigEndian>(value.query_records.len() as u16).unwrap();
-        buffer.write_u16::<BigEndian>(value.answer_records.len() as u16).unwrap();
-        buffer.write_u16::<BigEndian>(value.authority_records.len() as u16).unwrap();
-        buffer.write_u16::<BigEndian>(value.additional_records.len() as u16).unwrap();
+        buffer.write_u16::<BE>(value.query_records.len() as u16).unwrap();
+        buffer.write_u16::<BE>(value.answer_records.len() as u16).unwrap();
+        buffer.write_u16::<BE>(value.authority_records.len() as u16).unwrap();
+        buffer.write_u16::<BE>(value.additional_records.len() as u16).unwrap();
 
         for x in value.query_records {
             buffer.extend::<Vec<u8>>(x.into())
@@ -140,8 +134,8 @@ pub(crate) fn read_label(buffer: &mut Cursor<&[u8]>) -> Result<String, io::Error
 
 pub(crate) fn read_record_information(buffer: &mut Cursor<&[u8]>) -> Result<RecordInformation, io::Error> {
     let label = read_label(buffer)?;
-    let record_type = buffer.read_u16::<BigEndian>().unwrap(); // Get Into ENUM value somehow
-    let flags = buffer.read_u16::<BigEndian>().unwrap();
+    let record_type = buffer.read_u16::<BE>().unwrap(); // Get Into ENUM value somehow
+    let flags = buffer.read_u16::<BE>().unwrap();
     let class_code = flags & (0xFFFF - 1);
     let has_property = flags.bit_subset(15, 1) == 1;
     Ok(RecordInformation {
@@ -155,17 +149,13 @@ pub(crate) fn read_record_information(buffer: &mut Cursor<&[u8]>) -> Result<Reco
 
 pub(crate) fn read_complete_record(buffer: &mut Cursor<&[u8]>, discard_data: bool) -> Result<CompleteRecord, io::Error> {
     let record_information = read_record_information(buffer)?;
-    let ttl = buffer.read_u32::<BigEndian>()?;
-    let data_length = buffer.read_u16::<BigEndian>()? as u64;
+    let ttl = buffer.read_u32::<BE>()?;
+    let data_length = buffer.read_u16::<BE>()? as u64;
     let mut data: Vec<u8> = vec![];
     if discard_data {
         buffer.set_position(buffer.position() + data_length)
     } else {
         buffer.read_exact(&mut data)?;
     }
-    Ok(CompleteRecord {
-        record_information,
-        ttl,
-        data,
-    })
+    Ok(CompleteRecord { record_information, ttl, data })
 }

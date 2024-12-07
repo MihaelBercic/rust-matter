@@ -5,7 +5,7 @@ use crate::{
     rewrite::enums::{DestinationID, DestinationType, SessionType},
     utils::MatterError,
 };
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt, LE};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 
 use super::{extension::MessageExtension, flags::MatterMessageFlags, security_flags::MatterSecurityFlags};
 
@@ -42,17 +42,17 @@ impl TryFrom<&mut Cursor<&[u8]>> for MatterMessageHeader {
 
     fn try_from(value: &mut Cursor<&[u8]>) -> Result<Self, MatterError> {
         let flags = MatterMessageFlags { flags: value.read_u8()? };
-        let session_id = value.read_u16::<LittleEndian>()?;
+        let session_id = value.read_u16::<LE>()?;
         let security_flags = MatterSecurityFlags { flags: value.read_u8()? };
-        let message_counter = value.read_u32::<LittleEndian>()?;
+        let message_counter = value.read_u32::<LE>()?;
         let source_node_id = match flags.is_source_present() {
-            true => Some(value.read_u64::<LittleEndian>()?),
+            true => Some(value.read_u64::<LE>()?),
             false => None,
         };
         let destination_node_id = match flags.type_of_destination() {
             Some(destination_type) => match destination_type {
-                DestinationType::NodeID => Some(DestinationID::Node(value.read_u64::<LittleEndian>()?)),
-                DestinationType::GroupID => Some(DestinationID::Group(value.read_u16::<LittleEndian>()?)),
+                DestinationType::NodeID => Some(DestinationID::Node(value.read_u64::<LE>()?)),
+                DestinationType::GroupID => Some(DestinationID::Group(value.read_u16::<LE>()?)),
             },
             _ => None,
         };
@@ -60,7 +60,7 @@ impl TryFrom<&mut Cursor<&[u8]>> for MatterMessageHeader {
         let message_extensions = match security_flags.has_message_extensions() {
             false => None,
             true => {
-                let length = value.read_u16::<LittleEndian>()?;
+                let length = value.read_u16::<LE>()?;
                 let data: Vec<u8> = iter::repeat(0u8).take(length as usize).collect();
                 Some(MessageExtension { data })
             }

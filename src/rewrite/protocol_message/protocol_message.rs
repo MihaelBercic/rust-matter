@@ -1,10 +1,8 @@
-use std::io::{Cursor, Read};
-
-use crate::session::protocol::exchange_flags::ProtocolExchangeFlags;
-use crate::session::protocol::protocol_id::ProtocolID;
-use crate::session::protocol::secured_extensions::ProtocolSecuredExtensions;
 use crate::utils::MatterError;
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use std::io::{Cursor, Read};
+
+use super::{enums::ProtocolID, exchange_flags::ProtocolExchangeFlags, secured_extensions::ProtocolSecuredExtensions};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ProtocolMessage {
@@ -18,54 +16,25 @@ pub struct ProtocolMessage {
     pub payload: Vec<u8>,
 }
 
-impl ProtocolMessage {
-    pub fn to_bytes(self) -> Vec<u8> {
-        let mut data: Vec<u8> = vec![];
-        data.write_u8(self.exchange_flags.byte).expect("Unable to write exchange flags...");
-        data.write_u8(self.opcode.clone() as u8).expect("Unable to write opcode...");
-        data.write_u16::<LE>(self.exchange_id).expect("Unable to write exchange id...");
-        match self.protocol_vendor_id {
-            Some(vendor) => data.write_u16::<LE>(vendor).expect("Unable to write vendor id..."),
-            None => {}
-        }
-        data.write_u16::<LE>(self.protocol_id.clone() as u16).expect("Unable to write Protocol id...");
-        match self.acknowledged_message_counter {
-            None => {}
-            Some(counter) => data.write_u32::<LE>(counter).expect("Unable to write ACK message counter..."),
-        }
-        match &self.secured_extensions {
-            None => {}
-            Some(extensions) => {
-                data.write_u16::<LE>(extensions.data_length).expect("Unable to write Extensions Data Length...");
-                data.extend(&extensions.data);
-            }
-        }
-        data.extend(&self.payload);
-        data
-    }
-}
-
 impl From<ProtocolMessage> for Vec<u8> {
     fn from(value: ProtocolMessage) -> Self {
         let mut data: Vec<u8> = vec![];
         data.write_u8(value.exchange_flags.byte).expect("Unable to write exchange flags...");
         data.write_u8(value.opcode.clone() as u8).expect("Unable to write opcode...");
         data.write_u16::<LE>(value.exchange_id).expect("Unable to write exchange id...");
-        match value.protocol_vendor_id {
-            Some(vendor) => data.write_u16::<LE>(vendor).expect("Unable to write vendor id..."),
-            None => {}
+
+        if let Some(vendor) = value.protocol_vendor_id {
+            data.write_u16::<LE>(vendor).expect("Unable to write vendor id...");
         }
+
         data.write_u16::<LE>(value.protocol_id.clone() as u16).expect("Unable to write Protocol id...");
-        match value.acknowledged_message_counter {
-            None => {}
-            Some(counter) => data.write_u32::<LE>(counter).expect("Unable to write ACK message counter..."),
+        if let Some(counter) = value.acknowledged_message_counter {
+            data.write_u32::<LE>(counter).expect("Unable to write ACK message counter...");
         }
-        match &value.secured_extensions {
-            None => {}
-            Some(extensions) => {
-                data.write_u16::<LE>(extensions.data_length).expect("Unable to write Extensions Data Length...");
-                data.extend(&extensions.data);
-            }
+
+        if let Some(extensions) = &value.secured_extensions {
+            data.write_u16::<LE>(extensions.data_length).expect("Unable to write Extensions Data Length...");
+            data.extend(&extensions.data);
         }
         data.extend(&value.payload);
         data

@@ -1,4 +1,4 @@
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{WriteBytesExt, LE};
 use rand::{thread_rng, Rng};
 
 use crate::crypto::constants::{CRYPTO_PBKDF_ITERATIONS_MAX, CRYPTO_PBKDF_ITERATIONS_MIN};
@@ -39,9 +39,7 @@ impl PBKDFParamResponse {
                 let salt = random_bytes::<32>();
                 let iterations = random.gen_range(CRYPTO_PBKDF_ITERATIONS_MIN..=CRYPTO_PBKDF_ITERATIONS_MAX);
 
-                let mut salt = [
-                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-                ];
+                let mut salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
                 let iterations = 1000;
                 Some(PBKDFParameterSet { iterations, salt })
             }
@@ -60,7 +58,7 @@ impl PBKDFParamResponse {
         let mut vec = vec![];
         vec.extend_from_slice(&self.initiator_random);
         vec.extend_from_slice(&self.responder_random);
-        vec.write_u16::<LittleEndian>(self.session_id);
+        vec.write_u16::<LE>(self.session_id);
         if let Some(session) = &self.responder_session_params {
             vec.extend_from_slice(&session.as_bytes())
         }

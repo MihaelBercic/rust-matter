@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{WriteBytesExt, BE};
 
 use crate::mdns::packet::encode_label;
 use crate::mdns::records::record_type::RecordType;
@@ -24,8 +24,8 @@ impl From<RecordInformation> for Vec<u8> {
         let mut flags = value.flags;
         flags |= value.class_code;
         buffer.write_all(&encode_label(&value.label)).unwrap();
-        buffer.write_u16::<BigEndian>(value.record_type.into()).unwrap();
-        buffer.write_u16::<BigEndian>(flags).unwrap();
+        buffer.write_u16::<BE>(value.record_type.into()).unwrap();
+        buffer.write_u16::<BE>(flags).unwrap();
         buffer
     }
 }
