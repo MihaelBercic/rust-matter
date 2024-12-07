@@ -6,7 +6,7 @@ fn test_on_off_cluster() {
     let on_off = OnOffCluster::default();
     assert_eq!(
         on_off
-            .read_attribute(&crate::rewrite::session::interaction_model::attribute::AttributePath {
+            .read_attribute(&crate::rewrite::session::interaction_model::information_blocks::attribute::AttributePath {
                 enable_tag_compression: false,
                 node_id: Wildcard,
                 endpoint_id: Wildcard,
@@ -20,7 +20,7 @@ fn test_on_off_cluster() {
 
     assert_eq!(
         on_off
-            .read_attribute(&crate::rewrite::session::interaction_model::attribute::AttributePath {
+            .read_attribute(&crate::rewrite::session::interaction_model::information_blocks::attribute::AttributePath {
                 enable_tag_compression: false,
                 node_id: Wildcard,
                 endpoint_id: Wildcard,
