@@ -1,7 +1,4 @@
-use p256::ecdsa::SigningKey;
-
 use crate::{
-    crypto::constants::CERTIFICATE_SIZE,
     mdns::enums::{CommissionState, DeviceType},
     session::protocol::interaction::cluster::{FabricDescriptor, NOC},
 };

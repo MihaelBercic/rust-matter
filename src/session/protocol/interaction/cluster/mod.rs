@@ -23,21 +23,14 @@ mod certification_declaration;
 use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::basic_commissioning_info::BasicCommissioningInfo;
 use crate::session::protocol::interaction::cluster::enums::{NetworkCommissioningStatus, ProductColor, ProductFinish, RegulatoryLocationType};
-use crate::session::protocol::interaction::enums::GlobalStatusCode::{UnsupportedCluster, UnsupportedEndpoint};
-use crate::session::protocol::interaction::enums::QueryParameter::Specific;
-use crate::session::protocol::interaction::enums::{ClusterID, QueryParameter};
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
-use crate::session::protocol::interaction::information_blocks::attribute::status::{AttributeStatus, Status};
-use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandStatus, InvokeResponse};
+use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, InvokeResponse};
 use crate::session::session::Session;
-use crate::session::Device;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Unsigned8;
 use crate::tlv::structs::StatusReport;
 use crate::utils::{generic_error, MatterError};
-use crate::{log_debug, log_info};
 use std::any::Any;
-use std::collections::HashMap;
 
 pub enum BasicInformationAttributes {
     DataModelRevision = 0x0000,

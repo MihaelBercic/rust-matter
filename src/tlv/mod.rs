@@ -1,13 +1,5 @@
-use std::io::Cursor;
-
-use crate::tlv::control::Control;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::*;
-use crate::tlv::tag::Tag;
-use crate::tlv::tag_control::TagControl;
-use crate::tlv::tag_control::TagControl::Anonymous0;
-use crate::tlv::tag_number::TagNumber;
-use crate::tlv::tlv::Tlv;
 
 pub mod control;
 pub(crate) mod element_type;

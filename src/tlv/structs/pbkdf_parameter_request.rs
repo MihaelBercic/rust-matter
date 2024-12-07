@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use crate::tlv::element_type::ElementType;
-use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, Structure, Unsigned16, Unsigned32};
+use crate::tlv::element_type::ElementType::{BooleanFalse, BooleanTrue, Structure};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;

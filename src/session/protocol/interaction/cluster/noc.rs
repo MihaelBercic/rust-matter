@@ -1,7 +1,5 @@
 use p256::ecdsa::SigningKey;
 
-use crate::crypto::constants::CERTIFICATE_SIZE;
-
 /// `noc`: Node Operational Certificate
 ///
 /// `icac`: Intermediate Certificate Authority Certificate

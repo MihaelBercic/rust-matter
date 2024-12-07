@@ -1,5 +1,3 @@
-use crate::tlv::{element_type::ElementType, tag::Tag, tag_control::TagControl::ContextSpecific8, tlv::Tlv};
-
 // pub struct CertificationDeclaration {
 //     pub format_version: u16,
 //     pub vendor_id: u16,

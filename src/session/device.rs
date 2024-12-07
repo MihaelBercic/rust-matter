@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem::take};
+use std::collections::HashMap;
 
 use crate::{
     log_debug,
@@ -9,20 +9,15 @@ use crate::{
             attribute::status::{AttributeStatus, Status},
             CommandStatus,
         },
-    },
-    tlv::structs::StatusReport,
+    }
+    ,
 };
 
 use super::{
-    protocol::{
-        self,
-        enums::{self, SecureChannelGeneralCode, SecureStatusProtocolCode},
-        interaction::{
-            cluster::ClusterImplementation,
-            enums::ClusterID,
-            information_blocks::{attribute::report::AttributeReport, AttributePath, CommandData, InvokeResponse},
-        },
-        protocol_id::{self, ProtocolID},
+    protocol::interaction::{
+        cluster::ClusterImplementation,
+        enums::ClusterID,
+        information_blocks::{attribute::report::AttributeReport, AttributePath, CommandData, InvokeResponse},
     },
     session::Session,
 };

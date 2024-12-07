@@ -1,6 +1,4 @@
-use crate::crypto::random_bits;
 use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, LOCAL_DOMAIN, MDNS_PORT};
-use crate::mdns::device_information::Details;
 use crate::mdns::multicast_socket::MulticastSocket;
 use crate::mdns::packet::MDNSPacket;
 use crate::mdns::packet_header::MDNSPacketHeader;
@@ -14,7 +12,7 @@ use crate::session::counters::{
 };
 use crate::session::Device;
 use crate::utils::StringExtensions;
-use crate::{compute_pairing_code, log_debug, log_error, log_info, NetworkInterface, SharedDevice};
+use crate::{compute_pairing_code, log_error, NetworkInterface, SharedDevice};
 use constants::{COMMISSIONED_PROTOCOL, NON_COMMISSIONED_PROTOCOL};
 use enums::CommissionState;
 use rand::Rng;
@@ -146,7 +144,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
             weight: 0,
             port: udp_port,
         }
-        .into(),
+            .into(),
     };
     let aaaa_record = CompleteRecord {
         record_information: RecordInformation {
@@ -160,7 +158,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
         data: AAAARecord {
             address: device.ip.to_string(),
         }
-        .into(),
+            .into(),
     };
 
     let sub_l_record = CompleteRecord {
@@ -229,7 +227,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
                 ("VP", format!("{}+{}", device.vendor_id, device.product_id)),
             ],
         }
-        .into(),
+            .into(),
     };
 
     let mut query_iterator = desired_queries.iter();
@@ -270,6 +268,6 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
         additional_records,
         authority_records: vec![],
     }
-    .into();
+        .into();
     (is_unicast, packet_response)
 }

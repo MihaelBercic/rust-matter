@@ -10,7 +10,6 @@ use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
-use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 
 ///
@@ -42,8 +41,8 @@ impl<T: Into<ElementType>> From<Attribute<T>> for AttributeReport {
 }
 
 impl<T> From<Option<Attribute<T>>> for AttributeReport
-where
-    Attribute<T>: Into<AttributeReport>,
+    where
+        Attribute<T>: Into<AttributeReport>,
 {
     fn from(value: Option<Attribute<T>>) -> Self {
         match value {

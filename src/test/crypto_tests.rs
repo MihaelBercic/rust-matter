@@ -17,7 +17,6 @@ mod cryptography_tests {
     use crate::test::s2p_test_vectors::test_vectors::{get_test_vectors, RFC_T};
     use crate::tlv::structs::{PBKDFParamRequest, PBKDFParamResponse, PBKDFParameterSet};
     use crate::tlv::tlv::Tlv;
-    use crate::utils::BitSubset;
     use ccm::aead::generic_array::GenericArray;
     use ccm::aead::Payload;
     use hmac::Mac;
@@ -73,14 +72,14 @@ mod cryptography_tests {
         let public_key_encoded = hex::decode(
             "044f85bb78121be98ce0644cb9ae2e97d86d24bf962acabecdfa26e15f425fa0dbcafb3b8c65f5bc1f14af6e176b46bf20a58058f69d2f6d05ce91f4c44e16c5f8",
         )
-        .unwrap();
+            .unwrap();
         let message = b"Test";
         let public_key = EncodedPoint::from_bytes(&public_key_encoded).unwrap();
         let verifying_key = VerifyingKey::from_encoded_point(&public_key).unwrap();
         let signature = hex::decode(
             "7d639959c1a701326cb6827f10b59dca871d4f5f7d80f1c898eb6d85ac37999376afc3b4e22bd7724730cf1648f8dc974d1c5df8f94380f43fbe6414b3677a77",
         )
-        .unwrap();
+            .unwrap();
         let decoded_signature = Signature::from_slice(&signature).unwrap();
         let _ = verifying_key.verify(message, &decoded_signature).is_ok();
     }
@@ -272,7 +271,7 @@ mod cryptography_tests {
             hex::decode(
                 "04cf26d253cae2dd44c6954d443c7badc1e8811b8484eaae2d7bf43ec2f7e3173527877ea4a554513063036f55d2871e87e294dfdc18cd39edd6519fb4dfcde976"
             )
-            .unwrap()
+                .unwrap()
         );
         let req = PBKDFParamRequest {
             initiator_random: hex::decode("94eab5c37d101df5ef01b2c8ecada03a7c3b0cf5e26a08feda72617f9cd391a6").unwrap(),
@@ -305,7 +304,7 @@ mod cryptography_tests {
         let p_a = hex::decode(
             "04cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced196",
         )
-        .unwrap();
+            .unwrap();
         let p_b = spake
             .compute_public_verifier(&verifier.w0)
             .unwrap()
@@ -318,7 +317,7 @@ mod cryptography_tests {
             hex::decode(
                 "0404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb"
             )
-            .unwrap()
+                .unwrap()
         );
         let (z, v) = spake.compute_shared_values(&SpakeVerifier(verifier.clone()), &p_a, &p_b);
         assert_eq!(
@@ -326,14 +325,14 @@ mod cryptography_tests {
             hex::decode(
                 "04e3bb24193dd3f33a3769549d1abd19b0bdf1776a7274e35e1ecb98c318fba689bd30432374af3ff6642b9ada4ad26dac56ba6f4e679a4f8dbe0cc7f87b92799d"
             )
-            .unwrap()
+                .unwrap()
         );
         assert_eq!(
             v.to_encoded_point(false).as_bytes(),
             hex::decode(
                 "040b8bcc14906182b7a86b23637ed62257dac82d9edc059ab216bb995023c6b17e94a7f25f16f58b175d7cd885c006be49c1551edf94579e479fb77d711cb67a5b"
             )
-            .unwrap()
+                .unwrap()
         );
         let mut context = vec![];
         context.extend_from_slice(&CONTEXT_PREFIX_VALUE);
@@ -394,7 +393,7 @@ mod cryptography_tests {
         spake.x = Scalar::from_repr(*GenericArray::from_slice(
             &hex::decode("fee695b4972a4f620951010c87390d3fe1313efce399fbc2c9c7cdc04d22b4c6").unwrap(),
         ))
-        .unwrap();
+            .unwrap();
         let initiator = Spake2P::compute_prover(20202021, &param_set.salt, param_set.iterations);
         assert_eq!(hex::encode(initiator.w0), hex::encode(verifier.w0));
     }
@@ -407,11 +406,11 @@ fn spake2p_confirmation() {
     let p_a = hex::decode(
         "04cce1e192a645d54a3ac9a3a3f0b334f37c03400b826b14d873124dfb96a35815f80202f05c72d055b6da24942d0a6cac18caf310100ecef23248ac8fd2ced196",
     )
-    .unwrap();
+        .unwrap();
     let p_b = hex::decode(
         "0404f972c7232cde8911de7d93e37ad752b90ad095888ac83da5f3a1d5a7eb063288ed6d358e9092a8606dac6cd6b8fdfc0b3960df85434ed60c6b6091d23da7bb",
     )
-    .unwrap();
+        .unwrap();
     let confirmation = spake.compute_confirmation_values(&tt, &p_a, &p_b, 256);
     assert_eq!(
         hex::encode(confirmation.c_a),

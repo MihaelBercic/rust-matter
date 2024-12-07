@@ -5,7 +5,7 @@ use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::enums::SecureChannelProtocolOpcode;
 use crate::session::protocol::message_builder::ProtocolMessageBuilder;
 use crate::session::protocol::protocol_id::ProtocolID;
-use crate::{build_network_message, log_error, log_info};
+use crate::{build_network_message, log_error};
 use std::net::UdpSocket;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;

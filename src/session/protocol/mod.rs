@@ -1,13 +1,12 @@
 use crate::crypto::constants::{
-    CERTIFICATE_SIZE, CRYPTO_AEAD_MIC_LENGTH_BYTES, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
+    CRYPTO_AEAD_MIC_LENGTH_BYTES, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES, CRYPTO_PUBLIC_KEY_SIZE_BYTES, CRYPTO_SESSION_KEYS_INFO, CRYPTO_SYMMETRIC_KEY_LENGTH_BITS,
     CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES,
 };
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::values::Values::SpakeVerifier;
 use crate::crypto::spake::Spake2P;
 use crate::crypto::symmetric::{decrypt, encrypt};
-use crate::crypto::{self, hash_message, kdf, random_bytes, sign_message};
-use crate::mdns::device_information::Details;
+use crate::crypto::{self, hash_message, random_bytes, sign_message};
 use crate::session::matter::enums::MatterDestinationID;
 use crate::session::matter::enums::SessionOrigin::Pase;
 use crate::session::matter_message::MatterMessage;
@@ -30,13 +29,10 @@ use crate::tlv::tag_control::TagControl;
 use crate::tlv::tag_number::TagNumber;
 use crate::tlv::tlv::Tlv;
 use crate::utils::{bail_tlv, generic_error, transport_error, MatterError};
-use crate::{log_debug, log_error, log_info, tlv, SESSIONS, START_TIME};
+use crate::{log_debug, log_error, tlv, START_TIME};
 use byteorder::{WriteBytesExt, LE};
 use ccm::aead::Payload;
 use interaction::cluster::operational_credentials::MatterCertificate;
-use libc::LOG_INFO;
-use p256::ecdh::EphemeralSecret;
-use p256::ecdsa::SigningKey;
 use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::io::Cursor;
 

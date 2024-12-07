@@ -4,10 +4,7 @@ use crate::session::protocol::interaction::information_blocks::attribute::report
 use crate::session::protocol::interaction::information_blocks::attribute::Attribute;
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, InvokeResponse};
 use crate::session::session::Session;
-use crate::session::Device;
 use std::any::Any;
-
-use super::NewClusterImplementation;
 
 ///
 /// @author Mihael Berčič

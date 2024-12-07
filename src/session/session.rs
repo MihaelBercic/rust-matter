@@ -7,7 +7,6 @@ use crate::session::matter_message::MatterMessage;
 use crate::session::message_reception::MessageReceptionState;
 use crate::session::SessionRole;
 use crate::utils::{crypto_error, MatterError};
-use crate::{log_debug, log_info};
 use byteorder::{WriteBytesExt, LE};
 use ccm::aead::Payload;
 

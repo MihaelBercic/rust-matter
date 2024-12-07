@@ -10,7 +10,6 @@ use crate::session::session::Session;
 use crate::tlv::element_type::ElementType::{Structure, UTFString8, Unsigned8};
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
-use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 use std::any::Any;
 

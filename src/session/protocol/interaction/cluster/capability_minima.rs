@@ -2,7 +2,6 @@ use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl;
-use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 
 ///

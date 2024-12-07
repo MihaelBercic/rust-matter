@@ -1,10 +1,7 @@
-use crate::constants::TEST_CERT_PAA_NO_VID_CERT;
-use crate::crypto::constants::{CERTIFICATE_SIZE, CRYPTO_PUBLIC_KEY_SIZE_BYTES};
 use crate::crypto::kdf::key_derivation;
-use crate::crypto::{self, kdf, sign_message, sign_message_with_signature};
+use crate::crypto::{sign_message, sign_message_with_signature};
 use crate::mdns::device_information::{Details, GroupKey, GroupKeySecurityPolicy};
 use crate::mdns::enums::CommissionState;
-use crate::mdns::enums::DeviceType::Thermostat;
 use crate::session::protocol::interaction::cluster::enums::CertificateChainType::{self, *};
 use crate::session::protocol::interaction::cluster::ClusterImplementation;
 use crate::session::protocol::interaction::enums::QueryParameter::Specific;
@@ -15,30 +12,22 @@ use crate::session::protocol::interaction::information_blocks::attribute::Attrib
 use crate::session::protocol::interaction::information_blocks::{AttributePath, CommandData, CommandPath, CommandStatus, InvokeResponse};
 use crate::session::session::Session;
 use crate::tlv::element_type::ElementType;
-use crate::tlv::element_type::ElementType::{Array, OctetString16, Structure};
+use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
-use crate::tlv::tag_number;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
-use crate::utils::{bail_generic, bail_tlv, MatterError};
+use crate::utils::{bail_tlv, MatterError};
 use crate::{log_debug, log_info};
-use der::asn1::{ContextSpecific, ObjectIdentifier, OctetString, SetOf};
-use der::oid::AssociatedOid;
-use der::{Decode, DecodePem, Encode, FixedTag, Sequence, ValueOrd};
-use libc::LOG_INFO;
-use p256::ecdsa::{self, DerSignature, SigningKey, VerifyingKey};
-use p256::NistP256;
-use sec1::{DecodeEcPrivateKey, EncodeEcPrivateKey};
-use signature::Signer;
+use der::{DecodePem, Encode};
+use p256::ecdsa::{DerSignature, SigningKey};
+use sec1::DecodeEcPrivateKey;
 use std::any::Any;
 use std::fs;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use x509_cert::builder::{Builder, RequestBuilder};
-use x509_cert::name::{Name, RdnSequence};
-use x509_cert::spki::{AlgorithmIdentifierOwned, AlgorithmIdentifierWithOid, DynSignatureAlgorithmIdentifier};
-use x509_cert::time::Validity;
+use x509_cert::name::Name;
 use x509_cert::Certificate;
 
 use super::{FabricDescriptor, NOC};
@@ -107,7 +96,7 @@ impl OperationalCredentialsCluster {
             Tlv::new(nonce.into(), ContextSpecific8, Tag::short(2)),
             Tlv::new(timestamp.into(), ContextSpecific8, Tag::short(3)),
         ]))
-        .to_bytes();
+            .to_bytes();
 
         // log_info!(
         //     "TLV attestation elements before attestation challenge: {}",

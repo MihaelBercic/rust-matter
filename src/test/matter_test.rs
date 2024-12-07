@@ -117,6 +117,6 @@ fn queue_test() {
         }
         assert_eq!(total_received, 5);
     })
-    .join()
-    .expect("Unable to join the thread...");
+        .join()
+        .expect("Unable to join the thread...");
 }

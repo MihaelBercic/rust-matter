@@ -1,7 +1,6 @@
 use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag::Tag;
 use crate::tlv::tag_control::TagControl::ContextSpecific8;
-use crate::tlv::tag_number::TagNumber;
 use crate::tlv::tlv::Tlv;
 
 ///

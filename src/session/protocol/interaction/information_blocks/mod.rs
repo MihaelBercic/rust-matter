@@ -1,6 +1,5 @@
 pub mod attribute;
 
-use crate::log_error;
 use crate::session::protocol::interaction::enums::QueryParameter;
 use crate::session::protocol::interaction::enums::QueryParameter::{Specific, Wildcard};
 use crate::session::protocol::interaction::information_blocks::attribute::status::Status;

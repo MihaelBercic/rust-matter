@@ -1,16 +1,11 @@
-use crate::constants::{TEST_CMS_SIGNER_PRIVATE_KEY, TEST_CMS_SIGNER_SUBJECT_KEY_IDENTIFIER};
 use crate::crypto::constants::{CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES};
-use crate::mdns::enums::DeviceType;
-use crate::tlv::tlv::Tlv;
-use der::asn1::{ContextSpecific, Int, OctetString, SetOf};
-use der::TagMode::Implicit;
-use der::{Encode, TagMode, TagNumber};
+use der::Encode;
 use hmac::digest::MacError;
 use hmac::{Hmac, Mac};
 use p256::ecdh::EphemeralSecret;
 use p256::ecdsa::signature::Verifier;
 use p256::ecdsa::signature::{SignatureEncoding, Signer};
-use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
+use p256::ecdsa::{Signature, SigningKey};
 use p256::elliptic_curve::rand_core::OsRng;
 use p256::{NistP256, PublicKey};
 use rand::{thread_rng, Rng};

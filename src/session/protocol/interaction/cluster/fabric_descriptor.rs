@@ -1,7 +1,4 @@
-use crate::{
-    tlv::{element_type::ElementType, tag::Tag, tag_control::TagControl::ContextSpecific8, tlv::Tlv},
-    utils::MatterError,
-};
+use crate::tlv::{element_type::ElementType, tag::Tag, tag_control::TagControl::ContextSpecific8, tlv::Tlv};
 
 #[derive(Debug, Clone)]
 pub struct FabricDescriptor {

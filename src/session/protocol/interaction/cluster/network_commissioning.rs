@@ -1,4 +1,3 @@
-use crate::log_info;
 use crate::mdns::device_information::Details;
 use crate::session::protocol::interaction::cluster::network_info::NetworkInfo;
 use crate::session::protocol::interaction::cluster::{ClusterImplementation, NetworkCommissioningStatus};

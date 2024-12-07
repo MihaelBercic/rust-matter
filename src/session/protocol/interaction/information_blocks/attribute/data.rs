@@ -1,4 +1,3 @@
-use crate::log_info;
 use crate::session::protocol::interaction::information_blocks::AttributePath;
 use crate::tlv::element_type::ElementType;
 use crate::tlv::element_type::ElementType::Structure;

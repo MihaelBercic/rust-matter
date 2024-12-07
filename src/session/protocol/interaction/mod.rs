@@ -8,10 +8,7 @@ pub mod information_blocks;
 
 use information_blocks::attribute::data::AttributeData;
 use information_blocks::attribute::status::{AttributeStatus, Status};
-use information_blocks::{CommandPath, InvokeResponse};
 
-use crate::crypto::random_bytes;
-use crate::mdns::enums::DeviceType;
 use crate::session::matter_message::MatterMessage;
 use crate::session::protocol::interaction::enums::InteractionProtocolOpcode;
 use crate::session::protocol::interaction::information_blocks::attribute::report::AttributeReport;
@@ -27,7 +24,7 @@ use crate::tlv::tag_control::TagControl::ContextSpecific8;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 use crate::utils::{bail_tlv, generic_error, tlv_error, MatterError};
-use crate::{log_debug, log_info, SharedDevice};
+use crate::{log_debug, log_info};
 use std::io::Cursor;
 
 pub fn process_interaction_model(matter_message: &MatterMessage, protocol_message: ProtocolMessage, session: &mut Session, device: &mut Device) -> Result<ProtocolMessageBuilder, MatterError> {
