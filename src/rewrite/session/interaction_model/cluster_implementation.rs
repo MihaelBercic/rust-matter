@@ -1,9 +1,6 @@
 use std::any::Any;
 
-use crate::{
-    rewrite::session::interaction_model::attribute::{AttributePath, AttributeReport},
-    tlv::structs::StatusReport,
-};
+use super::information_blocks::attribute::{AttributePath, AttributeReport};
 
 pub trait ClusterImplementation: Any {
     /// Read attributes of a cluster based on the [AttributePath] provided.

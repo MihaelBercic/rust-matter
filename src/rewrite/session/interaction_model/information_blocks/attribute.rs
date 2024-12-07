@@ -10,7 +10,10 @@ use crate::{
     utils::{bail_tlv, tlv_error, MatterError},
 };
 
-use super::enums::{GlobalStatusCode, QueryParameter, QueryParameter::*};
+use crate::rewrite::session::interaction_model::enums::{
+    GlobalStatusCode,
+    QueryParameter::{self, *},
+};
 
 #[derive(Clone)]
 pub struct Attribute<const ID: u32, T: Into<ElementType>> {

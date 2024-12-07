@@ -2,9 +2,9 @@ use std::any::Any;
 
 use crate::{
     rewrite::session::interaction_model::{
-        attribute::{self, Attribute, AttributeReport},
         cluster_implementation::ClusterImplementation,
         enums::{QueryParameter::*, StartUpOnOffEnum},
+        information_blocks::attribute::{self, Attribute, AttributeReport},
     },
     tlv::{
         element_type::ElementType,
