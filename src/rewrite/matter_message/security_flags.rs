@@ -1,5 +1,5 @@
 use crate::{
-    rewrite::enums::MatterSessionType::{self, *},
+    rewrite::enums::SessionType::{self, *},
     utils::BitSubset,
 };
 
@@ -25,7 +25,7 @@ impl MatterSecurityFlags {
     }
 
     /// Retrieves the session type of the matter message.
-    pub fn session_type(&self) -> MatterSessionType {
+    pub fn session_type(&self) -> SessionType {
         match self.flags.bit_subset(0, 2) {
             0 => Unicast,
             1 => Group,
@@ -52,7 +52,7 @@ impl MatterSecurityFlags {
     }
 
     /// Sets the session type of the matter message.
-    pub fn set_session_type(&mut self, session_type: MatterSessionType) -> &mut Self {
+    pub fn set_session_type(&mut self, session_type: SessionType) -> &mut Self {
         let value = match session_type {
             Unicast => 0,
             Group => 1,

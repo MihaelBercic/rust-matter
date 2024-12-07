@@ -15,12 +15,12 @@ impl TryFrom<&[u8]> for MatterMessage {
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let mut reader = Cursor::new(value);
         let header = MatterMessageHeader::try_from(&mut reader)?;
-        let contains_mic = !header.is_insecure_unicast_session();
         let left = value.len() - reader.position() as usize;
         let mut payload: Vec<u8> = vec![0u8; left];
         reader.read_exact(&mut payload)?;
         let mut integrity_check: Vec<u8> = vec![];
-        if contains_mic {
+        if !header.is_insecure_unicast_session() {
+            // Indicates MIC is present.
             reader.read_to_end(&mut integrity_check)?;
         }
         Ok(Self { header, payload, integrity_check })

@@ -1,4 +1,4 @@
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct MatterMessageExtension {
+pub struct MessageExtension {
     pub data: Vec<u8>,
 }

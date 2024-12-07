@@ -1,9 +1,6 @@
-use crate::rewrite::enums::{MatterDestinationID, MatterDestinationType, MatterSessionType};
+use crate::rewrite::enums::{DestinationID, DestinationType, SessionType};
 
-use super::{
-    extension::MatterMessageExtension, flags::MatterMessageFlags, header::MatterMessageHeader, matter_message::MatterMessage,
-    security_flags::MatterSecurityFlags,
-};
+use super::{extension::MessageExtension, flags::MatterMessageFlags, header::MatterMessageHeader, matter_message::MatterMessage, security_flags::MatterSecurityFlags};
 
 ///
 /// @author Mihael Berčič
@@ -46,11 +43,11 @@ impl MatterMessageBuilder {
     }
 
     /// Sets the destination node id of the Matter Message.
-    pub fn set_destination(mut self, destination: MatterDestinationID) -> Self {
+    pub fn set_destination(mut self, destination: DestinationID) -> Self {
         self.message.header.destination_node_id = Some(destination.clone());
         match destination {
-            MatterDestinationID::Group(_) => self.set_type_of_destination(MatterDestinationType::GroupID),
-            MatterDestinationID::Node(_) => self.set_type_of_destination(MatterDestinationType::NodeID),
+            DestinationID::Group(_) => self.set_type_of_destination(DestinationType::GroupID),
+            DestinationID::Node(_) => self.set_type_of_destination(DestinationType::NodeID),
         }
     }
 
@@ -69,7 +66,7 @@ impl MatterMessageBuilder {
     /// Sets the message extensions of the Matter Message.
     pub fn set_message_extensions(mut self, data: &[u8]) -> Self {
         let vec: Vec<u8> = data.to_vec();
-        self.message.header.message_extensions = Some(MatterMessageExtension { data: vec });
+        self.message.header.message_extensions = Some(MessageExtension { data: vec });
         self
     }
 
@@ -92,7 +89,7 @@ impl MatterMessageBuilder {
     }
 
     /// Sets the session type of the matter message.
-    pub fn set_session_type(mut self, session_type: MatterSessionType) -> Self {
+    pub fn set_session_type(mut self, session_type: SessionType) -> Self {
         self.message.header.security_flags.set_session_type(session_type);
         self
     }
@@ -110,7 +107,7 @@ impl MatterMessageBuilder {
     }
 
     /// Sets the type of the destination [Group] or [Node].
-    fn set_type_of_destination(mut self, destination: MatterDestinationType) -> Self {
+    fn set_type_of_destination(mut self, destination: DestinationType) -> Self {
         self.message.header.flags.set_type_of_destination(destination);
         self
     }

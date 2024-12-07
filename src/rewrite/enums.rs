@@ -1,23 +1,23 @@
 #[derive(Debug, PartialEq)]
-pub enum MatterSessionType {
+pub enum SessionType {
     Unicast,
     Group,
     ReservedForFuture,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum MatterDestinationID {
+pub enum DestinationID {
     Group(u16),
     Node(u64),
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum MatterDestinationType {
+pub enum DestinationType {
     GroupID,
     NodeID,
 }
 
-pub enum MatterDeviceState {
+pub enum CommissioningState {
     Uncommissioned,
     Commissioning,
     Commissioned,

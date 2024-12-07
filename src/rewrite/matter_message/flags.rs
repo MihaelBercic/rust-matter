@@ -1,4 +1,4 @@
-use crate::{rewrite::enums::MatterDestinationType, utils::BitSubset};
+use crate::{rewrite::enums::DestinationType, utils::BitSubset};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct MatterMessageFlags {
@@ -17,11 +17,11 @@ impl MatterMessageFlags {
     }
 
     /// Sets the flag indicating the type of destination (Group or Node).
-    pub fn type_of_destination(&self) -> Option<MatterDestinationType> {
+    pub fn type_of_destination(&self) -> Option<DestinationType> {
         let destination = self.flags.bit_subset(0, 2);
         match destination {
-            1 => Some(MatterDestinationType::NodeID),
-            2 => Some(MatterDestinationType::GroupID),
+            1 => Some(DestinationType::NodeID),
+            2 => Some(DestinationType::GroupID),
             _ => None,
         }
     }
@@ -39,10 +39,10 @@ impl MatterMessageFlags {
     }
 
     /// Sets the flag indicating the type of destination for the current message.
-    pub fn set_type_of_destination(&mut self, destination: MatterDestinationType) -> &mut Self {
+    pub fn set_type_of_destination(&mut self, destination: DestinationType) -> &mut Self {
         let value = match destination {
-            MatterDestinationType::GroupID => 2,
-            MatterDestinationType::NodeID => 1,
+            DestinationType::GroupID => 2,
+            DestinationType::NodeID => 1,
         };
         self.flags.set_bits(0..=2, value);
         return self;
