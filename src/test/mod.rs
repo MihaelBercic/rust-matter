@@ -1,3 +1,5 @@
+use crate::log_debug;
+
 #[cfg(test)]
 pub mod crypto_tests;
 
