@@ -7,30 +7,13 @@ use std::time::SystemTimeError;
 
 mod bit_subset;
 mod byte_encodable;
+mod enums;
 mod padding;
 
 pub use bit_subset::BitSubset;
 pub use byte_encodable::ByteEncodable;
+pub use enums::*;
 pub use padding::*;
-
-#[derive(Debug)]
-pub enum MatterLayer {
-    Cryptography,
-    SecureSession,
-    Parsing,
-    Transport,
-    Application,
-    Data,
-    Interaction,
-    Generic,
-    TLV,
-}
-
-#[derive(Debug)]
-pub enum MatterError {
-    Custom(MatterLayer, String),
-    Io(io::Error),
-}
 
 impl MatterError {
     pub fn new(layer: MatterLayer, msg: &str) -> MatterError {
