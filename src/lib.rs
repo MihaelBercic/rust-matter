@@ -87,6 +87,7 @@ fn build_network_message(protocol_message: ProtocolMessage, counter: &AtomicU32,
     }
 }
 
+/// TODO: This is a temporary structure, defined for testing.
 pub struct NetworkInterface {
     pub index: u32,
     pub do_custom: bool,

@@ -1,5 +1,11 @@
-use std::collections::HashMap;
-
+use super::{
+    protocol::interaction::{
+        cluster::ClusterImplementation,
+        enums::ClusterID,
+        information_blocks::{attribute::report::AttributeReport, AttributePath, CommandData, InvokeResponse},
+    },
+    session::Session,
+};
 use crate::{
     log_debug,
     mdns::device_information::Details,
@@ -9,18 +15,9 @@ use crate::{
             attribute::status::{AttributeStatus, Status},
             CommandStatus,
         },
-    }
-    ,
-};
-
-use super::{
-    protocol::interaction::{
-        cluster::ClusterImplementation,
-        enums::ClusterID,
-        information_blocks::{attribute::report::AttributeReport, AttributePath, CommandData, InvokeResponse},
     },
-    session::Session,
 };
+use std::collections::HashMap;
 pub type Endpoint = HashMap<u32, Box<dyn ClusterImplementation + Send>>;
 
 pub struct Device {

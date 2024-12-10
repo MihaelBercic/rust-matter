@@ -1,16 +1,19 @@
-use std::any::Any;
-
 use crate::{
-    rewrite::session::interaction_model::{
-        cluster_implementation::ClusterImplementation,
-        enums::{QueryParameter::*, StartUpOnOffEnum},
-        information_blocks::attribute::{self, Attribute, AttributeReport},
+    rewrite::{
+        protocol_message::protocol_message::ProtocolMessage,
+        session::interaction_model::{
+            cluster_implementation::ClusterImplementation,
+            enums::{QueryParameter::*, StartUpOnOffEnum},
+            information_blocks::attribute::{self, Attribute, AttributeReport},
+        },
     },
+    session::{protocol::interaction::information_blocks::AttributePath, Device},
     tlv::{
         element_type::ElementType,
         structs::{self, StatusReport},
     },
 };
+use std::any::Any;
 
 pub struct OnOffCluster {
     pub(crate) is_on: Attribute<0, bool>,

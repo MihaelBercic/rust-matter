@@ -139,21 +139,6 @@ impl Session {
     }
 }
 
-/*
-Option<SharedSecret>
-LocalMessageCounter
-MessageReceptionState
-Local Fabric Index = 0 for PASE
-PeerNodeID
-ResumptionID
-ActiveTimestamp
-
-a. SESSION_IDLE_INTERVAL            | SESSION_PARAM_SET
-b. SESSION_ACTIVE_INTERVAL          | SESSION_PARAM_SET
-c. SESSION_ACTIVE_THRESHOLD         | SESSION_PARAM_SET
-PeerActiveMode = bool <=> (now() - ActiveTimestamp) < SESSION_ACTIVE_THRESHOLD
- */
-
 #[derive(Debug, Clone)]
 pub struct SessionSetup {
     pub peer_session_id: u16,
