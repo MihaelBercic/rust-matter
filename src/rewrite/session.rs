@@ -1,2 +1,2 @@
 pub mod interaction_model;
-// pub mod secure_channel;
+pub mod secure_channel;
