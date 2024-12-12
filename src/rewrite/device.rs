@@ -14,31 +14,6 @@ pub struct Device {
     pub details: Details,
 }
 
-pub struct EndpointBuilder {
-    endpoint: Endpoint,
-}
-
-impl EndpointBuilder {
-    pub fn new() -> Self {
-        Self { endpoint: Default::default() }
-    }
-
-    pub fn add_cluster(&mut self, cluster: ClusterID) -> &mut Self {
-        let id = cluster as u32;
-        self.endpoint.insert(id, cluster.into());
-        self
-    }
-}
-
-impl From<ClusterID> for Box<Cluster> {
-    fn from(value: ClusterID) -> Self {
-        Box::new(match value {
-            ClusterID::OnOff => OnOffCluster::default(),
-            _ => todo!("Not yet implemented."),
-        })
-    }
-}
-
 impl Device {
     fn get<T: ClusterImplementation>(&mut self, endpoint_id: u16, cluster_id: ClusterID) -> Option<&mut T> {
         self.endpoints_map
