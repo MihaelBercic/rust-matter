@@ -1,6 +1,6 @@
 use crate::rewrite::enums::{DestinationID, DestinationType, SessionType};
 
-use super::{extension::MessageExtension, flags::MatterMessageFlags, header::MatterMessageHeader, matter_message::MatterMessage, security_flags::MatterSecurityFlags};
+use super::{extension::MessageExtension, flags::MatterMessageFlags, header::MatterMessageHeader, message::MatterMessage, security_flags::MatterSecurityFlags};
 
 ///
 /// @author Mihael Berčič

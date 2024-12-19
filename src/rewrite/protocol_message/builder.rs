@@ -1,6 +1,6 @@
 use crate::utils::BitSubset;
 
-use super::{enums::ProtocolID, exchange_flags::ProtocolExchangeFlags, protocol_message::ProtocolMessage, secured_extensions::ProtocolSecuredExtensions};
+use super::{enums::ProtocolID, exchange_flags::ProtocolExchangeFlags, message::ProtocolMessage, secured_extensions::ProtocolSecuredExtensions};
 
 pub struct ProtocolMessageBuilder {
     message: ProtocolMessage,

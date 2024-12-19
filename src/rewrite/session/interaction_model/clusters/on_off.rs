@@ -1,6 +1,6 @@
 use crate::{
     rewrite::{
-        protocol_message::protocol_message::ProtocolMessage,
+        protocol_message::ProtocolMessage,
         session::interaction_model::{
             cluster_implementation::ClusterImplementation,
             enums::{QueryParameter::*, StartUpOnOffEnum},
