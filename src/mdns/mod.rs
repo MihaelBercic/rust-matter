@@ -1,3 +1,4 @@
+use crate::log_error;
 use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, LOCAL_DOMAIN, MDNS_PORT};
 use crate::mdns::multicast_socket::MulticastSocket;
 use crate::mdns::packet::MDNSPacket;
@@ -7,22 +8,14 @@ use crate::mdns::records::record_information::RecordInformation;
 use crate::mdns::records::record_type::RecordType;
 use crate::mdns::records::record_type::RecordType::{AAAA, PTR, SRV, TXT};
 use crate::mdns::records::{AAAARecord, PTRRecord, SRVRecord, TXTRecord};
-use crate::session::counters::{
-    initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER,
-};
-use crate::session::Device;
-use crate::utils::StringExtensions;
-use crate::{compute_pairing_code, log_error, NetworkInterface, SharedDevice};
+use crate::rewrite::counters::{initialize_counter, GLOBAL_GROUP_ENCRYPTED_CONTROL_MESSAGE_COUNTER, GLOBAL_GROUP_ENCRYPTED_DATA_MESSAGE_COUNTER, GLOBAL_UNENCRYPTED_COUNTER};
+use crate::rewrite::device::{compute_pairing_code, Device, SharedDevice};
 use constants::{COMMISSIONED_PROTOCOL, NON_COMMISSIONED_PROTOCOL};
 use enums::CommissionState;
-use rand::Rng;
-use std::io::Write;
 use std::net::UdpSocket;
-use std::ops::Add;
 use std::thread;
 use std::thread::sleep;
 use std::time::Duration;
-use verhoeff::VerhoeffMut;
 
 pub(crate) mod constants;
 pub mod device_information;
@@ -52,52 +45,45 @@ pub fn start_advertising(udp: &UdpSocket, shared_device: SharedDevice, interface
 
     // log_debug!("Spawning a new multicast listening thread...");
     let shared_clone = shared_device.clone();
-    thread::Builder::new()
-        .name("Multicast listening".to_string())
-        .stack_size(50 * 1024)
-        .spawn(move || {
-            loop {
-                match socket.receive_from() {
-                    Ok((size, sender)) => {
-                        let data = &socket.buffer[0..size];
-                        //TODO: Uncomment after stopped testing: if sender.ip() == ip { continue; }
-                        match MDNSPacket::try_from(data) {
-                            Ok(packet) => {
-                                _total += 1;
-                                let desired_queries: Vec<RecordInformation> = packet
-                                    .query_records
-                                    .iter()
-                                    .filter(|x| {
-                                        (x.label.contains(NON_COMMISSIONED_PROTOCOL)
-                                            || x.label.contains(NON_COMMISSIONED_PROTOCOL)
-                                            || x.label == host_name)
-                                    })
-                                    .map(|x| x.to_owned())
-                                    .collect();
-                                if desired_queries.is_empty() {
-                                    continue;
-                                }
-                                let device = shared_clone.lock().unwrap();
-                                let (is_unicast, packet_response) = build_response(&device, desired_queries, udp_port);
-                                sleep(Duration::from_millis(150));
-                                if is_unicast {
-                                    socket.send(&packet_response, sender);
-                                } else {
-                                    socket.send(&packet_response, &mdns_dst);
-                                }
+    thread::Builder::new().name("Multicast listening".to_string()).stack_size(50 * 1024).spawn(move || {
+        loop {
+            match socket.receive_from() {
+                Ok((size, sender)) => {
+                    let data = &socket.buffer[0..size];
+                    //TODO: Uncomment after stopped testing: if sender.ip() == ip { continue; }
+                    match MDNSPacket::try_from(data) {
+                        Ok(packet) => {
+                            _total += 1;
+                            let desired_queries: Vec<RecordInformation> = packet
+                                .query_records
+                                .iter()
+                                .filter(|x| (x.label.contains(NON_COMMISSIONED_PROTOCOL) || x.label.contains(NON_COMMISSIONED_PROTOCOL) || x.label == host_name))
+                                .map(|x| x.to_owned())
+                                .collect();
+                            if desired_queries.is_empty() {
+                                continue;
                             }
-                            Err(_) => {
-                                _failed += 1;
+                            let device = shared_clone.lock().unwrap();
+                            let (is_unicast, packet_response) = build_response(&device, desired_queries, udp_port);
+                            sleep(Duration::from_millis(150));
+                            if is_unicast {
+                                socket.send(&packet_response, sender);
+                            } else {
+                                socket.send(&packet_response, &mdns_dst);
                             }
                         }
+                        Err(_) => {
+                            _failed += 1;
+                        }
                     }
-                    Err(receive_error) => {
-                        log_error!("Socket error: {}", receive_error);
-                        sleep(Duration::from_secs(5));
-                    }
-                };
-            }
-        });
+                }
+                Err(receive_error) => {
+                    log_error!("Socket error: {}", receive_error);
+                    sleep(Duration::from_secs(5));
+                }
+            };
+        }
+    });
 }
 
 fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_port: u16) -> (bool, Vec<u8>) {
@@ -109,7 +95,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
         COMMISSIONED_PROTOCOL
     };
 
-    let mac = hex::encode_upper(&device.mac);
+    // let mac = hex::encode_upper(&device.mac);
     let host_name = format!("{}.{}", device.instance_name.clone(), LOCAL_DOMAIN);
 
     // let random: u64 = 0x705E698FD7D59D90;
@@ -144,7 +130,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
             weight: 0,
             port: udp_port,
         }
-            .into(),
+        .into(),
     };
     let aaaa_record = CompleteRecord {
         record_information: RecordInformation {
@@ -155,10 +141,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
             has_property: true,
         },
         ttl: 30,
-        data: AAAARecord {
-            address: device.ip.to_string(),
-        }
-            .into(),
+        data: AAAARecord { address: device.ip.to_string() }.into(),
     };
 
     let sub_l_record = CompleteRecord {
@@ -227,7 +210,7 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
                 ("VP", format!("{}+{}", device.vendor_id, device.product_id)),
             ],
         }
-            .into(),
+        .into(),
     };
 
     let mut query_iterator = desired_queries.iter();
@@ -268,6 +251,12 @@ fn build_response(device: &Device, desired_queries: Vec<RecordInformation>, udp_
         additional_records,
         authority_records: vec![],
     }
-        .into();
+    .into();
     (is_unicast, packet_response)
+}
+
+/// TODO: Remove, it's temporary.
+pub struct NetworkInterface {
+    pub index: u32,
+    pub do_custom: bool,
 }

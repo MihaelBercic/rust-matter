@@ -44,14 +44,3 @@ pub enum SessionOrigin {
     Case,
     Pase,
 }
-
-pub enum SessionType {
-    CASE,
-    PASE,
-}
-
-#[derive(Clone, Debug)]
-pub enum SessionRole {
-    Prover,
-    Verifier,
-}

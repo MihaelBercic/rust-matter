@@ -1,14 +1,11 @@
 use std::any::Any;
 
-use crate::{
-    session::{
-        protocol::interaction::information_blocks::{CommandData, InvokeResponse},
-        Device,
-    },
-    SharedDevice,
-};
+use crate::rewrite::device::Device;
 
-use super::information_blocks::attribute::{AttributePath, AttributeReport};
+use super::information_blocks::{
+    attribute::{AttributePath, AttributeReport},
+    command::{CommandData, InvokeResponse},
+};
 
 pub trait ClusterImplementation: Any {
     /// Read attributes of a cluster based on the [AttributePath] provided.
@@ -16,6 +13,10 @@ pub trait ClusterImplementation: Any {
     /// Returns a vector of attribute reports for each specific attribute read.
     fn read_attribute(&self, path: &AttributePath) -> Vec<AttributeReport>;
 
+    /// Invoke a command based on the [CommandData].
+    ///
+    /// Return a vector of InvokeResponses, (usually command invocations).
+    #[allow(unused_variables)]
     fn invoke_command(&self, device: &mut Device, data: CommandData) -> Vec<InvokeResponse> {
         todo!("Not yet implemented.")
     }

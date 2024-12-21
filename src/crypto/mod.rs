@@ -1,17 +1,13 @@
 use crate::crypto::constants::{CRYPTO_GROUP_SIZE_BYTES, CRYPTO_HASH_LEN_BYTES};
-use der::Encode;
 use hmac::digest::MacError;
 use hmac::{Hmac, Mac};
 use p256::ecdh::EphemeralSecret;
-use p256::ecdsa::signature::Verifier;
-use p256::ecdsa::signature::{SignatureEncoding, Signer};
+use p256::ecdsa::signature::Signer;
 use p256::ecdsa::{Signature, SigningKey};
 use p256::elliptic_curve::rand_core::OsRng;
 use p256::{NistP256, PublicKey};
 use rand::{thread_rng, Rng};
 use sha2::{Digest, Sha256};
-use signature::Keypair;
-use std::str::FromStr;
 
 pub mod constants;
 pub mod kdf;

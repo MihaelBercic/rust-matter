@@ -1,6 +1,4 @@
-use crate::crypto::constants::{
-    NIST_P_256_n, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_M_BYTES, CRYPTO_N_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES,
-};
+use crate::crypto::constants::{NIST_P_256_n, CRYPTO_GROUP_SIZE_BITS, CRYPTO_GROUP_SIZE_BYTES, CRYPTO_M_BYTES, CRYPTO_N_BYTES, CRYPTO_W_SIZE_BITS, CRYPTO_W_SIZE_BYTES};
 use crate::crypto::kdf::key_derivation;
 use crate::crypto::spake::spake_confirmation::SpakeConfirmation;
 use crate::crypto::spake::values::Values;
@@ -18,7 +16,7 @@ use p256::elliptic_curve::group::GroupEncoding;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
 use p256::elliptic_curve::subtle::ConstantTimeEq;
 use p256::elliptic_curve::{Field, PrimeField};
-use p256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar};
+pub use p256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar};
 use std::error::Error;
 use std::ops::{Add, Mul, Rem};
 
@@ -66,10 +64,11 @@ impl Spake2P {
         byte w0[CRYPTO_GROUP_SIZE_BYTES] = w0s mod p
         byte w1[CRYPTO_GROUP_SIZE_BYTES] = w1s mod p
         */
-        const REQUIRED_LIMBS: usize = { nlimbs!(CRYPTO_W_SIZE_BITS) };
+        const REQUIRED_LIMBS: usize = nlimbs!(CRYPTO_W_SIZE_BITS);
+        const REQUIRED_OUTPUT: usize = nlimbs!(CRYPTO_GROUP_SIZE_BITS);
+
         let order = NonZero::new(NIST_P_256_n.resize::<REQUIRED_LIMBS>()).unwrap();
         let pbkdf = kdf::password_key_derivation(&passcode.to_le_bytes(), salt, iterations, CRYPTO_W_SIZE_BITS * 2);
-        const REQUIRED_OUTPUT: usize = { nlimbs!(CRYPTO_GROUP_SIZE_BITS) };
         let w0 = Uint::<REQUIRED_LIMBS>::from_be_slice(&pbkdf[0..CRYPTO_W_SIZE_BYTES])
             .rem(&order)
             .resize::<REQUIRED_OUTPUT>()
@@ -114,7 +113,7 @@ impl Spake2P {
 
     /// Computes TT from (X,Y,Z,V, w0 and context).
     pub fn compute_transcript(&self, context: &[u8], id_p: &[u8], id_v: &[u8], values: Values, p_a: &[u8], p_b: &[u8]) -> Vec<u8> {
-        let mut w0 = match &values {
+        let w0 = match &values {
             Values::SpakeVerifier(r) => r.w0,
             Values::SpakeProver(i) => i.w0,
         };

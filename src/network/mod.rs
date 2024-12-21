@@ -1,12 +1,13 @@
+use crate::log_error;
 use crate::network::network_message::NetworkMessage;
-use crate::session::counters::GLOBAL_UNENCRYPTED_COUNTER;
-use crate::session::matter::enums::MatterDestinationID;
-use crate::session::matter_message::MatterMessage;
-use crate::session::protocol::enums::SecureChannelProtocolOpcode;
-use crate::session::protocol::message_builder::ProtocolMessageBuilder;
-use crate::session::protocol::protocol_id::ProtocolID;
-use crate::{build_network_message, log_error};
+use crate::rewrite::counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
+use crate::rewrite::enums::DestinationID;
+use crate::rewrite::matter_message::builder::MatterMessageBuilder;
+use crate::rewrite::matter_message::message::MatterMessage;
+use crate::rewrite::protocol_message::{ProtocolID, ProtocolMessage, ProtocolMessageBuilder, SecureChannelProtocolOpcode};
+use crate::rewrite::session::enums::MatterDestinationID;
 use std::net::UdpSocket;
+use std::sync::atomic::AtomicU32;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -45,8 +46,11 @@ pub(crate) fn start_listening_thread(processing_sender: Sender<NetworkMessage>, 
                                         .set_opcode(SecureChannelProtocolOpcode::MRPStandaloneAcknowledgement as u8)
                                         .set_protocol(ProtocolID::ProtocolSecureChannel)
                                         .build();
-                                    let nm = build_network_message(proto, &GLOBAL_UNENCRYPTED_COUNTER, MatterDestinationID::Node(destination));
-                                    outgoing_sender.send(nm);
+                                    let nm = build_network_message(proto, &GLOBAL_UNENCRYPTED_COUNTER, DestinationID::Node(destination));
+                                    let result = outgoing_sender.send(nm);
+                                    if let Err(error) = result {
+                                        log_error!("{:?}", error)
+                                    }
                                     continue;
                                 }
                                 history.push(message_id);
@@ -81,10 +85,13 @@ pub(crate) fn start_outgoing_thread(receiver: Receiver<NetworkMessage>, udp_sock
             loop {
                 let outgoing_message = receiver.recv();
                 match outgoing_message {
-                    Ok(network_message) => {
+                    Ok(mut network_message) => {
                         if let Some(recipient) = network_message.address {
                             // log_debug!("Sending a network message through the UDP to {}", recipient.to_string());
-                            udp_socket.send_to(&network_message.message.to_bytes(), recipient).unwrap();
+                            let bytes: Vec<u8> = network_message.message.into();
+                            udp_socket.send_to(&bytes, recipient).unwrap();
+                            network_message.retry_counter += 1;
+                            // TODO: create a mechanism that will retry until confirmed...
                         }
                     }
                     Err(_) => {}
@@ -92,4 +99,19 @@ pub(crate) fn start_outgoing_thread(receiver: Receiver<NetworkMessage>, udp_sock
             }
         })
         .expect("Unable to start outgoing thread...")
+}
+
+/// Builds a [NetworkMessage] and [MatterMessage] based on [ProtocolMessage] provided.
+fn build_network_message(protocol_message: ProtocolMessage, counter: &AtomicU32, destination: DestinationID) -> NetworkMessage {
+    let payload: Vec<u8> = protocol_message.into();
+    let matter = MatterMessageBuilder::new()
+        .set_destination(destination)
+        .set_counter(increase_counter(counter))
+        .set_payload(&payload)
+        .build();
+    NetworkMessage {
+        address: None,
+        message: matter,
+        retry_counter: 0,
+    }
 }

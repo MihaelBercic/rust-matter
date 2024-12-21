@@ -42,23 +42,20 @@ pub const bg_bright_cyan: &str = "\x1B[106m";
 pub const bg_bright_white: &str = "\x1B[107m";
 pub const bg_reset: &str = "\x1B[49m";
 
-
-#[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => {
-       println!(
+       std::println!(
             "{}{}{:<10}| {:<10} | {}{}",
             $crate::logging::color_bright_green,
             $crate::logging::style_bold,
             "info",
-            $crate::START_TIME.elapsed().unwrap().as_millis(),
+            $crate::rewrite::device::START_TIME.elapsed().unwrap().as_millis(),
             $crate::logging::style_reset,
-            format_args!($($arg)*)
+            std::format_args!($($arg)*)
         )
     };
 }
 
-#[macro_export]
 macro_rules! log_debug {
     ($($arg:tt)*) => {
         println!(
@@ -66,13 +63,12 @@ macro_rules! log_debug {
             $crate::logging::color_blue,
             $crate::logging::style_bold,
             "debug",
-            $crate::START_TIME.elapsed().unwrap().as_millis(),
+            $crate::rewrite::device::START_TIME.elapsed().unwrap().as_millis(),
             $crate::logging::style_reset,
             format_args!($($arg)*)
         )
     };
 }
-
 
 #[macro_export]
 macro_rules! log_error {
@@ -82,7 +78,7 @@ macro_rules! log_error {
             $crate::logging::color_bright_red,
             $crate::logging::style_bold,
             "error",
-            $crate::START_TIME.elapsed().unwrap().as_millis(),
+            $crate::rewrite::device::START_TIME.elapsed().unwrap().as_millis(),
             format_args!($($arg)*),
             $crate::logging::style_reset
         )

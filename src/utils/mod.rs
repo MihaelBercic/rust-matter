@@ -88,16 +88,32 @@ pub fn session_error(msg: &str) -> MatterError {
 }
 
 macro_rules! bail_tlv {
-    ($text:tt) => {
-        return Err(crate::utils::tlv_error($text))
+    ($($arg:tt)*) => {
+        {
+            let x = std::fmt::format(format_args!($($arg)*));
+            return Err(crate::utils::tlv_error(x.as_str()))
+        }
+    };
+}
+
+macro_rules! bail_transport {
+    ($($arg:tt)*) => {
+        {
+            let x = std::fmt::format(format_args!($($arg)*));
+            return Err(crate::utils::transport_error(x.as_str()))
+        }
     };
 }
 
 macro_rules! bail_generic {
-    ($text:tt) => {
-        return Err(crate::utisl::generic_error($text))
+    ($($arg:tt)*) => {
+        {
+            let x = std::fmt::format(format_args!($($arg)*));
+            return Err(crate::utils::generic_error(x.as_str()))
+        }
     };
 }
 
 pub(crate) use bail_generic;
 pub(crate) use bail_tlv;
+pub(crate) use bail_transport;

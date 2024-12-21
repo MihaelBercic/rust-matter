@@ -1,5 +1,6 @@
-use crate::session::matter_message::MatterMessage;
 use std::net::SocketAddr;
+
+use crate::rewrite::matter_message::message::MatterMessage;
 
 ///
 /// @author Mihael Berčič

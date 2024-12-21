@@ -1,5 +1,4 @@
 use crate::{
-    log_info,
     tlv::{
         element_type::ElementType::{self, *},
         tag::Tag,
@@ -216,5 +215,14 @@ impl TryFrom<ElementType> for AttributeData {
         let Some(path) = path else { bail_tlv!("Missing path!") };
         let Some(data) = data else { bail_tlv!("Missing data!") };
         Ok(Self { data_version, path, data })
+    }
+}
+
+impl From<Status> for ElementType {
+    fn from(value: Status) -> Self {
+        ElementType::Structure(vec![
+            Tlv::new(value.status.into(), TagControl::ContextSpecific8, Tag::short(0)),
+            Tlv::new(value.cluster_status.into(), TagControl::ContextSpecific8, Tag::short(1)),
+        ])
     }
 }

@@ -6,9 +6,11 @@ use std::net::{Ipv6Addr, SocketAddr, ToSocketAddrs, UdpSocket};
 use std::os::fd::FromRawFd;
 use std::str::FromStr;
 
+use crate::log_error;
 use crate::mdns::constants::{IPV6_MULTICAST_ADDRESS, MDNS_PORT};
-use crate::{log_error, NetworkInterface};
 use libc::{bind, c_char, in6_addr, perror, setsockopt, sockaddr, sockaddr_in6, socket, socklen_t, AF_INET6, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT};
+
+use super::NetworkInterface;
 
 /// Holds information about the udp_socket constructed via libc and the buffer corresponding for data.
 pub struct MulticastSocket<const C: usize> {
@@ -36,26 +38,12 @@ impl MulticastSocket<2000> {
                         sin6_flowinfo: 0,
                         sin6_scope_id: 0,
                     } as *const _ as *const sockaddr;
-                    if setsockopt(
-                        fd,
-                        SOL_SOCKET,
-                        SO_REUSEADDR,
-                        cc as *const c_void,
-                        size_of::<i32>() as socklen_t,
-                    ) < 0
-                    {
+                    if setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, cc as *const c_void, size_of::<i32>() as socklen_t) < 0 {
                         let error_text = "FIRST OPT FAILED" as *const _;
                         perror(error_text as *const c_char);
                     }
 
-                    if setsockopt(
-                        fd,
-                        SOL_SOCKET,
-                        SO_REUSEPORT,
-                        cc as *const c_void,
-                        size_of::<i32>() as socklen_t,
-                    ) < 0
-                    {
+                    if setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, cc as *const c_void, size_of::<i32>() as socklen_t) < 0 {
                         let error_text = "SECOND OPT FAILED" as *const _;
                         perror(error_text as *const c_char);
                     }

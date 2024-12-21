@@ -1,7 +1,8 @@
 use crate::{
     mdns::enums::{CommissionState, DeviceType},
-    session::protocol::interaction::cluster::{FabricDescriptor, NOC},
+    tlv::{element_type::ElementType, tag::Tag, tag_control::TagControl, tlv::Tlv},
 };
+use p256::ecdsa::SigningKey;
 use std::net::Ipv6Addr;
 
 ///
@@ -42,4 +43,46 @@ pub struct GroupKey {
     pub security_policy: GroupKeySecurityPolicy,
     pub epoch_key: Vec<u8>,
     pub epoch_start_time: u128,
+}
+
+/// `noc`: Node Operational Certificate
+///
+/// `icac`: Intermediate Certificate Authority Certificate
+#[derive(Clone, Debug)]
+pub struct NOC {
+    pub icac: Option<Vec<u8>>,
+    pub noc: Vec<u8>,
+    pub private_key: SigningKey,
+}
+
+#[derive(Debug, Clone)]
+pub struct FabricDescriptor {
+    pub root_public_key: Vec<u8>,
+    pub vendor_id: u16,
+    pub fabric_id: u64,
+    pub node_id: u64,
+    pub label: String,
+}
+
+impl From<FabricDescriptor> for ElementType {
+    fn from(value: FabricDescriptor) -> Self {
+        let children: Vec<Tlv> = vec![
+            Tlv::new(value.root_public_key.into(), TagControl::ContextSpecific8, Tag::short(1)),
+            Tlv::new(value.vendor_id.into(), TagControl::ContextSpecific8, Tag::short(2)),
+            Tlv::new(value.fabric_id.into(), TagControl::ContextSpecific8, Tag::short(3)),
+            Tlv::new(value.node_id.into(), TagControl::ContextSpecific8, Tag::short(4)),
+            Tlv::new(value.label.into(), TagControl::ContextSpecific8, Tag::short(5)),
+        ];
+        ElementType::Structure(children)
+    }
+}
+
+impl From<Vec<FabricDescriptor>> for ElementType {
+    fn from(value: Vec<FabricDescriptor>) -> Self {
+        let mut vec = vec![];
+        for x in value {
+            vec.push(Tlv::simple(x.into()))
+        }
+        ElementType::List(vec)
+    }
 }

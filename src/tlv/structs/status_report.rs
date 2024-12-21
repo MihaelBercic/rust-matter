@@ -1,7 +1,7 @@
-use crate::session::protocol::enums::{SecureChannelGeneralCode, SecureStatusProtocolCode};
-use crate::session::protocol::protocol_id::ProtocolID;
-use crate::session::protocol_message::ProtocolMessage;
-use crate::utils::MatterError;
+use crate::{
+    rewrite::protocol_message::{ProtocolID, ProtocolMessage, SecureChannelGeneralCode, SecureStatusProtocolCode},
+    utils::MatterError,
+};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::io::{Cursor, Read};
 
@@ -27,14 +27,12 @@ impl TryFrom<ProtocolMessage> for StatusReport {
         let protocol_id = ProtocolID::from(cursor.read_u32::<LE>()?);
         let protocol_code = SecureStatusProtocolCode::from(cursor.read_u16::<LE>()?);
         cursor.read_to_end(&mut data)?;
-        Ok(
-            Self {
-                general_code,
-                protocol_id,
-                protocol_code,
-                data,
-            }
-        )
+        Ok(Self {
+            general_code,
+            protocol_id,
+            protocol_code,
+            data,
+        })
     }
 }
 
