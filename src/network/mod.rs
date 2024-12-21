@@ -5,7 +5,6 @@ use crate::rewrite::enums::DestinationID;
 use crate::rewrite::matter_message::builder::MatterMessageBuilder;
 use crate::rewrite::matter_message::message::MatterMessage;
 use crate::rewrite::protocol_message::{ProtocolID, ProtocolMessage, ProtocolMessageBuilder, SecureChannelProtocolOpcode};
-use crate::rewrite::session::enums::MatterDestinationID;
 use std::net::UdpSocket;
 use std::sync::atomic::AtomicU32;
 use std::sync::mpsc::{Receiver, Sender};
@@ -27,7 +26,6 @@ pub(crate) fn start_listening_thread(processing_sender: Sender<NetworkMessage>, 
         .spawn(move || {
             let mut buffer = [0u8; 5000];
             let mut history = vec![];
-            // log_info!("Listening on: {}", udp_socket.local_addr().unwrap().port());
             loop {
                 match udp_socket.recv_from(&mut buffer) {
                     Ok((size, sender)) => {

@@ -1,4 +1,7 @@
-use std::sync::mpsc::Sender;
+use std::{
+    sync::mpsc::{Receiver, Sender},
+    thread::{self, JoinHandle},
+};
 
 use counters::{increase_counter, GLOBAL_UNENCRYPTED_COUNTER};
 use device::{SharedDevice, SESSIONS};
@@ -11,18 +14,42 @@ use session::{
 
 use crate::{
     constants::UNSPECIFIED_NODE_ID,
+    log_debug, log_error, log_info,
     logging::*,
     network::network_message::NetworkMessage,
     utils::{bail_generic, MatterError},
 };
+pub mod device;
 
 pub(crate) mod counters;
-pub(crate) mod device;
 pub(crate) mod enums;
 pub(crate) mod matter_message;
 pub(crate) mod message_reception;
 pub(crate) mod protocol_message;
 pub(crate) mod session;
+
+/// Message processing thread
+pub(crate) fn start_processing_thread(receiver: Receiver<NetworkMessage>, outgoing_sender: Sender<NetworkMessage>, device: SharedDevice) -> JoinHandle<()> {
+    thread::Builder::new()
+        .name("Processing thread".to_string())
+        .stack_size(100 * 1024)
+        .spawn(move || loop {
+            let message_to_process = receiver.recv();
+            match message_to_process {
+                Ok(network_message) => {
+                    // if !perform_validity_checks(&network_message.message) {
+                    //     log_error!("Failed validity checks...");
+                    //     continue;
+                    // }
+                    if let Err(error) = process_incoming(network_message, &outgoing_sender, device.clone()) {
+                        log_error!("Unable to process message: {:?}", error);
+                    }
+                }
+                Err(error) => log_error!("Unable to receive the message {:?}", error),
+            }
+        })
+        .expect("Unable to start processing thread...")
+}
 
 fn process_incoming(network_message: NetworkMessage, outgoing_sender: &Sender<NetworkMessage>, device: SharedDevice) -> Result<(), MatterError> {
     let mut matter_message = network_message.message;

@@ -3,7 +3,6 @@ use crate::tlv::element_type::ElementType::Structure;
 use crate::tlv::tag_number::TagNumber::Short;
 use crate::tlv::tlv::Tlv;
 use crate::utils::{MatterError, MatterLayer};
-use std::alloc::GlobalAlloc;
 
 ///
 /// @author Mihael Berčič

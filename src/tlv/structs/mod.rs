@@ -13,5 +13,4 @@ pub use pake_2::*;
 pub use pake_3::*;
 pub use pbkdf_parameter_request::*;
 pub use pbkdf_parameter_response::*;
-pub use pbkdf_parameter_set::*;
 pub use status_report::*;

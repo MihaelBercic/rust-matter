@@ -12,6 +12,7 @@ use crate::{
         random_bytes,
         spake::Spake2P,
     },
+    log_debug, log_error,
     rewrite::{
         device::{Device, START_TIME},
         enums::SessionOrigin,
@@ -79,7 +80,7 @@ pub(crate) fn process_secure(peer_id: u64, protocol_message: ProtocolMessage, se
             let verifier = Spake2P::compute_verifier(20202021, salt, iterations);
             let p_b: [u8; CRYPTO_PUBLIC_KEY_SIZE_BYTES] = s2p.compute_public_verifier(&verifier.w0)?.to_encoded_point(false).as_bytes().try_into().unwrap();
             let context = hash_message(&session_setup.context);
-            let mut transcript = s2p.compute_transcript(&context, &[], &[], crate::crypto::spake::values::Values::SpakeVerifier(verifier), &pake_1.p_a, &p_b);
+            let transcript = s2p.compute_transcript(&context, &[], &[], crate::crypto::spake::values::Values::SpakeVerifier(verifier), &pake_1.p_a, &p_b);
             let confirmation = s2p.compute_confirmation_values(&transcript, &pake_1.p_a, &p_b, 256);
             let pake_2 = Pake2 { p_b, c_b: confirmation.cB };
             let pake_tlv: Tlv = pake_2.into();
@@ -220,11 +221,11 @@ pub(crate) fn process_secure(peer_id: u64, protocol_message: ProtocolMessage, se
             let Some(case_setup) = &mut session.case_setup else { bail_generic!("No CASE_SETUP set.") };
 
             let bytes = tlv.clone().to_bytes();
-            let mut sigma3 = Sigma3::try_from(tlv).unwrap();
+            let sigma3 = Sigma3::try_from(tlv).unwrap();
             let mut salt = case_setup.ipk.clone();
             salt.extend_from_slice(&hash_message(&case_setup.context));
-            let mut s3k = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"Sigma3", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
-            let mut decrypted = crypto::symmetric::decrypt(&s3k, Payload { msg: &sigma3.encrypted, aad: &[] }, b"NCASE_Sigma3N").unwrap();
+            let s3k = key_derivation(&session.shared_secret.unwrap(), Some(&salt), b"Sigma3", CRYPTO_SYMMETRIC_KEY_LENGTH_BITS);
+            let decrypted = crypto::symmetric::decrypt(&s3k, Payload { msg: &sigma3.encrypted, aad: &[] }, b"NCASE_Sigma3N").unwrap();
 
             // TODO verify...
             let tlv = Tlv::try_from_cursor(&mut Cursor::new(&decrypted)).unwrap();

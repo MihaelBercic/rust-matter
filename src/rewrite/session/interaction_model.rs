@@ -1,4 +1,4 @@
-use crate::{rewrite::protocol_message::ProtocolMessageBuilder, tlv::structs::StatusReport, utils::MatterError};
+use crate::{rewrite::protocol_message::ProtocolMessageBuilder, utils::MatterError};
 
 pub mod cluster_implementation;
 pub mod clusters;

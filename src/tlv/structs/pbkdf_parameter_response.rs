@@ -32,14 +32,14 @@ impl PBKDFParamResponse {
         let responder_random = random_bits(32 * 8);
         let session_id = u16::from_le_bytes(random_bytes::<2>()); // set local session identifier
         let peer_session_id = request.initiator_session_id;
-        let mut pbkdf_parameters = match request.has_params {
+        let pbkdf_parameters = match request.has_params {
             true => None,
             _ => {
                 let mut random = thread_rng();
                 let salt = random_bytes::<32>();
                 let iterations = random.gen_range(CRYPTO_PBKDF_ITERATIONS_MIN..=CRYPTO_PBKDF_ITERATIONS_MAX);
 
-                let mut salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
+                let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
                 let iterations = 1000;
                 Some(PBKDFParameterSet { iterations, salt })
             }

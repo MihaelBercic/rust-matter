@@ -4,7 +4,7 @@ use super::session::{
     interaction_model::{cluster_implementation::ClusterImplementation, enums::ClusterID},
     Session,
 };
-use crate::{crypto::random_bits, mdns::device_information::Details};
+use crate::{crypto::random_bits, log_info, mdns::device_information::Details};
 use std::{
     collections::HashMap,
     sync::{Arc, LazyLock, Mutex},
@@ -24,6 +24,13 @@ pub struct Device {
 }
 
 impl Device {
+    pub fn new(details: Details) -> Self {
+        Self {
+            endpoints_map: Default::default(),
+            details,
+        }
+    }
+
     fn get<T: ClusterImplementation>(&mut self, endpoint_id: u16, cluster_id: ClusterID) -> Option<&mut T> {
         self.endpoints_map
             .get_mut(&endpoint_id)

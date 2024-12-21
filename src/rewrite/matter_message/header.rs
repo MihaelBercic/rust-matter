@@ -1,5 +1,5 @@
 use std::iter;
-use std::{env::var, io::Cursor};
+use std::io::Cursor;
 
 use crate::{
     rewrite::enums::{DestinationID, DestinationType, SessionType},

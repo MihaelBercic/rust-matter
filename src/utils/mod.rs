@@ -1,6 +1,4 @@
 use crate::utils::MatterLayer::{Parsing, Transport};
-use std::any::Any;
-use std::error::Error;
 use std::fmt;
 use std::io;
 use std::time::SystemTimeError;
@@ -13,7 +11,6 @@ mod padding;
 pub use bit_subset::BitSubset;
 pub use byte_encodable::ByteEncodable;
 pub use enums::*;
-pub use padding::*;
 
 impl MatterError {
     pub fn new(layer: MatterLayer, msg: &str) -> MatterError {
